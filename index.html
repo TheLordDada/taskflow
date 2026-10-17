@@ -710,6 +710,30 @@
                 </button>
             </div>
 
+            <!-- BANNER DE DESTAQUE: MODO EDITOR ADMINISTRATIVO -->
+            <div class="bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-gray-950 p-3 sm:p-3.5 rounded-2xl border border-purple-500/40 flex flex-wrap items-center justify-between gap-3 shadow-lg mb-4 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center justify-center font-bold text-sm shrink-0">
+                        <i class="fa-solid fa-pen-ruler"></i>
+                    </span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-xs font-extrabold text-white uppercase tracking-wider">Modo Editor Administrativo Ativo</h4>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">LIVRE PARA EDITAR</span>
+                        </div>
+                        <p class="text-[11px] text-purple-200/80 mt-0.5">Clique em <strong class="text-white">"Editar Tudo"</strong> nos cartões ou altere cargos, setores e senhas diretamente nos botões!</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" onclick="admin.promptAddRole()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-md shadow-purple-600/30 active:scale-95">
+                        <i class="fa-solid fa-plus text-xs"></i> <span>+ Novo Cargo</span>
+                    </button>
+                    <button type="button" onclick="admin.promptAddDepartment()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 active:scale-95">
+                        <i class="fa-solid fa-plus text-xs"></i> <span>+ Novo Setor</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Abas do Painel Admin -->
             <div class="flex flex-wrap bg-gray-950 p-1.5 rounded-2xl border border-gray-800 my-5 gap-1 shrink-0">
                 <button type="button" onclick="admin.switchTab('users')" id="admin-tab-users" class="flex-1 min-w-[130px] py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white transition flex items-center justify-center gap-2">
@@ -1400,7 +1424,7 @@
     <!-- ========================================== -->
     <!-- MODAL: EDITAR COLABORADOR (MODO EDITOR ADM) -->
     <!-- ========================================== -->
-    <div id="modal-admin-edit-user" style="display: none;" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 md:p-4">
+    <div id="modal-admin-edit-user" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-3 md:p-4">
         <div class="bg-gray-900 border border-indigo-500/40 rounded-3xl w-full max-w-lg p-5 shadow-2xl overflow-y-auto max-h-[92vh] custom-scrollbar">
             <div class="flex items-center justify-between pb-3.5 border-b border-gray-800">
                 <div class="flex items-center gap-2.5">
@@ -1503,7 +1527,7 @@
     <!-- ========================================== -->
     <!-- MODAL: EDITAR OCORRÊNCIA (MODO EDITOR ADM) -->
     <!-- ========================================== -->
-    <div id="modal-admin-edit-occurrence" style="display: none;" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 md:p-4">
+    <div id="modal-admin-edit-occurrence" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-3 md:p-4">
         <div class="bg-gray-900 border border-amber-500/40 rounded-3xl w-full max-w-xl p-5 shadow-2xl overflow-y-auto max-h-[92vh] custom-scrollbar">
             <div class="flex items-center justify-between pb-3.5 border-b border-gray-800">
                 <div class="flex items-center gap-2.5">
@@ -3973,15 +3997,27 @@
                                     ${isAdm ? '<span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500 text-black">ADMIN</span>' : ''}
                                     ${statusBadge}
                                 </div>
-                                <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-gray-400">
-                                    <span class="text-gray-300 font-mono text-[11px]">${acc.email}</span>
+                                <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-gray-300 pt-0.5">
+                                    <span class="text-gray-400 font-mono text-[11px]">${acc.email}</span>
                                     <span>•</span>
-                                    
-<select onchange="admin.changeUserRole('${acc.email}', this.value)" class="bg-gray-900 border border-gray-700 text-indigo-300 text-xs rounded-lg px-2 py-0.5 font-medium focus:outline-none focus:border-indigo-500">
-        ${admin.getRoles().map(r => `<option value="${r}" ${(acc.role || 'Colaborador') === r ? 'selected' : ''}>${r}</option>`).join('')}
-    </select>
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-[10px] text-gray-500 font-semibold uppercase">Cargo:</span>
+                                        <select onchange="admin.changeUserRole('${acc.email}', this.value)" class="bg-gray-900 border border-gray-700 text-indigo-300 text-xs rounded-lg px-2 py-0.5 font-medium focus:outline-none focus:border-indigo-500">
+                                            ${admin.getRoles().map(r => `<option value="${r}" ${(acc.role || 'Colaborador') === r ? 'selected' : ''}>${r}</option>`).join('')}
+                                        </select>
+                                    </div>
                                     <span>•</span>
-                                    <span class="text-gray-500">${acc.dept || 'Geral'}</span>
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-[10px] text-gray-500 font-semibold uppercase">Setor:</span>
+                                        <select onchange="admin.changeUserDept('${acc.email}', this.value)" class="bg-gray-900 border border-gray-700 text-purple-300 text-xs rounded-lg px-2 py-0.5 font-medium focus:outline-none focus:border-purple-500">
+                                            ${admin.getDepartments().map(d => `<option value="${d}" ${(acc.dept || 'Geral') === d ? 'selected' : ''}>${d}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <span>•</span>
+                                    <button type="button" onclick="admin.quickEditUserPassword('${acc.email}')" class="px-2 py-0.5 bg-gray-900 hover:bg-gray-800 text-amber-300 border border-gray-700 rounded-lg text-[11px] font-mono flex items-center gap-1 transition" title="Clique para ver ou trocar a senha">
+                                        <i class="fa-solid fa-key text-[10px] text-amber-400"></i>
+                                        <span>Senha: <strong>${acc.password ? '••••' : 'Definir'}</strong></span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -4019,10 +4055,10 @@
                                 `}
                                 
                                 <!-- Botão de Permissão: Liberar / Bloquear Ocorrências -->
-                                <button type="button" onclick="admin.openEditUserModal('${acc.email}')" title="Editar todos os dados do colaborador" class="px-2.5 py-1 bg-gray-800 hover:bg-indigo-900/60 text-indigo-300 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 border border-gray-700">
-            <i class="fa-solid fa-user-pen text-[11px]"></i>
-            <span>Editar</span>
-        </button>
+                                <button type="button" onclick="admin.openEditUserModal('${acc.email}')" title="Modo Editor Completo: alterar todos os dados deste colaborador" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 shadow-md shadow-indigo-600/30">
+        <i class="fa-solid fa-pen-to-square text-xs"></i>
+        <span>Editar Tudo</span>
+    </button>
         <button type="button" onclick="admin.toggleOccurrencesAccess('${acc.email}')" title="Autorizar ou Ocultar o Painel de Ocorrências para este colaborador" class="px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 ${acc.canAccessOccurrences ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30' : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200'}">
                                     <i class="fa-solid fa-clipboard-user ${acc.canAccessOccurrences ? 'text-amber-400' : 'text-gray-500'} text-[11px]"></i>
                                     <span>${acc.canAccessOccurrences ? 'Ocorrências: Liberado' : 'Ocorrências: Oculto'}</span>
@@ -4127,6 +4163,83 @@
                     syncManager.showToast(`✓ Cargo de ${acc.displayName} atualizado para "${newRole}"`);
                 }
             }
+
+            changeUserDept(email, newDept) {
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                const acc = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+                if (acc) {
+                    acc.dept = newDept;
+                    localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                    if (window.syncManager) {
+                        window.syncManager.publish({
+                            type: 'ACCOUNT_STATUS_UPDATE',
+                            email: acc.email,
+                            status: acc.status,
+                            account: acc
+                        });
+                    }
+                    this.renderAdminUsers();
+                    auth.updateCollaboratorsList();
+                    syncManager.showToast(`✓ Setor de ${acc.displayName} atualizado para "${newDept}"`);
+                }
+            }
+
+            quickEditUserName(email) {
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                const acc = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+                if (!acc) return;
+                const newName = prompt(`Editar nome completo de ${acc.displayName}:`, acc.displayName);
+                if (!newName || !newName.trim() || newName.trim() === acc.displayName) return;
+                acc.displayName = newName.trim();
+                localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                if (auth.currentUser && auth.currentUser.email.toLowerCase() === email.toLowerCase()) {
+                    auth.currentUser.displayName = acc.displayName;
+                    localStorage.setItem('taskflow_current_user', JSON.stringify(auth.currentUser));
+                    auth.updateUserUI();
+                }
+                if (window.syncManager) {
+                    window.syncManager.publish({
+                        type: 'ACCOUNT_STATUS_UPDATE',
+                        email: acc.email,
+                        status: acc.status,
+                        account: acc
+                    });
+                }
+                this.renderAdminUsers();
+                auth.updateCollaboratorsList();
+                syncManager.showToast(`✓ Nome atualizado para "${acc.displayName}"`);
+            }
+
+            quickEditUserPassword(email) {
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                const acc = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+                if (!acc) return;
+                const newPass = prompt(`Senha atual de ${acc.displayName}: "${acc.password || '123456'}"\n\nDigite a nova senha para este colaborador:`, acc.password || '');
+                if (newPass === null || !newPass.trim()) return;
+                acc.password = newPass.trim();
+                if (!acc.passwordHistory) acc.passwordHistory = [];
+                acc.passwordHistory.unshift({
+                    password: acc.password,
+                    changedAt: Date.now(),
+                    changedBy: auth.currentUser ? auth.currentUser.displayName : 'Administrador'
+                });
+                localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                if (auth.currentUser && auth.currentUser.email.toLowerCase() === email.toLowerCase()) {
+                    auth.currentUser.password = acc.password;
+                    localStorage.setItem('taskflow_current_user', JSON.stringify(auth.currentUser));
+                }
+                if (window.syncManager) {
+                    window.syncManager.publish({
+                        type: 'ACCOUNT_STATUS_UPDATE',
+                        email: acc.email,
+                        status: acc.status,
+                        account: acc
+                    });
+                }
+                this.renderAdminUsers();
+                syncManager.showToast(`✓ Nova senha de ${acc.displayName} definida com sucesso!`);
+            }
+
 
             initReportMonths() {
                 const select = document.getElementById('report-month-filter');
@@ -5276,6 +5389,7 @@
                 if (modal) {
                     modal.classList.remove('hidden');
                     modal.style.display = 'flex';
+                    modal.style.zIndex = '99999';
                 }
             }
 
@@ -5434,6 +5548,7 @@
                 if (modal) {
                     modal.classList.remove('hidden');
                     modal.style.display = 'flex';
+                    modal.style.zIndex = '99999';
                 }
             }
 
