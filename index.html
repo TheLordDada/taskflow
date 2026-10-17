@@ -31,6 +31,10 @@
             text-size-adjust: 100%;
         }
 
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
         html, body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #030712 !important;
@@ -38,7 +42,23 @@
             margin: 0;
             padding: 0;
             min-height: 100vh;
+            min-height: 100dvh;
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden !important;
             -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Mobile layout fixes & prevent overflow */
+        @media (max-width: 640px) {
+            .scrollbar-none::-webkit-scrollbar { display: none; }
+            .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+            .modal-content-box {
+                max-width: calc(100vw - 1rem) !important;
+                width: 100% !important;
+                margin-left: auto;
+                margin-right: auto;
+            }
         }
 
         /* Fallback de layout caso CDN demore ou seja bloqueado */
@@ -597,7 +617,7 @@
                 <button id="topbar-new-occurrence-btn" onclick="occApp.openNewModal()" class="hidden items-center gap-1.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-black font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-amber-600/30 whitespace-nowrap">
                     <i class="fa-solid fa-plus text-xs"></i>
                     <span class="hidden sm:inline">+ Nova Ocorrência</span>
-                    <span class="sm:hidden font-bold">+ Ocorrência</span>
+                    <span class="sm:hidden font-bold">+ Ocorr.</span>
                 </button>
                 <button onclick="auth.logout()" title="Sair da Conta" class="md:hidden p-2 text-gray-400 hover:text-red-400 rounded-xl bg-gray-800 active:scale-95">
                     <i class="fa-solid fa-right-from-bracket text-xs"></i>
@@ -692,8 +712,8 @@
     <!-- ========================================== -->
     <!-- PAINEL DO ADMINISTRADOR (EXCLUSIVO)        -->
     <!-- ========================================== -->
-    <div id="admin-modal" style="display: none;" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 md:p-6">
-        <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-4xl p-4 sm:p-6 pb-safe shadow-2xl overflow-y-auto max-h-[92vh] custom-scrollbar flex flex-col">
+    <div id="admin-modal" style="display: none;" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-2 sm:p-4 md:p-6">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl sm:rounded-3xl w-full max-w-4xl p-3 sm:p-6 pb-safe shadow-2xl overflow-y-auto max-h-[96vh] sm:max-h-[92vh] custom-scrollbar flex flex-col">
             <!-- Header do Painel Admin -->
             <div class="flex items-center justify-between pb-4 border-b border-gray-800">
                 <div class="flex items-center gap-3">
@@ -711,62 +731,62 @@
             </div>
 
             <!-- BANNER DE DESTAQUE: MODO EDITOR ADMINISTRATIVO -->
-            <div class="bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-gray-950 p-3 sm:p-3.5 rounded-2xl border border-purple-500/40 flex flex-wrap items-center justify-between gap-3 shadow-lg mb-4 shrink-0">
-                <div class="flex items-center gap-2.5">
+            <div class="bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-gray-950 p-3 sm:p-3.5 rounded-2xl border border-purple-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 shadow-lg mb-3 shrink-0">
+                <div class="flex items-center gap-2.5 min-w-0">
                     <span class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center justify-center font-bold text-sm shrink-0">
                         <i class="fa-solid fa-pen-ruler"></i>
                     </span>
-                    <div>
-                        <div class="flex items-center gap-2">
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-1.5">
                             <h4 class="text-xs font-extrabold text-white uppercase tracking-wider">Modo Editor Administrativo Ativo</h4>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">LIVRE PARA EDITAR</span>
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">LIVRE PARA EDITAR</span>
                         </div>
-                        <p class="text-[11px] text-purple-200/80 mt-0.5">Clique em <strong class="text-white">"Editar Tudo"</strong> nos cartões ou altere cargos, setores e senhas diretamente nos botões!</p>
+                        <p class="text-[11px] text-purple-200/80 mt-0.5 leading-tight">Altere dados direto nos cartões ou use <strong class="text-white">"Editar Tudo"</strong>!</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <button type="button" onclick="admin.promptAddRole()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-md shadow-purple-600/30 active:scale-95">
-                        <i class="fa-solid fa-plus text-xs"></i> <span>+ Novo Cargo</span>
+                <div class="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-1 sm:pt-0">
+                    <button type="button" onclick="admin.promptAddRole()" class="flex-1 sm:flex-none px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/30 active:scale-95">
+                        <i class="fa-solid fa-plus text-xs"></i> <span>+ Cargo</span>
                     </button>
-                    <button type="button" onclick="admin.promptAddDepartment()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 active:scale-95">
-                        <i class="fa-solid fa-plus text-xs"></i> <span>+ Novo Setor</span>
+                    <button type="button" onclick="admin.promptAddDepartment()" class="flex-1 sm:flex-none px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/30 active:scale-95">
+                        <i class="fa-solid fa-plus text-xs"></i> <span>+ Setor</span>
                     </button>
                 </div>
             </div>
 
             <!-- Abas do Painel Admin -->
-            <div class="flex flex-wrap bg-gray-950 p-1.5 rounded-2xl border border-gray-800 my-5 gap-1 shrink-0">
-                <button type="button" onclick="admin.switchTab('users')" id="admin-tab-users" class="flex-1 min-w-[130px] py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white transition flex items-center justify-center gap-2">
+            <div class="flex overflow-x-auto custom-scrollbar scrollbar-none sm:flex-wrap bg-gray-950 p-1.5 rounded-2xl border border-gray-800 my-3 sm:my-5 gap-1 shrink-0">
+                <button type="button" onclick="admin.switchTab('users')" id="admin-tab-users" class="flex-1 min-w-[110px] sm:min-w-[120px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl bg-indigo-600 text-white transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-users"></i>
                     <span>Usuários & Cargos</span>
                     <span id="admin-tab-pending-badge" class="hidden px-2 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-extrabold">0</span>
                 </button>
-                <button type="button" onclick="admin.switchTab('roles')" id="admin-tab-roles" class="flex-1 min-w-[130px] py-2 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
+                <button type="button" onclick="admin.switchTab('roles')" id="admin-tab-roles" class="flex-1 min-w-[110px] sm:min-w-[120px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-tags text-purple-400"></i>
                     <span>Modo Editor (Cargos & Setores)</span>
                 </button>
-                <button type="button" onclick="admin.switchTab('audit')" id="admin-tab-audit" class="flex-1 min-w-[140px] py-2 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
+                <button type="button" onclick="admin.switchTab('audit')" id="admin-tab-audit" class="flex-1 min-w-[110px] sm:min-w-[120px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-user-shield text-amber-400"></i>
                     <span>Dossiê & Senhas</span>
                 </button>
-                <button type="button" onclick="admin.switchTab('occurrences')" id="admin-tab-occurrences" class="flex-1 min-w-[140px] py-2 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
+                <button type="button" onclick="admin.switchTab('occurrences')" id="admin-tab-occurrences" class="flex-1 min-w-[110px] sm:min-w-[120px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-clipboard-user text-amber-400"></i>
                     <span>Ocorrências & Decisões</span>
                     <span id="admin-tab-occurrences-badge" class="hidden px-2 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-extrabold">0</span>
                 </button>
-                <button type="button" onclick="admin.switchTab('tasks')" id="admin-tab-tasks" class="flex-1 min-w-[120px] py-2 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
+                <button type="button" onclick="admin.switchTab('tasks')" id="admin-tab-tasks" class="flex-1 min-w-[110px] sm:min-w-[120px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-list-check"></i>
                     <span>Controle de Tarefas</span>
                 </button>
-                <button type="button" onclick="admin.switchTab('reports')" id="admin-tab-reports" class="flex-1 min-w-[150px] py-2 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
+                <button type="button" onclick="admin.switchTab('reports')" id="admin-tab-reports" class="flex-1 min-w-[110px] sm:min-w-[120px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-file-invoice text-emerald-400"></i>
                     <span>Relatórios & Gargalos</span>
                 </button>
-                <button type="button" onclick="admin.switchTab('settings')" id="admin-tab-settings" class="flex-1 min-w-[120px] py-2 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
+                <button type="button" onclick="admin.switchTab('settings')" id="admin-tab-settings" class="flex-1 min-w-[110px] sm:min-w-[120px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-sliders"></i>
                     <span>Funcionalidades</span>
                 </button>
-                <button type="button" onclick="admin.switchTab('email')" id="admin-tab-email" class="flex-1 min-w-[130px] py-2 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
+                <button type="button" onclick="admin.switchTab('email')" id="admin-tab-email" class="flex-1 min-w-[110px] sm:min-w-[120px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-envelope-circle-check text-indigo-400"></i>
                     <span>E-mail Real (SMTP/API)</span>
                 </button>
@@ -1424,7 +1444,7 @@
     <!-- ========================================== -->
     <!-- MODAL: EDITAR COLABORADOR (MODO EDITOR ADM) -->
     <!-- ========================================== -->
-    <div id="modal-admin-edit-user" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-3 md:p-4">
+    <div id="modal-admin-edit-user" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-2 sm:p-4">
         <div class="bg-gray-900 border border-indigo-500/40 rounded-3xl w-full max-w-lg p-5 shadow-2xl overflow-y-auto max-h-[92vh] custom-scrollbar">
             <div class="flex items-center justify-between pb-3.5 border-b border-gray-800">
                 <div class="flex items-center gap-2.5">
@@ -1527,7 +1547,7 @@
     <!-- ========================================== -->
     <!-- MODAL: EDITAR OCORRÊNCIA (MODO EDITOR ADM) -->
     <!-- ========================================== -->
-    <div id="modal-admin-edit-occurrence" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-3 md:p-4">
+    <div id="modal-admin-edit-occurrence" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-2 sm:p-4">
         <div class="bg-gray-900 border border-amber-500/40 rounded-3xl w-full max-w-xl p-5 shadow-2xl overflow-y-auto max-h-[92vh] custom-scrollbar">
             <div class="flex items-center justify-between pb-3.5 border-b border-gray-800">
                 <div class="flex items-center gap-2.5">
@@ -3149,20 +3169,22 @@
                         <!-- Rodapé com Autor e Ações -->
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-2 gap-2 text-xs">
                             <span class="text-[11px] text-gray-400">Registrado por: <strong class="text-gray-300">${occ.authorName}</strong> (${occ.authorRole || 'Líder'})</span>
-                            <div class="flex items-center gap-2 self-end sm:self-auto">
+                            <div class="w-full sm:w-auto flex flex-wrap items-center justify-end gap-1.5 pt-2 sm:pt-0">
                                 ${isAdm ? `
-                                    <button onclick="admin.openEditOccurrenceModal('${occ.id}')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-indigo-300 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition active:scale-95 border border-gray-700"><i class="fa-solid fa-pen-to-square text-xs"></i><span>Editar</span></button>
-                            <button onclick="admin.openEditOccurrenceModal('${occ.id}')" title="Editar Registro Completo" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-indigo-300 rounded-xl text-xs font-semibold flex items-center gap-1 transition active:scale-95 border border-gray-700"><i class="fa-solid fa-pen-to-square text-[11px]"></i><span>Editar</span></button>
+                                    <button onclick="admin.openEditOccurrenceModal('${occ.id}')" title="Editar Registro Completo" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-indigo-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 border border-gray-700">
+                                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                        <span>Editar</span>
+                                    </button>
                                     <button onclick="occApp.openAdminReplyModal('${occ.id}')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-xl text-xs flex items-center gap-1.5 transition active:scale-95 shadow-md">
                                         <i class="fa-solid fa-gavel text-xs"></i>
-                                        <span>${occ.adminFeedback ? 'Editar Parecer' : 'Dar Resposta & Orientar'}</span>
+                                        <span>${occ.adminFeedback ? 'Editar Parecer' : 'Dar Resposta'}</span>
                                     </button>
                                     ${!isResolved ? `
                                         <button onclick="occApp.markAsResolved('${occ.id}')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-emerald-700 text-gray-300 hover:text-white rounded-xl text-xs font-semibold transition active:scale-95">
-                                            Concluir Caso
+                                            Concluir
                                         </button>
                                     ` : ''}
-                                    <button onclick="occApp.deleteOccurrence('${occ.id}')" title="Excluir Registro" class="p-1.5 text-gray-500 hover:text-red-400 rounded-lg transition active:scale-95">
+                                    <button onclick="occApp.deleteOccurrence('${occ.id}')" title="Excluir Registro" class="p-2 text-gray-500 hover:text-red-400 rounded-xl transition active:scale-95">
                                         <i class="fa-solid fa-trash-can text-xs"></i>
                                     </button>
                                 ` : ''}
@@ -3978,7 +4000,7 @@
                     const isBlocked = acc.status === 'rejected' || acc.status === 'blocked';
 
                     let statusBadge = isAwaitingEmail
-                        ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 animate-pulse">Código Enviado por E-mail</span>`
+                        ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 animate-pulse">Código E-mail</span>`
                         : isPending 
                         ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-pulse">Aguardando Aprovação</span>`
                         : isBlocked
@@ -3986,91 +4008,108 @@
                         : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Aprovado</span>`;
 
                     return `
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3.5 bg-gray-950/80 border ${isPending || isAwaitingEmail ? 'border-amber-500/50' : 'border-gray-800'} rounded-2xl gap-3">
-                        <div class="flex items-center gap-3 flex-1 min-w-0">
-                            <div class="w-10 h-10 rounded-xl ${isAdm ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30'} flex items-center justify-center font-bold text-xs shrink-0">
+                    <div class="flex flex-col p-3 sm:p-3.5 bg-gray-950/90 border ${isPending || isAwaitingEmail ? 'border-amber-500/50' : 'border-gray-800'} rounded-2xl gap-2.5 sm:gap-3 transition hover:border-gray-700">
+                        <!-- Topo do Card: Avatar, Nome, E-mail e Status -->
+                        <div class="flex items-start sm:items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-xl ${isAdm ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30'} flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 sm:mt-0">
                                 ${acc.displayName ? acc.displayName.substring(0, 2).toUpperCase() : 'CO'}
                             </div>
-                            <div class="flex-1 min-w-0 space-y-1">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <span class="text-sm font-bold text-gray-100">${acc.displayName}</span>
-                                    ${isAdm ? '<span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500 text-black">ADMIN</span>' : ''}
+                            <div class="flex-1 min-w-0 space-y-0.5">
+                                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                    <span class="text-sm font-bold text-gray-100 truncate">${acc.displayName}</span>
+                                    <button type="button" onclick="admin.quickEditUserName('${acc.email}')" title="Renomear colaborador" class="text-gray-400 hover:text-indigo-300 p-0.5 transition">
+                                        <i class="fa-solid fa-pen text-[10px]"></i>
+                                    </button>
+                                    ${isAdm ? '<span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500 text-black">ADMIN</span>' : ''}
                                     ${statusBadge}
                                 </div>
-                                <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-gray-300 pt-0.5">
-                                    <span class="text-gray-400 font-mono text-[11px]">${acc.email}</span>
-                                    <span>•</span>
-                                    <div class="flex items-center gap-1">
-                                        <span class="text-[10px] text-gray-500 font-semibold uppercase">Cargo:</span>
-                                        <select onchange="admin.changeUserRole('${acc.email}', this.value)" class="bg-gray-900 border border-gray-700 text-indigo-300 text-xs rounded-lg px-2 py-0.5 font-medium focus:outline-none focus:border-indigo-500">
-                                            ${admin.getRoles().map(r => `<option value="${r}" ${(acc.role || 'Colaborador') === r ? 'selected' : ''}>${r}</option>`).join('')}
-                                        </select>
-                                    </div>
-                                    <span>•</span>
-                                    <div class="flex items-center gap-1">
-                                        <span class="text-[10px] text-gray-500 font-semibold uppercase">Setor:</span>
-                                        <select onchange="admin.changeUserDept('${acc.email}', this.value)" class="bg-gray-900 border border-gray-700 text-purple-300 text-xs rounded-lg px-2 py-0.5 font-medium focus:outline-none focus:border-purple-500">
-                                            ${admin.getDepartments().map(d => `<option value="${d}" ${(acc.dept || 'Geral') === d ? 'selected' : ''}>${d}</option>`).join('')}
-                                        </select>
-                                    </div>
-                                    <span>•</span>
-                                    <button type="button" onclick="admin.quickEditUserPassword('${acc.email}')" class="px-2 py-0.5 bg-gray-900 hover:bg-gray-800 text-amber-300 border border-gray-700 rounded-lg text-[11px] font-mono flex items-center gap-1 transition" title="Clique para ver ou trocar a senha">
-                                        <i class="fa-solid fa-key text-[10px] text-amber-400"></i>
-                                        <span>Senha: <strong>${acc.password ? '••••' : 'Definir'}</strong></span>
-                                    </button>
-                                </div>
+                                <p class="text-gray-400 font-mono text-[11px] break-all leading-tight">${acc.email}</p>
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                        <!-- Linha de Edição Rápida: Cargo, Setor e Senha -->
+                        <div class="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
+                            <div class="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl px-2 py-1">
+                                <span class="text-[10px] text-gray-500 font-bold uppercase shrink-0">Cargo:</span>
+                                <select onchange="admin.changeUserRole('${acc.email}', this.value)" class="bg-transparent text-indigo-300 text-xs font-semibold focus:outline-none cursor-pointer max-w-[130px] truncate">
+                                    ${admin.getRoles().map(r => `<option value="${r}" class="bg-gray-900 text-gray-200" ${(acc.role || 'Colaborador') === r ? 'selected' : ''}>${r}</option>`).join('')}
+                                </select>
+                            </div>
+
+                            <div class="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl px-2 py-1">
+                                <span class="text-[10px] text-gray-500 font-bold uppercase shrink-0">Setor:</span>
+                                <select onchange="admin.changeUserDept('${acc.email}', this.value)" class="bg-transparent text-purple-300 text-xs font-semibold focus:outline-none cursor-pointer max-w-[130px] truncate">
+                                    ${admin.getDepartments().map(d => `<option value="${d}" class="bg-gray-900 text-gray-200" ${(acc.dept || 'Geral') === d ? 'selected' : ''}>${d}</option>`).join('')}
+                                </select>
+                            </div>
+
+                            <button type="button" onclick="admin.quickEditUserPassword('${acc.email}')" class="flex items-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-amber-300 border border-gray-800 rounded-xl px-2.5 py-1 text-xs font-mono transition active:scale-95" title="Clique para ver ou trocar a senha">
+                                <i class="fa-solid fa-key text-[10px] text-amber-400 shrink-0"></i>
+                                <span>Senha: <strong>${acc.password ? '••••' : 'Definir'}</strong></span>
+                            </button>
+                        </div>
+
+                        <!-- Barra de Ações: Responsiva, organizada em linha própria sem sobreposição -->
+                        <div class="w-full flex flex-wrap items-center justify-end gap-1.5 pt-2 border-t border-gray-800/80">
                             ${isAwaitingEmail ? `
-                                <button onclick="admin.approveDirectlyFromPendingCode('${acc.email}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-md">
-                                    <i class="fa-solid fa-check"></i> Aprovar Direto
+                                <button onclick="admin.approveDirectlyFromPendingCode('${acc.email}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-md active:scale-95">
+                                    <i class="fa-solid fa-check"></i> <span>Aprovar Direto</span>
                                 </button>
-                                <button onclick="admin.viewPendingCode('${acc.email}')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-indigo-300 rounded-xl text-xs font-semibold transition" title="Ver código OTP de segurança">
-                                    <i class="fa-solid fa-key mr-1"></i>Ver Código
+                                <button onclick="admin.viewPendingCode('${acc.email}')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-indigo-300 rounded-xl text-xs font-semibold transition active:scale-95" title="Ver código OTP de segurança">
+                                    <i class="fa-solid fa-key text-[10px]"></i> <span>Ver Código</span>
                                 </button>
-                                <button onclick="admin.cancelPendingCode('${acc.email}')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-red-600 text-gray-400 hover:text-white rounded-xl text-xs transition">
+                                <button onclick="admin.cancelPendingCode('${acc.email}')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-red-600 text-gray-400 hover:text-white rounded-xl text-xs transition active:scale-95">
                                     Cancelar
                                 </button>
                             ` : isPending ? `
-                                <button onclick="admin.approveUser('${acc.email}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-md">
-                                    <i class="fa-solid fa-check"></i> Aprovar
+                                <button onclick="admin.approveUser('${acc.email}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-md active:scale-95">
+                                    <i class="fa-solid fa-check"></i> <span>Aprovar</span>
                                 </button>
-                                <button onclick="admin.viewPendingCode('${acc.email}')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-indigo-300 rounded-xl text-xs font-semibold transition" title="Ver código OTP de segurança">
-                                    <i class="fa-solid fa-key mr-1"></i>Ver Código
+                                <button onclick="admin.viewPendingCode('${acc.email}')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-indigo-300 rounded-xl text-xs font-semibold transition active:scale-95" title="Ver código OTP de segurança">
+                                    <i class="fa-solid fa-key text-[10px]"></i> <span>Ver Código</span>
                                 </button>
-                                <button onclick="admin.blockUser('${acc.email}')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-red-600 text-gray-400 hover:text-white rounded-xl text-xs transition">
+                                <button onclick="admin.blockUser('${acc.email}')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-red-600 text-gray-400 hover:text-white rounded-xl text-xs transition active:scale-95">
                                     Rejeitar
                                 </button>
                             ` : !isAdm ? `
                                 ${isBlocked ? `
-                                    <button onclick="admin.approveUser('${acc.email}')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold">
+                                    <button onclick="admin.approveUser('${acc.email}')" class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold active:scale-95">
                                         Desbloquear
                                     </button>
                                 ` : `
-                                    <button onclick="admin.blockUser('${acc.email}')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-red-900/60 text-gray-400 hover:text-red-300 rounded-xl text-xs transition">
+                                    <button onclick="admin.blockUser('${acc.email}')" class="px-2.5 py-1.5 bg-gray-800 hover:bg-red-900/60 text-gray-400 hover:text-red-300 rounded-xl text-xs transition border border-gray-700 active:scale-95">
                                         Bloquear
                                     </button>
                                 `}
                                 
-                                <!-- Botão de Permissão: Liberar / Bloquear Ocorrências -->
                                 <button type="button" onclick="admin.openEditUserModal('${acc.email}')" title="Modo Editor Completo: alterar todos os dados deste colaborador" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 shadow-md shadow-indigo-600/30">
-        <i class="fa-solid fa-pen-to-square text-xs"></i>
-        <span>Editar Tudo</span>
-    </button>
-        <button type="button" onclick="admin.toggleOccurrencesAccess('${acc.email}')" title="Autorizar ou Ocultar o Painel de Ocorrências para este colaborador" class="px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 ${acc.canAccessOccurrences ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30' : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200'}">
-                                    <i class="fa-solid fa-clipboard-user ${acc.canAccessOccurrences ? 'text-amber-400' : 'text-gray-500'} text-[11px]"></i>
-                                    <span>${acc.canAccessOccurrences ? 'Ocorrências: Liberado' : 'Ocorrências: Oculto'}</span>
+                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    <span>Editar Tudo</span>
                                 </button>
-                                <button type="button" onclick="admin.openUserAudit('${acc.email}')" title="Ver Dossiê e Tudo que Este Usuário Fez" class="px-2.5 py-1 bg-gray-800 hover:bg-indigo-900/60 text-indigo-300 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 border border-gray-700">
-                                    <i class="fa-solid fa-id-card text-[11px]"></i>
+
+                                <button type="button" onclick="admin.toggleOccurrencesAccess('${acc.email}')" title="Autorizar ou Ocultar o Painel de Ocorrências para este colaborador" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 ${acc.canAccessOccurrences ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30' : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200'}">
+                                    <i class="fa-solid fa-clipboard-user ${acc.canAccessOccurrences ? 'text-amber-400' : 'text-gray-500'} text-xs"></i>
+                                    <span>${acc.canAccessOccurrences ? 'Ocorrências ON' : 'Ocorrências OFF'}</span>
+                                </button>
+
+                                <button type="button" onclick="admin.openUserAudit('${acc.email}')" title="Ver Dossiê e Tudo que Este Usuário Fez" class="px-2.5 py-1.5 bg-gray-800 hover:bg-indigo-900/60 text-indigo-300 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 border border-gray-700">
+                                    <i class="fa-solid fa-id-card text-xs"></i>
                                     <span>Dossiê</span>
                                 </button>
-                                <button onclick="admin.deleteUser('${acc.email}')" class="p-2 text-gray-500 hover:text-red-400 transition" title="Excluir Usuário">
+
+                                <button onclick="admin.deleteUser('${acc.email}')" class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/40 rounded-xl transition active:scale-95" title="Excluir Usuário">
                                     <i class="fa-solid fa-trash-can text-xs"></i>
                                 </button>
-                            ` : ''}
+                            ` : `
+                                <button type="button" onclick="admin.openEditUserModal('${acc.email}')" title="Editar dados da conta de administrador" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1.5 shadow-md shadow-indigo-600/30">
+                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    <span>Editar Tudo</span>
+                                </button>
+                                <button type="button" onclick="admin.openUserAudit('${acc.email}')" title="Ver Dossiê Administrativo" class="px-2.5 py-1.5 bg-gray-800 hover:bg-indigo-900/60 text-indigo-300 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 border border-gray-700">
+                                    <i class="fa-solid fa-id-card text-xs"></i>
+                                    <span>Dossiê</span>
+                                </button>
+                            `}
                         </div>
                     </div>`;
                 }).join('');
