@@ -717,6 +717,10 @@
                     <span>Usuários & Cargos</span>
                     <span id="admin-tab-pending-badge" class="hidden px-2 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-extrabold">0</span>
                 </button>
+                <button type="button" onclick="admin.switchTab('roles')" id="admin-tab-roles" class="flex-1 min-w-[130px] py-2 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-tags text-purple-400"></i>
+                    <span>Cargos & Setores</span>
+                </button>
                 <button type="button" onclick="admin.switchTab('audit')" id="admin-tab-audit" class="flex-1 min-w-[140px] py-2 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-user-shield text-amber-400"></i>
                     <span>Dossiê & Senhas</span>
@@ -760,6 +764,65 @@
                 </div>
                 <div id="admin-users-list" class="space-y-2.5">
                     <!-- Usuários injetados dinamicamente -->
+                </div>
+            </div>
+
+            <!-- CONTEÚDO DA ABA: GESTÃO DE CARGOS & SETORES (MODO EDITOR COMPLETO) -->
+            <div id="admin-content-roles" class="space-y-6 hidden">
+                <div class="bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-gray-950 p-4 rounded-2xl border border-purple-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+                    <div>
+                        <h4 class="text-xs font-bold text-purple-300 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-tags text-base text-purple-400"></i>
+                            <span>Gerenciador de Cargos e Setores da Empresa</span>
+                        </h4>
+                        <p class="text-xs text-gray-400 mt-0.5">Crie novos cargos e departamentos ou renomeie/exclua os existentes. Todas as opções em todo o sistema atualizam automaticamente.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    <!-- BLOCO 1: CARGOS -->
+                    <div class="bg-gray-950/90 border border-gray-800 rounded-3xl p-4 sm:p-5 space-y-4 shadow-xl">
+                        <div class="flex items-center justify-between border-b border-gray-800/80 pb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold text-xs">
+                                    <i class="fa-solid fa-id-badge"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-gray-100">Cargos da Empresa</h4>
+                                    <p class="text-[11px] text-gray-400">Funções atribuídas aos colaboradores</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="admin.promptAddRole()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shadow-md shadow-purple-600/30">
+                                <i class="fa-solid fa-plus text-xs"></i>
+                                <span>+ Novo Cargo</span>
+                            </button>
+                        </div>
+                        <div id="admin-roles-list" class="space-y-2 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+                            <!-- Injetado dinamicamente -->
+                        </div>
+                    </div>
+
+                    <!-- BLOCO 2: SETORES / DEPARTAMENTOS -->
+                    <div class="bg-gray-950/90 border border-gray-800 rounded-3xl p-4 sm:p-5 space-y-4 shadow-xl">
+                        <div class="flex items-center justify-between border-b border-gray-800/80 pb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-xs">
+                                    <i class="fa-solid fa-building"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-gray-100">Setores / Departamentos</h4>
+                                    <p class="text-[11px] text-gray-400">Áreas para tarefas e ocorrências</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="admin.promptAddDepartment()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shadow-md shadow-indigo-600/30">
+                                <i class="fa-solid fa-plus text-xs"></i>
+                                <span>+ Novo Setor</span>
+                            </button>
+                        </div>
+                        <div id="admin-departments-list" class="space-y-2 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+                            <!-- Injetado dinamicamente -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1300,7 +1363,9 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Setor / Departamento</label>
-                        <input type="text" id="admin-create-dept" placeholder="Ex: Reposição, Loja, Caixa..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
+                        <select id="admin-create-dept" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
+                            <!-- Preenchido dinamicamente -->
+                        </select>
                     </div>
                 </div>
 
@@ -1594,6 +1659,7 @@
             }
 
             playNotificationSound() {
+                if (!window.auth || !auth.currentUser) return;
                 try {
                     const AudioCtx = window.AudioContext || window.webkitAudioContext;
                     if (!AudioCtx) return;
@@ -1618,6 +1684,7 @@
             }
 
             playAnnouncementAlertSound() {
+                if (!window.auth || !auth.currentUser) return;
                 try {
                     const AudioCtx = window.AudioContext || window.webkitAudioContext;
                     if (!AudioCtx) return;
@@ -1644,6 +1711,7 @@
             }
 
             playTaskCompleteSound() {
+                if (!window.auth || !auth.currentUser) return;
                 try {
                     const AudioCtx = window.AudioContext || window.webkitAudioContext;
                     if (!AudioCtx) return;
@@ -1669,6 +1737,7 @@
             }
 
             dispatchNotification(title, message) {
+                if (!window.auth || !auth.currentUser) return;
                 if (window.AndroidApp && typeof window.AndroidApp.showNotification === 'function') {
                     try {
                         window.AndroidApp.showNotification(title, message);
@@ -2487,6 +2556,7 @@
             }
 
             openNewModal() {
+                if (window.admin) admin.populateRoleAndDeptSelects();
                 const modal = document.getElementById('modal-occurrence');
                 if (modal) {
                     modal.classList.remove('hidden');
@@ -2852,6 +2922,8 @@
                             <span class="text-[11px] text-gray-400">Registrado por: <strong class="text-gray-300">${occ.authorName}</strong> (${occ.authorRole || 'Líder'})</span>
                             <div class="flex items-center gap-2 self-end sm:self-auto">
                                 ${isAdm ? `
+                                    <button onclick="admin.openEditOccurrenceModal('${occ.id}')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-indigo-300 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition active:scale-95 border border-gray-700"><i class="fa-solid fa-pen-to-square text-xs"></i><span>Editar</span></button>
+                            <button onclick="admin.openEditOccurrenceModal('${occ.id}')" title="Editar Registro Completo" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-indigo-300 rounded-xl text-xs font-semibold flex items-center gap-1 transition active:scale-95 border border-gray-700"><i class="fa-solid fa-pen-to-square text-[11px]"></i><span>Editar</span></button>
                                     <button onclick="occApp.openAdminReplyModal('${occ.id}')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-black font-bold rounded-xl text-xs flex items-center gap-1.5 transition active:scale-95 shadow-md">
                                         <i class="fa-solid fa-gavel text-xs"></i>
                                         <span>${occ.adminFeedback ? 'Editar Parecer' : 'Dar Resposta & Orientar'}</span>
@@ -3566,6 +3638,8 @@
                     m.style.display = 'flex';
                 }
                 this.updatePendingBadge();
+                this.populateRoleAndDeptSelects();
+                this.renderRolesAndDepts();
                 this.renderAdminUsers();
                 this.populateAuditUserSelect();
                 this.initReportMonths();
@@ -3585,7 +3659,7 @@
 
             switchTab(tab) {
                 this.currentTab = tab;
-                ['users', 'audit', 'occurrences', 'tasks', 'reports', 'settings', 'email'].forEach(t => {
+                ['users', 'roles', 'audit', 'occurrences', 'tasks', 'reports', 'settings', 'email'].forEach(t => {
                     const btn = document.getElementById(`admin-tab-${t}`);
                     const content = document.getElementById(`admin-content-${t}`);
                     if (btn && content) {
@@ -3696,18 +3770,8 @@
                                     <span>•</span>
                                     
 <select onchange="admin.changeUserRole('${acc.email}', this.value)" class="bg-gray-900 border border-gray-700 text-indigo-300 text-xs rounded-lg px-2 py-0.5 font-medium focus:outline-none focus:border-indigo-500">
-    <option value="Colaborador" ${(acc.role || 'Colaborador') === 'Colaborador' ? 'selected' : ''}>Colaborador Geral</option>
-    <option value="Líder Setorial" ${acc.role === 'Líder Setorial' ? 'selected' : ''}>Líder Setorial</option>
-    <option value="Líder de Reposição" ${acc.role === 'Líder de Reposição' ? 'selected' : ''}>Líder de Reposição</option>
-    <option value="Repositor" ${acc.role === 'Repositor' ? 'selected' : ''}>Repositor</option>
-    <option value="Operador de Caixa" ${acc.role === 'Operador de Caixa' ? 'selected' : ''}>Operador de Caixa</option>
-    <option value="Fiscal de Loja" ${acc.role === 'Fiscal de Loja' ? 'selected' : ''}>Fiscal de Loja</option>
-    <option value="Açougue" ${acc.role === 'Açougue' ? 'selected' : ''}>Açougue</option>
-    <option value="Padaria" ${acc.role === 'Padaria' ? 'selected' : ''}>Padaria</option>
-    <option value="Depósito / Estoque" ${acc.role === 'Depósito / Estoque' ? 'selected' : ''}>Depósito / Estoque</option>
-    <option value="Supervisor" ${acc.role === 'Supervisor' ? 'selected' : ''}>Supervisor</option>
-    <option value="Gerente" ${acc.role === 'Gerente' ? 'selected' : ''}>Gerente</option>
-</select>
+        ${admin.getRoles().map(r => `<option value="${r}" ${(acc.role || 'Colaborador') === r ? 'selected' : ''}>${r}</option>`).join('')}
+    </select>
                                     <span>•</span>
                                     <span class="text-gray-500">${acc.dept || 'Geral'}</span>
                                 </div>
@@ -3747,7 +3811,11 @@
                                 `}
                                 
                                 <!-- Botão de Permissão: Liberar / Bloquear Ocorrências -->
-                                <button type="button" onclick="admin.toggleOccurrencesAccess('${acc.email}')" title="Autorizar ou Ocultar o Painel de Ocorrências para este colaborador" class="px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 ${acc.canAccessOccurrences ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30' : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200'}">
+                                <button type="button" onclick="admin.openEditUserModal('${acc.email}')" title="Editar todos os dados do colaborador" class="px-2.5 py-1 bg-gray-800 hover:bg-indigo-900/60 text-indigo-300 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 border border-gray-700">
+            <i class="fa-solid fa-user-pen text-[11px]"></i>
+            <span>Editar</span>
+        </button>
+        <button type="button" onclick="admin.toggleOccurrencesAccess('${acc.email}')" title="Autorizar ou Ocultar o Painel de Ocorrências para este colaborador" class="px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 ${acc.canAccessOccurrences ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30' : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200'}">
                                     <i class="fa-solid fa-clipboard-user ${acc.canAccessOccurrences ? 'text-amber-400' : 'text-gray-500'} text-[11px]"></i>
                                     <span>${acc.canAccessOccurrences ? 'Ocorrências: Liberado' : 'Ocorrências: Oculto'}</span>
                                 </button>
@@ -4464,6 +4532,7 @@
             }
 
             openNewUserModal() {
+                this.populateRoleAndDeptSelects();
                 const modal = document.getElementById('modal-admin-create-user');
                 if (modal) {
                     modal.classList.remove('hidden');
@@ -4591,6 +4660,7 @@
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                             ${t.image ? `<img src="${t.image}" onclick="app.viewFullImage(this.src)" title="Ver Foto Ampliada" class="w-7 h-7 object-cover rounded-lg border border-gray-700 cursor-pointer hover:border-indigo-400">` : ''}
+                            <button onclick="admin.editTask('${t.id}')" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition active:scale-95 flex items-center gap-1"><i class="fa-solid fa-pen-to-square text-[10px]"></i>Editar</button>
                             <button onclick="admin.reassignTaskPrompt('${t.id}')" class="px-2.5 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-xs font-medium transition active:scale-95">Reatribuir</button>
                             <button onclick="app.deleteTask('${t.id}')" title="Excluir" class="p-1.5 text-gray-500 hover:text-red-400 rounded-lg transition active:scale-95"><i class="fa-solid fa-trash text-xs"></i></button>
                         </div>
@@ -4656,6 +4726,547 @@
                 document.body.removeChild(link);
                 syncManager.showToast("✓ Planilha CSV exportada com sucesso!");
             }
+
+            // ==========================================
+            // MODO EDITOR: GESTÃO DINÂMICA DE CARGOS & SETORES
+            // ==========================================
+            getRoles() {
+                const custom = localStorage.getItem('taskflow_custom_roles');
+                if (custom) {
+                    try { return JSON.parse(custom); } catch(e) {}
+                }
+                return [
+                    "Administrador",
+                    "Gerente",
+                    "Supervisor",
+                    "Líder Setorial",
+                    "Líder de Reposição",
+                    "Repositor",
+                    "Operador de Caixa",
+                    "Fiscal de Loja",
+                    "Açougue",
+                    "Padaria",
+                    "Depósito / Estoque",
+                    "Colaborador"
+                ];
+            }
+
+            saveRoles(roles) {
+                localStorage.setItem('taskflow_custom_roles', JSON.stringify(roles));
+                this.populateRoleAndDeptSelects();
+                this.renderRolesAndDepts();
+                if (window.syncManager) {
+                    syncManager.publish({
+                        type: 'APP_CONFIG_UPDATE',
+                        config: { customRoles: roles }
+                    });
+                }
+            }
+
+            promptAddRole() {
+                const name = prompt("Digite o título do novo Cargo a cadastrar:");
+                if (!name || !name.trim()) return;
+                const clean = name.trim();
+                const roles = this.getRoles();
+                if (roles.some(r => r.toLowerCase() === clean.toLowerCase())) {
+                    alert("Este cargo já existe no sistema.");
+                    return;
+                }
+                roles.push(clean);
+                this.saveRoles(roles);
+                this.renderAdminUsers();
+                syncManager.showToast(`✓ Cargo "${clean}" criado com sucesso!`);
+            }
+
+            editRole(oldName) {
+                const newName = prompt(`Novo nome para o cargo "${oldName}":`, oldName);
+                if (!newName || !newName.trim() || newName.trim() === oldName) return;
+                const clean = newName.trim();
+                let roles = this.getRoles();
+                const idx = roles.indexOf(oldName);
+                if (idx !== -1) roles[idx] = clean;
+                
+                // Atualiza colaboradores que tinham este cargo
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                accounts.forEach(a => {
+                    if (a.role === oldName) a.role = clean;
+                });
+                localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                
+                if (auth.currentUser && auth.currentUser.role === oldName) {
+                    auth.currentUser.role = clean;
+                    localStorage.setItem('taskflow_current_user', JSON.stringify(auth.currentUser));
+                    auth.updateUserUI();
+                }
+                
+                auth.updateCollaboratorsList();
+                this.saveRoles(roles);
+                this.renderAdminUsers();
+                syncManager.showToast(`✓ Cargo renomeado para "${clean}"!`);
+            }
+
+            deleteRole(roleName) {
+                if (roleName === 'Administrador' || roleName === 'Colaborador') {
+                    alert("Os cargos base 'Administrador' e 'Colaborador' não podem ser excluídos.");
+                    return;
+                }
+                if (!confirm(`Deseja realmente excluir o cargo "${roleName}"? Os colaboradores com este cargo continuarão no sistema, mas o cargo será removido da lista.`)) return;
+                let roles = this.getRoles().filter(r => r !== roleName);
+                this.saveRoles(roles);
+                this.renderAdminUsers();
+                syncManager.showToast(`Cargo "${roleName}" excluído.`);
+            }
+
+            getDepartments() {
+                const custom = localStorage.getItem('taskflow_custom_departments');
+                if (custom) {
+                    try { return JSON.parse(custom); } catch(e) {}
+                }
+                return [
+                    "Geral",
+                    "Frente de Caixa",
+                    "Reposição / Mercearia",
+                    "Açougue",
+                    "Padaria",
+                    "Hortifrúti (FLV)",
+                    "Depósito / Estoque",
+                    "Prevenção de Perdas",
+                    "Administração / RH",
+                    "Limpeza & Manutenção"
+                ];
+            }
+
+            saveDepartments(depts) {
+                localStorage.setItem('taskflow_custom_departments', JSON.stringify(depts));
+                this.populateRoleAndDeptSelects();
+                this.renderRolesAndDepts();
+                if (window.syncManager) {
+                    syncManager.publish({
+                        type: 'APP_CONFIG_UPDATE',
+                        config: { customDepartments: depts }
+                    });
+                }
+            }
+
+            promptAddDepartment() {
+                const name = prompt("Digite o nome do novo Setor / Departamento:");
+                if (!name || !name.trim()) return;
+                const clean = name.trim();
+                const depts = this.getDepartments();
+                if (depts.some(d => d.toLowerCase() === clean.toLowerCase())) {
+                    alert("Este setor já existe no sistema.");
+                    return;
+                }
+                depts.push(clean);
+                this.saveDepartments(depts);
+                syncManager.showToast(`✓ Setor "${clean}" criado com sucesso!`);
+            }
+
+            editDepartment(oldName) {
+                const newName = prompt(`Novo nome para o setor "${oldName}":`, oldName);
+                if (!newName || !newName.trim() || newName.trim() === oldName) return;
+                const clean = newName.trim();
+                let depts = this.getDepartments();
+                const idx = depts.indexOf(oldName);
+                if (idx !== -1) depts[idx] = clean;
+
+                // Atualiza colaboradores
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                accounts.forEach(a => {
+                    if (a.dept === oldName) a.dept = clean;
+                });
+                localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+
+                // Atualiza ocorrências
+                if (window.occApp) {
+                    occApp.occurrences.forEach(o => {
+                        if (o.department === oldName) o.department = clean;
+                    });
+                    occApp.saveLocally();
+                }
+
+                this.saveDepartments(depts);
+                this.renderAdminUsers();
+                syncManager.showToast(`✓ Setor renomeado para "${clean}"!`);
+            }
+
+            deleteDepartment(deptName) {
+                if (deptName === 'Geral') {
+                    alert("O setor 'Geral' não pode ser excluído.");
+                    return;
+                }
+                if (!confirm(`Deseja realmente excluir o setor "${deptName}"?`)) return;
+                let depts = this.getDepartments().filter(d => d !== deptName);
+                this.saveDepartments(depts);
+                syncManager.showToast(`Setor "${deptName}" excluído.`);
+            }
+
+            populateRoleAndDeptSelects() {
+                const roles = this.getRoles();
+                const depts = this.getDepartments();
+
+                // 0. admin-create-dept
+                const createDeptEl = document.getElementById('admin-create-dept');
+                if (createDeptEl) {
+                    const currentVal = createDeptEl.value;
+                    createDeptEl.innerHTML = depts.map(d => `<option value="${d}">${d}</option>`).join('');
+                    if (currentVal && depts.includes(currentVal)) createDeptEl.value = currentVal;
+                }
+
+                // 1. admin-create-role
+                const createRoleEl = document.getElementById('admin-create-role');
+                if (createRoleEl) {
+                    const currentVal = createRoleEl.value;
+                    createRoleEl.innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join('');
+                    if (currentVal && roles.includes(currentVal)) createRoleEl.value = currentVal;
+                }
+
+                // 2. admin-edit-user-role
+                const editRoleEl = document.getElementById('admin-edit-user-role');
+                if (editRoleEl) {
+                    const currentVal = editRoleEl.value;
+                    editRoleEl.innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join('');
+                    if (currentVal && roles.includes(currentVal)) editRoleEl.value = currentVal;
+                }
+
+                // 3. admin-edit-user-dept
+                const editDeptEl = document.getElementById('admin-edit-user-dept');
+                if (editDeptEl) {
+                    const currentVal = editDeptEl.value;
+                    editDeptEl.innerHTML = depts.map(d => `<option value="${d}">${d}</option>`).join('');
+                    if (currentVal && depts.includes(currentVal)) editDeptEl.value = currentVal;
+                }
+
+                // 4. occ-dept (Modal Nova Ocorrência)
+                const occDeptEl = document.getElementById('occ-dept');
+                if (occDeptEl) {
+                    const currentVal = occDeptEl.value;
+                    occDeptEl.innerHTML = depts.map(d => `<option value="${d}">${d}</option>`).join('');
+                    if (currentVal && depts.includes(currentVal)) occDeptEl.value = currentVal;
+                }
+
+                // 5. admin-edit-occ-dept (Modal Editar Ocorrência)
+                const editOccDeptEl = document.getElementById('admin-edit-occ-dept');
+                if (editOccDeptEl) {
+                    const currentVal = editOccDeptEl.value;
+                    editOccDeptEl.innerHTML = depts.map(d => `<option value="${d}">${d}</option>`).join('');
+                    if (currentVal && depts.includes(currentVal)) editOccDeptEl.value = currentVal;
+                }
+            }
+
+            renderRolesAndDepts() {
+                const rolesContainer = document.getElementById('admin-roles-list');
+                const deptsContainer = document.getElementById('admin-departments-list');
+                if (!rolesContainer || !deptsContainer) return;
+
+                const roles = this.getRoles();
+                const depts = this.getDepartments();
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                const occurrences = window.occApp ? occApp.occurrences : [];
+
+                // Render Cargos
+                rolesContainer.innerHTML = roles.map(role => {
+                    const userCount = accounts.filter(a => (a.role || 'Colaborador') === role).length;
+                    const isProtected = (role === 'Administrador' || role === 'Colaborador');
+                    return `
+                    <div class="flex items-center justify-between p-2.5 bg-gray-900 border border-gray-800 rounded-2xl text-xs hover:border-purple-500/40 transition">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-7 h-7 rounded-lg bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold text-[11px] shrink-0">
+                                <i class="fa-solid fa-briefcase"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <span class="font-bold text-gray-200 block truncate">${role}</span>
+                                <span class="text-[10px] text-gray-500">${userCount} colaborador(es)</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" onclick="admin.editRole('${role}')" class="p-1.5 text-gray-400 hover:text-purple-300 hover:bg-gray-800 rounded-lg transition" title="Editar Cargo">
+                                <i class="fa-solid fa-pen text-xs"></i>
+                            </button>
+                            ${!isProtected ? `
+                            <button type="button" onclick="admin.deleteRole('${role}')" class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-gray-800 rounded-lg transition" title="Excluir Cargo">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                            ` : '<span class="text-[10px] text-gray-600 px-1 font-mono">Padrão</span>'}
+                        </div>
+                    </div>`;
+                }).join('');
+
+                // Render Setores
+                deptsContainer.innerHTML = depts.map(dept => {
+                    const occCount = occurrences.filter(o => o.department === dept).length;
+                    const isProtected = (dept === 'Geral');
+                    return `
+                    <div class="flex items-center justify-between p-2.5 bg-gray-900 border border-gray-800 rounded-2xl text-xs hover:border-indigo-500/40 transition">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-7 h-7 rounded-lg bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-[11px] shrink-0">
+                                <i class="fa-solid fa-layer-group"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <span class="font-bold text-gray-200 block truncate">${dept}</span>
+                                <span class="text-[10px] text-gray-500">${occCount} ocorrência(s)</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" onclick="admin.editDepartment('${dept}')" class="p-1.5 text-gray-400 hover:text-indigo-300 hover:bg-gray-800 rounded-lg transition" title="Editar Setor">
+                                <i class="fa-solid fa-pen text-xs"></i>
+                            </button>
+                            ${!isProtected ? `
+                            <button type="button" onclick="admin.deleteDepartment('${dept}')" class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-gray-800 rounded-lg transition" title="Excluir Setor">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                            ` : '<span class="text-[10px] text-gray-600 px-1 font-mono">Padrão</span>'}
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // ==========================================
+            // MODO EDITOR: EDIÇÃO COMPLETA DE COLABORADOR
+            // ==========================================
+            openEditUserModal(email) {
+                this.populateRoleAndDeptSelects();
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                const acc = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+
+                if (!acc) {
+                    alert("Colaborador não encontrado.");
+                    return;
+                }
+
+                document.getElementById('admin-edit-user-original-email').value = acc.email;
+                document.getElementById('admin-edit-user-name').value = acc.displayName || '';
+                document.getElementById('admin-edit-user-email').value = acc.email;
+                document.getElementById('admin-edit-user-password').value = acc.password || '';
+                document.getElementById('admin-edit-user-role').value = acc.role || 'Colaborador';
+                document.getElementById('admin-edit-user-dept').value = acc.dept || 'Geral';
+                document.getElementById('admin-edit-user-is-admin').value = acc.isAdmin ? 'true' : 'false';
+                document.getElementById('admin-edit-user-status').value = acc.status || 'approved';
+                document.getElementById('admin-edit-user-can-occurrences').checked = !!acc.canAccessOccurrences;
+
+                const errBox = document.getElementById('admin-edit-user-error');
+                if (errBox) errBox.classList.add('hidden');
+
+                const modal = document.getElementById('modal-admin-edit-user');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'flex';
+                }
+            }
+
+            closeEditUserModal() {
+                const modal = document.getElementById('modal-admin-edit-user');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                }
+            }
+
+            toggleEditPasswordVisibility() {
+                const passInput = document.getElementById('admin-edit-user-password');
+                const icon = document.getElementById('admin-edit-pass-icon');
+                if (!passInput || !icon) return;
+                if (passInput.type === 'password') {
+                    passInput.type = 'text';
+                    icon.className = 'fa-solid fa-eye-slash';
+                } else {
+                    passInput.type = 'password';
+                    icon.className = 'fa-solid fa-eye';
+                }
+            }
+
+            handleSaveEditUser(e) {
+                e.preventDefault();
+                const originalEmail = document.getElementById('admin-edit-user-original-email').value;
+                const newName = document.getElementById('admin-edit-user-name').value.trim();
+                const newEmail = document.getElementById('admin-edit-user-email').value.trim();
+                const newPassword = document.getElementById('admin-edit-user-password').value;
+                const newRole = document.getElementById('admin-edit-user-role').value;
+                const newDept = document.getElementById('admin-edit-user-dept').value;
+                const newIsAdmin = document.getElementById('admin-edit-user-is-admin').value === 'true';
+                const newStatus = document.getElementById('admin-edit-user-status').value;
+                const newCanOccurrences = document.getElementById('admin-edit-user-can-occurrences').checked;
+                const errBox = document.getElementById('admin-edit-user-error');
+
+                if (!newName || !newEmail || !newPassword) {
+                    if (errBox) {
+                        errBox.innerText = "Preencha todos os campos obrigatórios.";
+                        errBox.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                let accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                
+                // Se o e-mail foi alterado, checa duplicidade
+                if (newEmail.toLowerCase() !== originalEmail.toLowerCase()) {
+                    if (accounts.some(a => a.email.toLowerCase() === newEmail.toLowerCase())) {
+                        if (errBox) {
+                            errBox.innerText = "Já existe outra conta com este novo e-mail.";
+                            errBox.classList.remove('hidden');
+                        }
+                        return;
+                    }
+                }
+
+                const accIdx = accounts.findIndex(a => a.email.toLowerCase() === originalEmail.toLowerCase());
+                if (accIdx === -1) {
+                    alert("Conta não encontrada.");
+                    return;
+                }
+
+                const oldPassword = accounts[accIdx].password;
+                accounts[accIdx].displayName = newName;
+                accounts[accIdx].email = newEmail;
+                accounts[accIdx].password = newPassword;
+                accounts[accIdx].role = newRole;
+                accounts[accIdx].dept = newDept;
+                accounts[accIdx].isAdmin = newIsAdmin;
+                accounts[accIdx].status = newStatus;
+                accounts[accIdx].canAccessOccurrences = newCanOccurrences;
+                accounts[accIdx].updatedAt = Date.now();
+
+                if (newPassword !== oldPassword) {
+                    if (!accounts[accIdx].passwordHistory) accounts[accIdx].passwordHistory = [];
+                    accounts[accIdx].passwordHistory.unshift({
+                        password: newPassword,
+                        changedAt: Date.now(),
+                        changedBy: auth.currentUser ? auth.currentUser.displayName : 'Administrador'
+                    });
+                }
+
+                localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+
+                // Se estiver editando a si próprio
+                if (auth.currentUser && auth.currentUser.email.toLowerCase() === originalEmail.toLowerCase()) {
+                    auth.currentUser = Object.assign(auth.currentUser, accounts[accIdx]);
+                    localStorage.setItem('taskflow_current_user', JSON.stringify(auth.currentUser));
+                    auth.updateUserUI();
+                    auth.applyPermissionsUI();
+                }
+
+                if (window.syncManager) {
+                    // Se mudou e-mail, remove o anterior e publica o novo
+                    if (newEmail.toLowerCase() !== originalEmail.toLowerCase()) {
+                        syncManager.publish({ type: 'ACCOUNT_DELETE', email: originalEmail });
+                    }
+                    syncManager.publish({
+                        type: 'ACCOUNT_STATUS_UPDATE',
+                        email: newEmail,
+                        status: newStatus,
+                        account: accounts[accIdx]
+                    });
+                }
+
+                auth.updateCollaboratorsList();
+                this.renderAdminUsers();
+                this.closeEditUserModal();
+                syncManager.showToast(`✓ Dados de ${newName} salvos e atualizados!`);
+            }
+
+            // ==========================================
+            // MODO EDITOR: EDIÇÃO COMPLETA DE OCORRÊNCIA
+            // ==========================================
+            openEditOccurrenceModal(occId) {
+                this.populateRoleAndDeptSelects();
+                if (!window.occApp) return;
+                const occ = occApp.occurrences.find(o => o.id === occId);
+                if (!occ) {
+                    alert("Ocorrência não encontrada.");
+                    return;
+                }
+
+                document.getElementById('admin-edit-occ-id').value = occ.id;
+                document.getElementById('admin-edit-occ-title').value = occ.title || '';
+                document.getElementById('admin-edit-occ-dept').value = occ.department || 'Geral';
+                document.getElementById('admin-edit-occ-collab').value = occ.collaborator || '';
+                document.getElementById('admin-edit-occ-author').value = occ.authorName || '';
+                document.getElementById('admin-edit-occ-severity').value = occ.severity || 'Normal';
+                document.getElementById('admin-edit-occ-what').value = occ.whatHappened || '';
+                document.getElementById('admin-edit-occ-resolution').value = occ.currentResolution || '';
+                document.getElementById('admin-edit-occ-action').value = occ.actionTaken || '';
+                document.getElementById('admin-edit-occ-status').value = occ.status || 'pending_admin';
+                document.getElementById('admin-edit-occ-guidance').value = occ.adminFeedback ? occ.adminFeedback.guidance || '' : '';
+                document.getElementById('admin-edit-occ-decision').value = occ.adminFeedback ? occ.adminFeedback.recommendedDecision || '' : '';
+
+                const modal = document.getElementById('modal-admin-edit-occurrence');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'flex';
+                }
+            }
+
+            closeEditOccurrenceModal() {
+                const modal = document.getElementById('modal-admin-edit-occurrence');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                }
+            }
+
+            handleSaveEditOccurrence(e) {
+                e.preventDefault();
+                if (!window.occApp) return;
+                const occId = document.getElementById('admin-edit-occ-id').value;
+                const occ = occApp.occurrences.find(o => o.id === occId);
+                if (!occ) return;
+
+                const title = document.getElementById('admin-edit-occ-title').value.trim();
+                const dept = document.getElementById('admin-edit-occ-dept').value;
+                const collab = document.getElementById('admin-edit-occ-collab').value.trim();
+                const author = document.getElementById('admin-edit-occ-author').value.trim();
+                const severity = document.getElementById('admin-edit-occ-severity').value;
+                const what = document.getElementById('admin-edit-occ-what').value.trim();
+                const resolution = document.getElementById('admin-edit-occ-resolution').value.trim();
+                const actionTaken = document.getElementById('admin-edit-occ-action').value.trim();
+                const status = document.getElementById('admin-edit-occ-status').value;
+                const guidance = document.getElementById('admin-edit-occ-guidance').value.trim();
+                const decision = document.getElementById('admin-edit-occ-decision').value.trim();
+
+                occ.title = title;
+                occ.department = dept;
+                occ.collaborator = collab;
+                occ.authorName = author;
+                occ.severity = severity;
+                occ.whatHappened = what;
+                occ.currentResolution = resolution;
+                occ.actionTaken = actionTaken;
+                occ.status = status;
+                occ.updatedAt = Date.now();
+
+                if (guidance || decision) {
+                    occ.adminFeedback = {
+                        adminName: auth.currentUser ? auth.currentUser.displayName : 'Administrador',
+                        adminEmail: auth.currentUser ? auth.currentUser.email : 'admin@empresa.com',
+                        answeredAt: Date.now(),
+                        guidance: guidance,
+                        recommendedDecision: decision
+                    };
+                }
+
+                occApp.saveLocally();
+                if (window.syncManager) {
+                    syncManager.publish({
+                        type: 'OCCURRENCE_UPSERT',
+                        occurrence: occ
+                    });
+                }
+
+                this.renderAdminOccurrences();
+                this.closeEditOccurrenceModal();
+                syncManager.showToast("✓ Ocorrência atualizada com sucesso!");
+            }
+
+            // ==========================================
+            // MODO EDITOR: EDIÇÃO DE TAREFA
+            // ==========================================
+            editTask(id) {
+                const task = app.tasks.find(t => t.id == id);
+                if (!task) return;
+                this.closePanel();
+                app.openModal(task);
+            }
+
 
             syncSettingsUI() {
                 document.getElementById('feature-allow-camera').checked = !!this.config.allowCamera;
@@ -5124,6 +5735,11 @@
             handleIncomingAction(payload, notify = true) {
                 if (!payload || !payload.type) return;
 
+                // Se o usuário estiver deslogado, NUNCA dispara som, notificação ou toast de tarefas
+                if (!window.auth || !auth.currentUser) {
+                    notify = false;
+                }
+
                 // Ignora ação se veio da mesma aba/sessão que acabou de enviar
                 if (payload.sessionId && payload.sessionId === this.sessionId) return;
 
@@ -5279,7 +5895,17 @@
                     }
                 } else if (payload.type === 'APP_CONFIG_UPDATE') {
                     if (window.admin && payload.config) {
-                        admin.config = payload.config;
+                        admin.config = Object.assign(admin.config, payload.config);
+                        if (payload.config.customRoles) {
+                            localStorage.setItem('taskflow_custom_roles', JSON.stringify(payload.config.customRoles));
+                            admin.populateRoleAndDeptSelects();
+                            if (admin.renderRolesAndDepts) admin.renderRolesAndDepts();
+                        }
+                        if (payload.config.customDepartments) {
+                            localStorage.setItem('taskflow_custom_departments', JSON.stringify(payload.config.customDepartments));
+                            admin.populateRoleAndDeptSelects();
+                            if (admin.renderRolesAndDepts) admin.renderRolesAndDepts();
+                        }
                         localStorage.setItem('taskflow_app_config', JSON.stringify(admin.config));
                         admin.applyFeatureConfigUI();
                         if (payload.config.announcement) {
@@ -5326,6 +5952,8 @@
             }
 
             showToast(msg) {
+                // Se deslogado, oculta toasts na tela de login exceto conexão inicial
+                if ((!window.auth || !auth.currentUser) && !msg.startsWith('✓ Conectado')) return;
                 const toast = document.getElementById('sync-toast');
                 const text = document.getElementById('sync-toast-text');
                 if (toast && text) {
@@ -5408,6 +6036,7 @@
         window.app.init();
         window.auth.init();
         window.occApp.init();
+        if (window.admin) window.admin.populateRoleAndDeptSelects();
         window.syncManager.init();
 
         // ==========================================
@@ -5508,6 +6137,31 @@
                 }
                 return true;
             }
+
+            // Modal de edição de usuário pelo admin
+            const adminEditUserModal = document.getElementById('modal-admin-edit-user');
+            if (adminEditUserModal && !adminEditUserModal.classList.contains('hidden') && adminEditUserModal.style.display !== 'none') {
+                if (window.admin && typeof window.admin.closeEditUserModal === 'function') {
+                    window.admin.closeEditUserModal();
+                } else {
+                    adminEditUserModal.classList.add('hidden');
+                    adminEditUserModal.style.display = 'none';
+                }
+                return true;
+            }
+
+            // Modal de edição de ocorrência pelo admin
+            const adminEditOccModal = document.getElementById('modal-admin-edit-occurrence');
+            if (adminEditOccModal && !adminEditOccModal.classList.contains('hidden') && adminEditOccModal.style.display !== 'none') {
+                if (window.admin && typeof window.admin.closeEditOccurrenceModal === 'function') {
+                    window.admin.closeEditOccurrenceModal();
+                } else {
+                    adminEditOccModal.classList.add('hidden');
+                    adminEditOccModal.style.display = 'none';
+                }
+                return true;
+            }
+
 
             // 8. Modal do painel administrativo
             const adminModal = document.getElementById('admin-modal');
