@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Portal de Acesso e Instalação da Equipe</title>
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            950: '#030712',
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f1f5f9;
+        }
+        .glow-indigo {
+            box-shadow: 0 0 50px -10px rgba(99, 102, 241, 0.25);
+        }
+        .glow-emerald {
+            box-shadow: 0 0 50px -10px rgba(16, 185, 129, 0.25);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#030712] selection:bg-indigo-600 selection:text-white">
+
+    <!-- Top Banner de Status -->
+    <header class="border-b border-gray-800/80 bg-gray-900/60 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-600/30">
+                    <i class="fa-solid fa-list-check text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-base sm:text-lg tracking-tight bg-gradient-to-r from-white via-gray-100 to-gray-400 bg-clip-text text-transparent">TaskFlow</h1>
+                    <p class="text-[11px] text-gray-400 flex items-center gap-1.5 font-medium">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Portal Oficial da Equipe • Rondon
+                    </p>
+                </div>
+            </div>
+            
+            <a href="index.html" class="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center gap-2">
+                <span>Entrar no App</span>
+                <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Principal -->
+    <main class="flex-1 max-w-5xl mx-auto px-4 py-8 sm:py-14 w-full space-y-12">
+        <section class="text-center space-y-5 max-w-3xl mx-auto">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs font-semibold">
+                <i class="fa-solid fa-cloud-bolt text-indigo-400"></i>
+                <span>Versão Oficial em Nuvem • Atualização 100% Automática</span>
+            </div>
+            
+            <h2 class="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
+                Instale o <span class="bg-gradient-to-r from-indigo-400 via-violet-300 to-indigo-500 bg-clip-text text-transparent">TaskFlow</span> no seu aparelho
+            </h2>
+            
+            <p class="text-sm sm:text-base text-gray-400 leading-relaxed max-w-2xl mx-auto">
+                Acompanhe suas tarefas diárias, registre ocorrências do setor em tempo real e receba notificações direto no seu celular ou computador sem complicações.
+            </p>
+
+            <!-- Botões Principais de Ação Rápida -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3">
+                <a href="TaskFlow.apk" download class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-emerald-600/25 transition active:scale-95 flex items-center justify-center gap-3 border border-emerald-400/20">
+                    <i class="fa-brands fa-android text-xl"></i>
+                    <span>Baixar Aplicativo Android (.APK)</span>
+                </a>
+
+                <a href="index.html" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gray-900 hover:bg-gray-800 text-gray-200 hover:text-white font-semibold text-sm sm:text-base border border-gray-700 transition active:scale-95 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-globe text-indigo-400"></i>
+                    <span>Abrir Versão Web Online</span>
+                </a>
+            </div>
+            
+            <p class="text-[11px] text-gray-500 font-medium">
+                <i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> Instalador seguro e verificado. Compatível com todos os celulares Android.
+            </p>
+        </section>
+
+        <!-- Seletor de Plataformas (Tabs) -->
+        <section class="space-y-6">
+            <div class="text-center space-y-1">
+                <h3 class="text-xl sm:text-2xl font-bold text-white">Escolha o seu dispositivo abaixo:</h3>
+                <p class="text-xs sm:text-sm text-gray-400">Siga as instruções rápidas de 1 minuto para o seu aparelho</p>
+            </div>
+
+            <!-- Grade com os 3 Dispositivos -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                
+                <!-- 1. CELULAR ANDROID -->
+                <div class="bg-gray-900/80 border border-emerald-500/30 rounded-3xl p-6 flex flex-col justify-between glow-emerald relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 text-emerald-500/5 text-9xl pointer-events-none">
+                        <i class="fa-brands fa-android"></i>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-2xl">
+                                <i class="fa-brands fa-android"></i>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold">App Dedicado</span>
+                        </div>
+
+                        <div>
+                            <h4 class="text-lg font-bold text-white">Celular Android</h4>
+                            <p class="text-xs text-gray-400">Samsung, Motorola, Xiaomi e outros</p>
+                        </div>
+
+                        <ol class="space-y-3 text-xs text-gray-300">
+                            <li class="flex items-start gap-2.5">
+                                <span class="w-5 h-5 rounded-full bg-emerald-600 text-white font-extrabold flex items-center justify-center shrink-0 text-[10px] mt-0.5">1</span>
+                                <span>Clique no botão abaixo para baixar o instalador oficial <strong>TaskFlow.apk</strong>.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="w-5 h-5 rounded-full bg-emerald-600 text-white font-extrabold flex items-center justify-center shrink-0 text-[10px] mt-0.5">2</span>
+                                <span>Ao concluir, toque na notificação do download e escolha <strong>"Instalar"</strong>.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="w-5 h-5 rounded-full bg-emerald-600 text-white font-extrabold flex items-center justify-center shrink-0 text-[10px] mt-0.5">3</span>
+                                <span>Se o celular pedir permissão, clique em <strong>"Permitir desta fonte"</strong>.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="w-5 h-5 rounded-full bg-emerald-600 text-white font-extrabold flex items-center justify-center shrink-0 text-[10px] mt-0.5">4</span>
+                                <span>Pronto! O app se atualiza sozinho sem precisar baixar nada nunca mais.</span>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <div class="pt-6">
+                        <a href="TaskFlow.apk" download class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition active:scale-95">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Baixar APK no Celular</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 2. IPHONE & IPAD (iOS) -->
+                <div class="bg-gray-900/80 border border-gray-800 hover:border-indigo-500/30 rounded-3xl p-6 flex flex-col justify-between transition relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 text-gray-700/5 text-9xl pointer-events-none">
+                        <i class="fa-brands fa-apple"></i>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="w-12 h-12 rounded-2xl bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-200 text-2xl">
+                                <i class="fa-brands fa-apple"></i>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] font-bold">PWA Apple</span>
+                        </div>
+
+                        <div>
+                            <h4 class="text-lg font-bold text-white">iPhone & iPad (iOS)</h4>
+                            <p class="text-xs text-gray-400">Funciona pelo navegador Safari</p>
+                        </div>
+
+                        <ol class="space-y-3 text-xs text-gray-300">
+                            <li class="flex items-start gap-2.5">
+                                <span class="w-5 h-5 rounded-full bg-gray-800 text-indigo-400 border border-gray-700 font-extrabold flex items-center justify-center shrink-0 text-[10px] mt-0.5">1</span>
+                                <span>Abra o <strong>Safari</strong> no seu iPhone e acesse este link do sistema.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="w-5 h-5 rounded-full bg-gray-800 text-indigo-400 border border-gray-700 font-extrabold flex items-center justify-center shrink-0 text-[10px] mt-0.5">2</span>
+                                <span>Toque no botão <strong>Compartilhar</strong> (quadradinho com uma seta para cima <i class="fa-solid fa-arrow-up-from-bracket text-[10px]"></i>).</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="w-5 h-5 rounded-full bg-gray-800 text-indigo-400 border border-gray-700 font-extrabold flex items-center justify-center shrink-0 text-[10px] mt-0.5">3</span>
+                                <span>Role para baixo e toque em <strong>"Adicionar à Tela de Início"</strong>.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="w-5 h-5 rounded-full bg-gray-800 text-indigo-400 border border-gray-700 font-extrabold flex items-center justify-center shrink-0 text-[10px] mt-0.5">4</span>
+                                <span>Toque em <strong>Adicionar</strong>. O ícone do app aparecerá na tela do seu iPhone!</span>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <div class="pt-6">
+                        <a href="index.html" class="w-full py-2.5 px-4 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold text-xs flex items-center justify-center gap-2 border border-gray-700 transition active:scale-95">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            <span>Abrir Sistema no Safari</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 3. COMPUTADOR / NOTEBOOK -->
+                <div class="bg-gray-900/80 border border-gray-800 hover:border-indigo-500/30 rounded-3xl p-6 flex flex-col justify-between transition relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 text-gray-700/5 text-9xl pointer-events-none">
+                        <i class="fa-solid fa-laptop"></i>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-2xl">
+                                <i class="fa-solid fa-desktop"></i>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] font-bold">PC & Notebook</span>
+                        </div>
+
+                        <div>
+                            <h4 class="text-lg font-bold text-white">Computador (PC)</h4>
+                            <p class="text-xs text-gray-400">Google Chrome, Edge ou Firefox</p>
+                        </div>
+
+                        <ol class="space-y-3 text-xs text-gray-300">
+                            <li class="flex items-start gap-2.5">
+                                <span class="w-5 h-5 rounded-full bg-gray-800 text-indigo-400 border border-gray-700 font-extrabold flex items-center justify-center shrink-0 text-[10px] mt-0.5">1</span>
+                                <span>Abra o link do TaskFlow no <strong>Google Chrome</strong> ou <strong>Microsoft Edge</strong>.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="w-5 h-5 rounded-full bg-gray-800 text-indigo-400 border border-gray-700 font-extrabold flex items-center justify-center shrink-0 text-[10px] mt-0.5">2</span>
+                                <span>No canto direito da barra de endereço, clique no ícone <strong>"Instalar aplicativo"</strong> <i class="fa-solid fa-circle-down text-[10px]"></i>.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="w-5 h-5 rounded-full bg-gray-800 text-indigo-400 border border-gray-700 font-extrabold flex items-center justify-center shrink-0 text-[10px] mt-0.5">3</span>
+                                <span>Ele criará um atalho próprio na sua Área de Trabalho e Barra de Tarefas.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="w-5 h-5 rounded-full bg-gray-800 text-indigo-400 border border-gray-700 font-extrabold flex items-center justify-center shrink-0 text-[10px] mt-0.5">4</span>
+                                <span>Perfeito para os líderes gerenciarem tarefas em tela cheia com alta produtividade.</span>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <div class="pt-6">
+                        <a href="index.html" target="_blank" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 transition active:scale-95">
+                            <i class="fa-solid fa-window-restore"></i>
+                            <span>Abrir no Navegador PC</span>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Perguntas Frequentes / Instruções para Colaboradores -->
+        <section class="border border-gray-800 bg-gray-900/40 rounded-3xl p-6 sm:p-8 space-y-6">
+            <div class="flex items-center gap-3 border-b border-gray-800 pb-4">
+                <i class="fa-solid fa-circle-question text-indigo-400 text-xl"></i>
+                <h3 class="text-lg sm:text-xl font-bold text-white">Dúvidas Frequentes da Equipe</h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs sm:text-sm">
+                <div class="space-y-1.5 p-4 rounded-2xl bg-gray-950/60 border border-gray-800/80">
+                    <p class="font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus text-emerald-400 text-xs"></i>
+                        Como criar minha conta de colaborador?
+                    </p>
+                    <p class="text-gray-400 leading-relaxed">
+                        Abra o TaskFlow, clique em <strong>"Criar Conta"</strong>, preencha seu nome, e-mail e uma senha. Sua conta entrará na lista e o Administrador aprovará seu acesso para começar a receber tarefas.
+                    </p>
+                </div>
+
+                <div class="space-y-1.5 p-4 rounded-2xl bg-gray-950/60 border border-gray-800/80">
+                    <p class="font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-arrows-rotate text-indigo-400 text-xs"></i>
+                        Preciso atualizar o aplicativo depois?
+                    </p>
+                    <p class="text-gray-400 leading-relaxed">
+                        <strong>Não!</strong> O aplicativo é conectado à nuvem. Sempre que houver melhorias, relatórios novos ou correções, ele se atualiza sozinho assim que você abrir o app.
+                    </p>
+                </div>
+
+                <div class="space-y-1.5 p-4 rounded-2xl bg-gray-950/60 border border-gray-800/80">
+                    <p class="font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-wifi text-amber-400 text-xs"></i>
+                        Funciona se eu ficar sem internet?
+                    </p>
+                    <p class="text-gray-400 leading-relaxed">
+                        Sim! O aplicativo possui armazenamento offline. Você pode consultar suas tarefas salvas mesmo sem sinal e tudo sincronizará automaticamente assim que a conexão voltar.
+                    </p>
+                </div>
+
+                <div class="space-y-1.5 p-4 rounded-2xl bg-gray-950/60 border border-gray-800/80">
+                    <p class="font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-key text-violet-400 text-xs"></i>
+                        Como alterar minha senha?
+                    </p>
+                    <p class="text-gray-400 leading-relaxed">
+                        Dentro do app, clique no ícone de <strong>Engrenagem ⚙️</strong> no topo ou no seu perfil para cadastrar uma nova senha a qualquer momento com total segurança.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Link Direto para Compartilhar -->
+        <section class="text-center p-6 rounded-2xl bg-gradient-to-r from-indigo-950/50 via-gray-900 to-indigo-950/50 border border-indigo-500/20 space-y-3">
+            <p class="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Link para compartilhar no WhatsApp da equipe:</p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-2 max-w-lg mx-auto">
+                <input type="text" readonly id="share-link-input" value="https://thelorddada.github.io/taskflow/instalar.html" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-xs font-mono text-gray-300 text-center select-all focus:outline-none focus:border-indigo-500">
+                <button type="button" onclick="copyShareLink()" id="btn-copy-link" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold whitespace-nowrap transition active:scale-95 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-copy"></i>
+                    <span id="copy-text">Copiar Link</span>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800/80 bg-gray-950 py-6 text-center text-xs text-gray-500">
+        <div class="max-w-5xl mx-auto px-4 space-y-1">
+            <p class="font-medium text-gray-400">TaskFlow - Gestão Inteligente de Tarefas & Processos</p>
+            <p>© 2026 Empresa Rondon • Todos os direitos reservados</p>
+        </div>
+    </footer>
+
+    <script>
+        function copyShareLink() {
+            const input = document.getElementById('share-link-input');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            try {
+                navigator.clipboard.writeText(input.value);
+            } catch(e) {
+                document.execCommand('copy');
+            }
+            const btnText = document.getElementById('copy-text');
+            const original = btnText.innerText;
+            btnText.innerText = "✓ Copiado!";
+            setTimeout(() => {
+                btnText.innerText = original;
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
