@@ -1,5 +1,5 @@
-﻿// Service Worker para suporte PWA offline e notificaÃ§Ãµes
-const CACHE_NAME = 'taskflow-v5';
+// Service Worker TaskFlow - Suporte PWA Offline & Limpeza de Cache para Atualização Automática
+const CACHE_NAME = 'taskflow-v6-20261019';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -11,6 +11,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('[SW] Removendo cache antigo:', key);
             return caches.delete(key);
           }
         })
@@ -20,7 +21,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Pass-through fetch com fallback
+  // Pass-through fetch com fallback offline
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
