@@ -645,7 +645,7 @@
                     <span class="hidden sm:inline">+ Nova Ocorrência</span>
                     <span class="sm:hidden font-bold">+ Ocorr.</span>
                 </button>
-                <button id="topbar-new-feedback-btn" onclick="feedbackApp.switchTab('apply')" class="hidden items-center gap-1.5 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-purple-600/30 whitespace-nowrap">
+                <button id="topbar-new-feedback-btn" onclick="feedbackApp.openNewFeedbackModal()" class="hidden items-center gap-1.5 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-purple-600/30 whitespace-nowrap">
                     <i class="fa-solid fa-plus text-xs"></i>
                     <span class="hidden sm:inline">+ Novo Feedback</span>
                     <span class="sm:hidden font-bold">+ Feedback</span>
@@ -731,9 +731,9 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button type="button" onclick="feedbackApp.switchTab('apply')" class="flex-1 sm:flex-none px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-lg shadow-purple-600/30 active:scale-95">
+                        <button type="button" onclick="feedbackApp.openNewFeedbackModal()" class="flex-1 sm:flex-none px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-lg shadow-purple-600/30 active:scale-95">
                             <i class="fa-solid fa-plus text-xs"></i>
-                            <span>Novo Feedback</span>
+                            <span>+ Novo Feedback (1-on-1)</span>
                         </button>
                     </div>
                 </div>
@@ -1017,7 +1017,7 @@
             </button>
 
             <!-- Floating Action Button (FAB) Mobile para Criar Tarefa com 1 Toque -->
-            <button type="button" id="mob-fab-new-task" onclick="app.openModal()" title="Criar Nova Tarefa" class="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 active:scale-90 text-white rounded-2xl shadow-2xl shadow-indigo-600/50 flex items-center justify-center text-xl transition border border-indigo-400/40">
+            <button type="button" id="mob-fab-action-btn" onclick="window.triggerActiveFAB()" title="Criar Novo Item" class="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 active:scale-90 text-white rounded-2xl shadow-2xl shadow-indigo-600/50 flex items-center justify-center text-xl transition border border-indigo-400/40">
                 <i class="fa-solid fa-plus"></i>
             </button>
         </nav>
@@ -3130,6 +3130,17 @@
         // =====================================================================
         // MÓDULO: OCORRÊNCIAS & PROCESSOS (ACOMPANHAMENTO & DECISÕES DA LIDERANÇA)
         // =====================================================================
+        // Ação centralizada do Botão Flutuante Mobile (+) para Tarefas, Ocorrências e Feedback
+        window.triggerActiveFAB = function() {
+            if (window.currentMainView === 'occurrences') {
+                if (window.occApp) occApp.openNewModal();
+            } else if (window.currentMainView === 'feedback') {
+                if (window.feedbackApp) feedbackApp.openNewFeedbackModal();
+            } else {
+                if (window.app) app.openModal();
+            }
+        };
+
         window.currentMainView = 'tasks';
 
         window.switchMainView = function(view) {
@@ -3180,12 +3191,15 @@
             if (mobOcc) mobOcc.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2.5 transition active:scale-90 relative";
             if (mobFb) mobFb.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2 transition active:scale-90 relative";
 
-            const mobFab = document.getElementById('mob-fab-new-task');
+            const mobFab = document.getElementById('mob-fab-action-btn');
             if (view === 'tasks') {
                 if (tasksSec) tasksSec.classList.remove('hidden');
                 if (viewTitle) viewTitle.innerText = "Todas as Tarefas";
                 if (btnNewTask) btnNewTask.classList.remove('hidden');
-                if (mobFab) mobFab.classList.remove('hidden');
+                if (mobFab) {
+                    mobFab.classList.remove('hidden');
+                    mobFab.className = "md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 active:scale-90 text-white rounded-2xl shadow-2xl shadow-indigo-600/50 flex items-center justify-center text-xl transition border border-indigo-400/40";
+                }
 
                 if (switchTasks) switchTasks.className = "flex-1 py-2 px-1 text-xs font-bold rounded-xl bg-indigo-600 text-white transition flex items-center justify-center gap-1 shadow-md shadow-indigo-600/30";
                 if (topbarTasks) topbarTasks.className = "px-2.5 py-1 text-xs font-bold rounded-lg bg-indigo-600 text-white transition flex items-center gap-1";
@@ -3193,7 +3207,10 @@
 
                 if (window.app) window.app.render();
             } else if (view === 'occurrences') {
-                if (mobFab) mobFab.classList.add('hidden');
+                if (mobFab) {
+                    mobFab.classList.remove('hidden');
+                    mobFab.className = "md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-amber-600 hover:bg-amber-500 active:scale-90 text-black rounded-2xl shadow-2xl shadow-amber-600/50 flex items-center justify-center text-xl transition border border-amber-400/40";
+                }
                 if (occSec) occSec.classList.remove('hidden');
                 if (viewTitle) viewTitle.innerText = "Ocorrências & Processos";
                 if (btnNewOcc) { btnNewOcc.classList.remove('hidden'); btnNewOcc.style.display = 'flex'; }
@@ -3204,7 +3221,10 @@
 
                 if (window.occApp) window.occApp.render();
             } else if (view === 'feedback') {
-                if (mobFab) mobFab.classList.add('hidden');
+                if (mobFab) {
+                    mobFab.classList.remove('hidden');
+                    mobFab.className = "md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-purple-600 hover:bg-purple-500 active:scale-90 text-white rounded-2xl shadow-2xl shadow-purple-600/50 flex items-center justify-center text-xl transition border border-purple-400/40";
+                }
                 if (fbSec) fbSec.classList.remove('hidden');
                 if (viewTitle) viewTitle.innerText = "Feedback de Colaboradores";
                 if (btnNewFb) { btnNewFb.classList.remove('hidden'); btnNewFb.style.display = 'flex'; }
@@ -3851,8 +3871,214 @@
                 }
             }
 
-            populateCollaboratorsSelect() {
-                const select = document.getElementById('fb-form-collaborator');
+
+            openNewFeedbackModal() {
+                const modal = document.getElementById('modal-feedback-apply');
+                if (!modal) return;
+
+                this.populateCollaboratorsSelect('fb-modal-collaborator');
+                this.modalCategoryRatings = {};
+
+                const dateInput = document.getElementById('fb-modal-date');
+                if (dateInput) dateInput.value = typeof getLocalTodayString === 'function' ? getLocalTodayString() : new Date().toISOString().split('T')[0];
+
+                const leaderEl = document.getElementById('fb-modal-leader-name');
+                if (window.auth && auth.currentUser) {
+                    if (leaderEl) leaderEl.innerText = `${auth.currentUser.displayName} (${auth.currentUser.role || 'Líder'})`;
+                }
+
+                this.renderModalApplyTopics();
+
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                modal.style.zIndex = '99999';
+            }
+
+            closeNewFeedbackModal() {
+                const modal = document.getElementById('modal-feedback-apply');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                }
+            }
+
+            onModalCollaboratorChange(email) {
+                const infoEl = document.getElementById('fb-modal-collab-info');
+                if (!email) {
+                    if (infoEl) infoEl.classList.add('hidden');
+                    return;
+                }
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                const acc = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+                if (acc && infoEl) {
+                    infoEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i> Setor: <strong>${acc.dept || 'Geral'}</strong> • Cargo: <strong>${acc.role || 'Colaborador'}</strong> • E-mail: ${acc.email}`;
+                    infoEl.classList.remove('hidden');
+                }
+            }
+
+            setModalTopicRating(catId, rating) {
+                if (!this.modalCategoryRatings) this.modalCategoryRatings = {};
+                this.modalCategoryRatings[catId] = rating;
+
+                const options = ['Excelente', 'Bom', 'Regular', 'Precisa Melhorar'];
+                options.forEach(opt => {
+                    const btn = document.getElementById(`fb-modal-rate-${catId}-${opt.replace(/\s+/g, '_')}`);
+                    if (btn) {
+                        if (opt === rating) {
+                            if (opt === 'Excelente') {
+                                btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 text-black border border-emerald-400 shadow-md transition active:scale-95";
+                            } else if (opt === 'Bom') {
+                                btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white border border-indigo-400 shadow-md transition active:scale-95";
+                            } else if (opt === 'Regular') {
+                                btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-black border border-amber-400 shadow-md transition active:scale-95";
+                            } else {
+                                btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold bg-red-600 text-white border border-red-400 shadow-md transition active:scale-95";
+                            }
+                        } else {
+                            btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold bg-gray-950 border border-gray-800 text-gray-400 hover:text-gray-200 transition active:scale-95";
+                        }
+                    }
+                });
+            }
+
+            renderModalApplyTopics() {
+                const container = document.getElementById('fb-modal-topics-container');
+                if (!container) return;
+
+                if (!this.modalCategoryRatings) this.modalCategoryRatings = {};
+
+                if (this.templates.length === 0) {
+                    container.innerHTML = `<div class="p-4 text-center text-xs text-gray-400 bg-gray-900 rounded-xl">Nenhum tópico cadastrado pelo administrador.</div>`;
+                    return;
+                }
+
+                container.innerHTML = this.templates.map((cat, idx) => {
+                    const currentRating = this.modalCategoryRatings[cat.id] || 'Bom';
+                    this.modalCategoryRatings[cat.id] = currentRating;
+
+                    return `
+                    <div class="bg-gray-900/90 border border-gray-800 rounded-2xl p-3.5 space-y-3">
+                        <div class="flex items-center justify-between border-b border-gray-800/60 pb-2">
+                            <div>
+                                <h5 class="text-xs sm:text-sm font-bold text-gray-100 flex items-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-md bg-purple-600/30 text-purple-300 flex items-center justify-center text-[10px] font-bold">${idx + 1}</span>
+                                    <span>${cat.category}</span>
+                                </h5>
+                                <p class="text-[11px] text-gray-400 mt-0.5">${cat.description}</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1 bg-gray-950/70 p-2.5 rounded-xl border border-gray-800/60 text-xs">
+                            <span class="text-[10px] font-bold text-purple-300 uppercase tracking-wider block">Critérios / Perguntas Obrigatórias do ADM:</span>
+                            <ul class="space-y-1 text-gray-300">
+                                ${(cat.questions || []).map(q => `
+                                    <li class="flex items-start gap-1.5">
+                                        <i class="fa-solid fa-angle-right text-purple-400 text-[10px] mt-1 shrink-0"></i>
+                                        <span>${q}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-300 uppercase tracking-wider mb-1.5">Classificação do Tópico:</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                                ${['Excelente', 'Bom', 'Regular', 'Precisa Melhorar'].map(opt => {
+                                    const isSel = opt === currentRating;
+                                    const selClass = isSel
+                                        ? (opt === 'Excelente' ? 'bg-emerald-500 text-black border-emerald-400 shadow-md font-bold'
+                                          : opt === 'Bom' ? 'bg-indigo-600 text-white border-indigo-400 shadow-md font-bold'
+                                          : opt === 'Regular' ? 'bg-amber-500 text-black border-amber-400 shadow-md font-bold'
+                                          : 'bg-red-600 text-white border-red-400 shadow-md font-bold')
+                                        : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-gray-200';
+                                    return `<button type="button" id="fb-modal-rate-${cat.id}-${opt.replace(/\s+/g, '_')}" onclick="feedbackApp.setModalTopicRating('${cat.id}', '${opt}')" class="px-2.5 py-1.5 rounded-xl text-xs transition border ${selClass}">${opt === 'Excelente' ? '🟢' : opt === 'Bom' ? '🔵' : opt === 'Regular' ? '🟡' : '🔴'} ${opt}</button>`;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <div>
+                            <input type="text" id="fb-modal-obs-${cat.id}" placeholder="Observações específicas para ${cat.category}..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-1.5 text-xs text-gray-100 focus:outline-none focus:border-purple-500 transition">
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            handleSaveModalFeedback(event) {
+                event.preventDefault();
+                try {
+                    const collabEmail = document.getElementById('fb-modal-collaborator').value;
+                    if (!collabEmail) {
+                        alert("Por favor, selecione o colaborador avaliado.");
+                        return;
+                    }
+                    const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                    const collabAcc = accounts.find(a => a.email.toLowerCase() === collabEmail.toLowerCase());
+                    const collabName = collabAcc ? collabAcc.displayName : collabEmail;
+                    const collabDept = collabAcc ? collabAcc.dept : 'Geral';
+                    const collabRole = collabAcc ? collabAcc.role : 'Colaborador';
+
+                    const cycle = document.getElementById('fb-modal-cycle').value;
+                    const date = document.getElementById('fb-modal-date').value || (typeof getLocalTodayString === 'function' ? getLocalTodayString() : new Date().toISOString().split('T')[0]);
+
+                    const currentLeader = (window.auth && auth.currentUser) ? auth.currentUser : { displayName: 'Líder de Equipe', email: 'lider@empresa.com', role: 'Líder' };
+
+                    const topicsData = this.templates.map(cat => {
+                        const obsInput = document.getElementById(`fb-modal-obs-${cat.id}`);
+                        return {
+                            categoryId: cat.id,
+                            categoryName: cat.category,
+                            rating: (this.modalCategoryRatings && this.modalCategoryRatings[cat.id]) || 'Bom',
+                            notes: obsInput ? obsInput.value.trim() : ''
+                        };
+                    });
+
+                    const overallRating = document.getElementById('fb-modal-overall').value;
+                    const positiveHighlights = document.getElementById('fb-modal-positives').value.trim();
+                    const actionPlan = document.getElementById('fb-modal-action-plan').value.trim();
+                    const followUpDate = document.getElementById('fb-modal-follow-up').value;
+
+                    const newFeedback = {
+                        id: 'fb_' + Date.now(),
+                        createdAt: Date.now(),
+                        date: date,
+                        cycle: cycle,
+                        collaboratorName: collabName,
+                        collaboratorEmail: collabEmail,
+                        collaboratorDept: collabDept,
+                        collaboratorRole: collabRole,
+                        leaderName: currentLeader.displayName,
+                        leaderEmail: currentLeader.email,
+                        leaderRole: currentLeader.role || 'Líder',
+                        topics: topicsData,
+                        positiveHighlights: positiveHighlights,
+                        actionPlan: actionPlan,
+                        overallRating: overallRating,
+                        followUpDate: followUpDate,
+                        agreement: true
+                    };
+
+                    this.feedbacks.unshift(newFeedback);
+                    this.saveFeedbacks(true);
+
+                    if (window.syncManager) {
+                        syncManager.publish({
+                            type: 'FEEDBACK_UPSERT',
+                            feedback: newFeedback
+                        });
+                        syncManager.showToast(`✓ Feedback de ${collabName} registrado com sucesso!`);
+                    }
+
+                    this.closeNewFeedbackModal();
+                    window.switchMainView('feedback');
+                    this.switchTab('history');
+                } catch(err) {
+                    console.error("Erro ao salvar feedback:", err);
+                    alert("Ocorreu um erro ao salvar o feedback: " + err.message);
+                }
+            }
+
+            populateCollaboratorsSelect(targetSelectId = null) {
+                const select = document.getElementById(targetSelectId || 'fb-form-collaborator');
                 if (!select) return;
 
                 const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
@@ -8002,6 +8228,13 @@
         // ==========================================
         window.handleAndroidBackPressed = function() {
 
+            // Fecha modal de aplicação de feedback
+            const fbApplyModal = document.getElementById('modal-feedback-apply');
+            if (fbApplyModal && !fbApplyModal.classList.contains('hidden') && fbApplyModal.style.display !== 'none') {
+                if (window.feedbackApp) feedbackApp.closeNewFeedbackModal();
+                return true;
+            }
+
             // Fecha modal de detalhe/impressão de feedback
             const fbDetailModal = document.getElementById('modal-feedback-detail');
             if (fbDetailModal && !fbDetailModal.classList.contains('hidden') && fbDetailModal.style.display !== 'none') {
@@ -8176,6 +8409,112 @@
             window.handleAndroidBackPressed();
         });
     </script>
+
+
+    <!-- ========================================== -->
+    <!-- MODAL NOVO FEEDBACK 1-ON-1 & AVALIAÇÃO     -->
+    <!-- ========================================== -->
+    <div id="modal-feedback-apply" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-gray-900 border border-purple-500/40 rounded-3xl w-full max-w-2xl p-4 sm:p-6 shadow-2xl overflow-y-auto max-h-[94vh] custom-scrollbar space-y-4">
+            <!-- Header Modal -->
+            <div class="flex items-center justify-between pb-3.5 border-b border-gray-800">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-purple-600/20 text-purple-400 border border-purple-500/30 flex items-center justify-center text-lg shadow-lg">
+                        <i class="fa-solid fa-comments"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-gray-100">Nova Avaliação 1-on-1 & Feedback</h3>
+                        <p class="text-[11px] text-purple-300 font-medium">Aplicação de diretrizes e alinhamento de desempenho</p>
+                    </div>
+                </div>
+                <button type="button" onclick="feedbackApp.closeNewFeedbackModal()" class="text-gray-400 hover:text-gray-200 w-8 h-8 rounded-xl flex items-center justify-center bg-gray-800 active:scale-95 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form onsubmit="feedbackApp.handleSaveModalFeedback(event)" class="space-y-4">
+                <!-- 1. Identificação -->
+                <div class="bg-gray-950/80 p-3.5 rounded-2xl border border-gray-800 space-y-3">
+                    <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider block">1. Identificação da Reunião</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Colaborador Avaliado *</label>
+                            <select id="fb-modal-collaborator" required onchange="feedbackApp.onModalCollaboratorChange(this.value)" class="w-full bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-purple-500 transition">
+                                <option value="">Selecione o colaborador...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Ciclo de Avaliação *</label>
+                            <select id="fb-modal-cycle" required class="w-full bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-purple-500 transition">
+                                <option value="1-on-1 Periódico (Mensal)">1-on-1 Periódico (Mensal)</option>
+                                <option value="Avaliação Trimestral">Avaliação Trimestral</option>
+                                <option value="Período de Experiência (45 Dias)">Período de Experiência (45 Dias)</option>
+                                <option value="Período de Experiência (90 Dias)">Período de Experiência (90 Dias)</option>
+                                <option value="Alinhamento de Postura / Corretivo">Alinhamento de Postura / Corretivo</option>
+                                <option value="Reconhecimento & Elogio">Reconhecimento & Elogio</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Data da Reunião *</label>
+                            <input type="date" id="fb-modal-date" required class="w-full bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-purple-500 transition font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Líder Conduzindo</label>
+                            <div id="fb-modal-leader-name" class="w-full bg-gray-900/60 border border-gray-800 rounded-xl px-3 py-2 text-xs text-purple-300 font-semibold truncate">
+                                Líder Atual
+                            </div>
+                        </div>
+                    </div>
+                    <div id="fb-modal-collab-info" class="hidden text-[11px] text-indigo-300 bg-indigo-950/40 p-2 rounded-xl border border-indigo-900/40"></div>
+                </div>
+
+                <!-- 2. Tópicos do ADM -->
+                <div class="bg-gray-950/80 p-3.5 rounded-2xl border border-gray-800 space-y-3">
+                    <span class="text-xs font-bold text-purple-400 uppercase tracking-wider block">2. Tópicos & Perguntas Obrigatórias do ADM</span>
+                    <div id="fb-modal-topics-container" class="space-y-3.5">
+                        <!-- Injetado dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- 3. Conclusão e Plano de Ação -->
+                <div class="bg-gray-950/80 p-3.5 rounded-2xl border border-gray-800 space-y-3">
+                    <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider block">3. Conclusão & Plano de Ação</span>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Classificação Geral da Sessão *</label>
+                        <select id="fb-modal-overall" required class="w-full bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-purple-500 transition">
+                            <option value="Excelente">🟢 Excelente (Supera expectativas com consistência)</option>
+                            <option value="Bom" selected>🔵 Bom (Atende plenamente os requisitos do cargo)</option>
+                            <option value="Regular">🟡 Regular (Apresenta oscilações ou pontos de atenção)</option>
+                            <option value="Precisa Melhorar">🔴 Precisa Melhorar (Desempenho abaixo do esperado)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Pontos Fortes & Elogios</label>
+                        <textarea id="fb-modal-positives" rows="2" placeholder="O que o colaborador tem feito de exemplar..." class="w-full bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-purple-500 transition"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Plano de Ação & Metas para o Próximo Ciclo *</label>
+                        <textarea id="fb-modal-action-plan" required rows="3" placeholder="Quais ações práticas e melhorias foram combinadas nesta sessão..." class="w-full bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-purple-500 transition"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Data Prevista para Próximo Acompanhamento (Follow-up)</label>
+                        <input type="date" id="fb-modal-follow-up" class="w-full bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-purple-500 transition font-mono">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="feedbackApp.closeNewFeedbackModal()" class="flex-1 py-2.5 text-xs rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition active:scale-95">Cancelar</button>
+                    <button type="submit" class="flex-1 py-2.5 text-xs rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-600/30 transition active:scale-95 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>Salvar Feedback & Registrar 1-on-1</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- ========================================== -->
     <!-- MODAL DE VISUALIZAÇÃO / IMPRESSÃO 1-ON-1   -->
