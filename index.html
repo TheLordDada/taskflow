@@ -1015,6 +1015,11 @@
                 <i class="fa-solid fa-stopwatch text-base text-indigo-400"></i>
                 <span class="text-[10px] font-semibold">Pomodoro</span>
             </button>
+
+            <!-- Floating Action Button (FAB) Mobile para Criar Tarefa com 1 Toque -->
+            <button type="button" id="mob-fab-new-task" onclick="app.openModal()" title="Criar Nova Tarefa" class="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 active:scale-90 text-white rounded-2xl shadow-2xl shadow-indigo-600/50 flex items-center justify-center text-xl transition border border-indigo-400/40">
+                <i class="fa-solid fa-plus"></i>
+            </button>
         </nav>
     </main>
 
@@ -1512,7 +1517,7 @@
     <!-- ========================================== -->
     <!-- MODAL NOVA / EDITAR TAREFA                 -->
     <!-- ========================================== -->
-    <div id="task-modal" style="display: none;" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div id="task-modal" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-3 sm:p-4">
         <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
             <!-- Header Fixo -->
             <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-800 shrink-0">
@@ -1680,6 +1685,20 @@
 
                 <div id="settings-password-error" class="hidden text-xs text-red-400 bg-red-950/40 border border-red-800/60 p-2.5 rounded-xl"></div>
                 <div id="settings-password-success" class="hidden text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-800/60 p-2.5 rounded-xl"></div>
+
+                
+                <!-- Seção de Atualização e Cache do App / APK -->
+                <div class="mt-4 pt-3.5 border-t border-gray-800">
+                    <h4 class="text-xs font-bold text-gray-300 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrows-rotate text-indigo-400 text-[11px]"></i>
+                        <span>Atualizações & Cache do App</span>
+                    </h4>
+                    <p class="text-[11px] text-gray-400 mb-2.5">Força o download da versão mais recente publicada na nuvem (GitHub Pages) e limpa o cache local.</p>
+                    <button type="button" onclick="window.forceAppReload(true)" class="w-full py-2.5 px-3 bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-800/60 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition active:scale-95 shadow-sm">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span>Buscar Atualizações / Recarregar Versão Mais Recente</span>
+                    </button>
+                </div>
 
                 <div class="flex gap-2 pt-2">
                     <button type="button" onclick="auth.closeAccountSettingsModal()" class="flex-1 py-2.5 text-xs rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition active:scale-95">Cancelar</button>
@@ -2210,12 +2229,51 @@
             return `${year}-${month}-${day}`;
         }
 
-        // PWA Service Worker
+        // Auto-detecção de APK Android Offline com Internet ativa -> Redireciona para versão online mais recente
+        if (window.location.protocol === 'file:' && navigator.onLine) {
+            console.log("APK em modo local com conexão ativa. Redirecionando para nuvem...");
+            window.location.href = "https://thelorddada.github.io/taskflow/?v=" + Date.now();
+        }
+
+        // PWA Service Worker com verificação de nova versão
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(() => {});
+                navigator.serviceWorker.register('sw.js?v=20261019_1540').then(reg => {
+                    if (reg) reg.update();
+                }).catch(() => {});
             });
         }
+
+        // Função global de recarregamento forçado (limpa ServiceWorker, Caches e recarrega)
+        window.forceAppReload = async function(interactive = true) {
+            if (interactive && window.syncManager) {
+                syncManager.showToast("Buscando atualizações e limpando cache...");
+            }
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let reg of registrations) {
+                        await reg.unregister();
+                    }
+                }
+                if ('caches' in window) {
+                    const keys = await caches.keys();
+                    for (let k of keys) {
+                        await caches.delete(k);
+                    }
+                }
+            } catch(e) {
+                console.warn("Erro ao limpar caches:", e);
+            }
+            if (window.AndroidApp && typeof window.AndroidApp.reloadOnline === 'function') {
+                window.AndroidApp.reloadOnline();
+            } else {
+                const targetUrl = (window.location.origin && window.location.origin !== 'null' && window.location.protocol !== 'file:')
+                    ? window.location.origin + window.location.pathname
+                    : 'https://thelorddada.github.io/taskflow/';
+                window.location.href = targetUrl + '?v=' + Date.now();
+            }
+        };
 
         // 1. GERENCIADOR DE TAREFAS
         class TaskApp {
@@ -2245,7 +2303,7 @@
                     console.warn("Storage quota limit reached, maintaining in active session memory:", e);
                 }
                 this.render();
-                if (window.admin) admin.renderAdminTasks();
+                if (window.admin && typeof admin.renderAdminTasks === 'function') { try { admin.renderAdminTasks(); } catch(e) {} }
             }
 
             playNotificationSound() {
@@ -2389,8 +2447,8 @@
 
             openModal(task = null) {
                 // Checa se o modo somente leitura para colaboradores está ativo
-                if (window.admin && admin.config.adminOnlyCreate && (!auth.currentUser || !auth.currentUser.isAdmin)) {
-                    alert("Aviso: Apenas os Administradores podem criar novas tarefas no momento.");
+                if (window.admin && admin.config && admin.config.adminOnlyCreate && (!auth.currentUser || !auth.currentUser.isAdmin)) {
+                    alert("Aviso: Apenas os Administradores podem criar novas tarefas no momento.\nSe você é o Administrador, faça login com sua conta.");
                     return;
                 }
 
@@ -2398,6 +2456,7 @@
                 if (m) {
                     m.classList.remove('hidden');
                     m.style.display = 'flex';
+                    m.style.zIndex = '99999';
                 }
                 if(task) {
                     document.getElementById('modal-title').innerText = 'Editar Tarefa';
@@ -2584,67 +2643,105 @@
             }
 
             async saveTask(e) {
-                e.preventDefault();
-                const id = document.getElementById('task-id').value;
-                const title = document.getElementById('task-title').value.trim();
-                const assignee = document.getElementById('task-assignee').value.trim() || 'Equipe';
-                const date = document.getElementById('task-date').value || getLocalTodayString();
-                const priority = document.getElementById('task-priority').value;
-
-                const authorName = auth.currentUser ? auth.currentUser.displayName : 'Equipe';
-                const authorRole = auth.currentUser ? auth.currentUser.role : 'Colaborador';
-
-                let finalImage = this.tempImage;
-                if (finalImage && finalImage.length > 50000) {
-                    finalImage = await this.compressImage(finalImage, 640, 0.65);
-                }
-
-                let taskToBroadcast = null;
-
-                if (id) {
-                    const task = this.tasks.find(t => t.id == id);
-                    if (task) {
-                        task.title = title;
-                        task.assignee = assignee;
-                        task.date = date;
-                        task.priority = priority;
-                        task.image = finalImage;
-                        task.updatedAt = Date.now();
-                        taskToBroadcast = task;
+                if (e) e.preventDefault();
+                try {
+                    const id = (document.getElementById('task-id').value || '').trim();
+                    const title = (document.getElementById('task-title').value || '').trim();
+                    if (!title) {
+                        alert("Por favor, informe o título da tarefa.");
+                        return;
                     }
-                } else {
-                    taskToBroadcast = {
-                        id: 'task_' + Date.now(),
-                        title,
-                        assignee,
-                        date,
-                        priority,
-                        image: finalImage,
-                        authorName,
-                        authorRole,
-                        completed: false,
-                        completedBy: null,
-                        createdAt: Date.now(),
-                        updatedAt: Date.now()
-                    };
-                    this.tasks.unshift(taskToBroadcast);
-                }
+                    const assignee = (document.getElementById('task-assignee').value || '').trim() || 'Equipe';
+                    const date = document.getElementById('task-date').value || getLocalTodayString();
+                    const priority = document.getElementById('task-priority').value || 'media';
 
-                this.closeModal();
-                this.saveLocally();
+                    const authorName = auth.currentUser ? auth.currentUser.displayName : 'Equipe';
+                    const authorRole = auth.currentUser ? auth.currentUser.role : 'Colaborador';
 
-                // Som e Notificação
-                this.playNotificationSound();
-                const notifTitle = id ? "TaskFlow - Tarefa Atualizada" : "TaskFlow - Nova Tarefa Criada";
-                const notifBody = `"${title}" (Responsável: ${assignee})`;
-                this.dispatchNotification(notifTitle, notifBody);
+                    let finalImage = this.tempImage;
+                    if (finalImage && finalImage.length > 50000) {
+                        try {
+                            finalImage = await this.compressImage(finalImage, 640, 0.65);
+                        } catch(imgErr) {
+                            console.warn("Falha ao comprimir imagem da tarefa:", imgErr);
+                        }
+                    }
 
-                // Publica em nuvem imediatamente
-                if (window.syncManager && taskToBroadcast) {
-                    window.syncManager.publish({
-                        type: 'TASK_UPSERT',
-                        task: taskToBroadcast
-                    });
+                    let taskToBroadcast = null;
+
+                    if (id) {
+                        const task = this.tasks.find(t => t.id == id);
+                        if (task) {
+                            task.title = title;
+                            task.assignee = assignee;
+                            task.date = date;
+                            task.priority = priority;
+                            task.image = finalImage;
+                            task.updatedAt = Date.now();
+                            taskToBroadcast = task;
+                        }
+                    } else {
+                        taskToBroadcast = {
+                            id: 'task_' + Date.now(),
+                            title,
+                            assignee,
+                            date,
+                            priority,
+                            image: finalImage,
+                            authorName,
+                            authorRole,
+                            completed: false,
+                            completedBy: null,
+                            createdAt: Date.now(),
+                            updatedAt: Date.now()
+                        };
+                        this.tasks.unshift(taskToBroadcast);
+                    }
+
+                    this.closeModal();
+
+                    // Se criou uma nova tarefa e o filtro ativo não for 'all', muda para 'all' para que a tarefa apareça imediatamente!
+                    if (!id && this.currentFilter !== 'all') {
+                        this.currentFilter = 'all';
+                        ['all', 'mine', 'today', 'upcoming'].forEach(f => {
+                            const btn = document.getElementById('filter-' + f);
+                            if (btn) {
+                                if (f === 'all') {
+                                    btn.className = "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white shadow-md shadow-indigo-600/30 transition text-left";
+                                } else {
+                                    btn.className = "w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:text-gray-200 hover:bg-gray-800/60 transition text-left";
+                                }
+                            }
+                        });
+                        const viewTitle = document.getElementById('current-view-title');
+                        if (viewTitle) viewTitle.innerText = 'Todas as Tarefas';
+                    }
+
+                    this.saveLocally();
+
+                    // Feedback visual instantâneo garantido
+                    if (window.syncManager) {
+                        syncManager.showToast(id ? "✓ Tarefa atualizada com sucesso!" : "✓ Tarefa criada com sucesso!");
+                    }
+
+                    // Som e Notificação (com proteção contra bloqueio de áudio/notif)
+                    try { this.playNotificationSound(); } catch(e) {}
+                    try {
+                        const notifTitle = id ? "TaskFlow - Tarefa Atualizada" : "TaskFlow - Nova Tarefa Criada";
+                        const notifBody = `"${title}" (Responsável: ${assignee})`;
+                        this.dispatchNotification(notifTitle, notifBody);
+                    } catch(e) {}
+
+                    // Publica em nuvem imediatamente
+                    if (window.syncManager && taskToBroadcast) {
+                        window.syncManager.publish({
+                            type: 'TASK_UPSERT',
+                            task: taskToBroadcast
+                        });
+                    }
+                } catch(err) {
+                    console.error("Erro ao salvar tarefa:", err);
+                    alert("Ocorreu um erro ao salvar a tarefa: " + err.message);
                 }
             }
 
@@ -3083,10 +3180,12 @@
             if (mobOcc) mobOcc.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2.5 transition active:scale-90 relative";
             if (mobFb) mobFb.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2 transition active:scale-90 relative";
 
+            const mobFab = document.getElementById('mob-fab-new-task');
             if (view === 'tasks') {
                 if (tasksSec) tasksSec.classList.remove('hidden');
                 if (viewTitle) viewTitle.innerText = "Todas as Tarefas";
                 if (btnNewTask) btnNewTask.classList.remove('hidden');
+                if (mobFab) mobFab.classList.remove('hidden');
 
                 if (switchTasks) switchTasks.className = "flex-1 py-2 px-1 text-xs font-bold rounded-xl bg-indigo-600 text-white transition flex items-center justify-center gap-1 shadow-md shadow-indigo-600/30";
                 if (topbarTasks) topbarTasks.className = "px-2.5 py-1 text-xs font-bold rounded-lg bg-indigo-600 text-white transition flex items-center gap-1";
@@ -3094,6 +3193,7 @@
 
                 if (window.app) window.app.render();
             } else if (view === 'occurrences') {
+                if (mobFab) mobFab.classList.add('hidden');
                 if (occSec) occSec.classList.remove('hidden');
                 if (viewTitle) viewTitle.innerText = "Ocorrências & Processos";
                 if (btnNewOcc) { btnNewOcc.classList.remove('hidden'); btnNewOcc.style.display = 'flex'; }
@@ -3104,6 +3204,7 @@
 
                 if (window.occApp) window.occApp.render();
             } else if (view === 'feedback') {
+                if (mobFab) mobFab.classList.add('hidden');
                 if (fbSec) fbSec.classList.remove('hidden');
                 if (viewTitle) viewTitle.innerText = "Feedback de Colaboradores";
                 if (btnNewFb) { btnNewFb.classList.remove('hidden'); btnNewFb.style.display = 'flex'; }
@@ -6435,6 +6536,7 @@
 
             renderAdminTasks() {
                 const container = document.getElementById('admin-tasks-list');
+                if (!container) return;
                 const tasks = window.app ? window.app.tasks : [];
 
                 if (tasks.length === 0) {
