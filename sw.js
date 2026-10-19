@@ -1,5 +1,5 @@
 ﻿// Service Worker para suporte PWA offline e notificaÃ§Ãµes
-const CACHE_NAME = 'taskflow-v4';
+const CACHE_NAME = 'taskflow-v5';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
