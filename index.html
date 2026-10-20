@@ -742,16 +742,16 @@
                     </div>
                 </div>
 
-                <!-- Abas Internas: 1. Aplicar Feedback | 2. Histórico | 3. Diretrizes ADM -->
+                <!-- Abas Internas: 1. Histórico | 2. Aplicar Feedback | 3. Diretrizes ADM -->
                 <div class="flex overflow-x-auto custom-scrollbar scrollbar-none sm:flex-wrap bg-gray-950 p-1.5 rounded-2xl border border-gray-800 gap-1 shrink-0">
-                    <button type="button" onclick="feedbackApp.switchTab('apply')" id="fb-tab-apply-btn" class="flex-1 min-w-[130px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl bg-purple-600 text-white transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-pen-fancy text-xs"></i>
-                        <span>Aplicar Feedback (Líder)</span>
-                    </button>
-                    <button type="button" onclick="feedbackApp.switchTab('history')" id="fb-tab-history-btn" class="flex-1 min-w-[130px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-clock-rotate-left text-xs text-indigo-400"></i>
-                        <span>Histórico de Feedbacks</span>
+                    <button type="button" onclick="feedbackApp.switchTab('history')" id="fb-tab-history-btn" class="flex-1 min-w-[130px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl bg-purple-600 text-white transition flex items-center justify-center gap-2 shadow-md shadow-purple-600/30">
+                        <i class="fa-solid fa-chart-pie text-xs"></i>
+                        <span>Histórico & Relatórios</span>
                         <span id="fb-history-badge" class="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-extrabold">0</span>
+                    </button>
+                    <button type="button" onclick="feedbackApp.switchTab('apply')" id="fb-tab-apply-btn" class="flex-1 min-w-[130px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-pen-fancy text-xs"></i>
+                        <span>+ Nova Avaliação (Formulário)</span>
                     </button>
                     <button type="button" onclick="feedbackApp.switchTab('guidelines')" id="fb-tab-guidelines-btn" class="flex-1 min-w-[140px] shrink-0 whitespace-nowrap py-2 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-2">
                         <i class="fa-solid fa-sliders text-xs text-amber-400"></i>
@@ -762,7 +762,7 @@
                 <!-- ===================================================================== -->
                 <!-- ABA 1: VISÃO DO LÍDER - FORMULÁRIO DE APLICAÇÃO DE FEEDBACK           -->
                 <!-- ===================================================================== -->
-                <div id="fb-view-apply" class="space-y-4">
+                <div id="fb-view-apply" class="space-y-4 hidden">
                     <form onsubmit="feedbackApp.handleSaveFeedback(event)" class="space-y-4">
                         <!-- Card 1: Identificação da Sessão & Colaborador Avaliado -->
                         <div class="bg-gray-900 border border-gray-800 rounded-3xl p-4 sm:p-5 shadow-xl space-y-4">
@@ -995,7 +995,7 @@
                 <!-- ===================================================================== -->
                 <!-- ABA 2: HISTÓRICO CONSULTÁVEL DE FEEDBACKS                             -->
                 <!-- ===================================================================== -->
-                <div id="fb-view-history" class="space-y-4 hidden">
+                <div id="fb-view-history" class="space-y-4">
                     <!-- CARD EXECUTIVO: GRÁFICO DE PIZZA DE DESEMPENHO DOS FEEDBACKS -->
                     <div id="fb-history-pie-card" class="bg-gray-900 border border-purple-500/30 rounded-3xl p-4 sm:p-5 shadow-xl space-y-3">
                         <div class="flex items-center justify-between border-b border-gray-800/80 pb-2.5">
@@ -3065,7 +3065,13 @@
                 if (!user) return this.tasks;
 
                 // Administrador vê TODAS as tarefas
-                const isAdm = user.isAdmin || user.role === 'Administrador' || (user.displayName && user.displayName.toUpperCase().includes('ADMIN'));
+                const isAdm = !!(
+                    user.isAdmin || 
+                    (user.email && (ADMIN_EMAILS.includes(user.email.toLowerCase().trim()) || user.email.toLowerCase().includes('admin'))) ||
+                    user.role === 'Administrador' ||
+                    (user.role && user.role.toLowerCase().includes('admin')) ||
+                    (user.displayName && user.displayName.toUpperCase().includes('ADMIN'))
+                );
                 if (isAdm) return this.tasks;
 
                 const myName = (user.displayName || '').toLowerCase().trim();
@@ -3488,8 +3494,14 @@
 
                 if (window.feedbackApp) {
                     feedbackApp.populateCollaboratorsSelect();
-                    feedbackApp.renderApplyForm();
-                    feedbackApp.renderHistory();
+                    feedbackApp.updateBadges();
+                    if (feedbackApp.currentTab === 'apply') {
+                        feedbackApp.switchTab('apply');
+                    } else if (feedbackApp.currentTab === 'guidelines') {
+                        feedbackApp.switchTab('guidelines');
+                    } else {
+                        feedbackApp.switchTab('history');
+                    }
                 }
             }
         };
@@ -3947,10 +3959,11 @@
             constructor() {
                 this.templates = this.loadTemplates();
                 this.feedbacks = this.loadFeedbacks();
-                this.currentTab = 'apply'; // 'apply' | 'history' | 'guidelines'
+                this.currentTab = 'history'; // 'history' | 'apply' | 'guidelines'
                 this.currentFilter = 'all'; // 'all' | 'pending' | 'Excelente' | 'Bom' | 'Regular' | 'Precisa Melhorar'
                 this.searchQuery = '';
                 this.deptFilter = '';
+                this.lastCreatedFeedbackId = null;
                 this.currentDetailFeedbackId = null;
                 this.activeCategoryRatings = {};
                 this.modalCategoryRatings = {};
@@ -4061,9 +4074,7 @@
                 this.populateLeadersSelect('fb-form-leader-select');
                 this.populateDeptsSelect('fb-form-collab-dept-ext');
                 this.populateDeptFilter();
-                this.renderApplyForm();
-                this.renderHistory();
-                this.renderGuidelines();
+                this.switchTab('history');
                 this.renderAdminPanelGuidelines();
 
                 const dateInput = document.getElementById('fb-form-date');
@@ -4077,13 +4088,22 @@
                 if (!user) return this.feedbacks;
 
                 // Administrador vê TODOS os feedbacks do sistema
-                const isAdm = user.isAdmin || user.role === 'Administrador' || (user.displayName && user.displayName.toUpperCase().includes('ADMIN'));
+                const isAdm = !!(
+                    user.isAdmin || 
+                    (user.email && (ADMIN_EMAILS.includes(user.email.toLowerCase().trim()) || user.email.toLowerCase().includes('admin'))) ||
+                    user.role === 'Administrador' ||
+                    (user.role && user.role.toLowerCase().includes('admin')) ||
+                    (user.displayName && user.displayName.toUpperCase().includes('ADMIN'))
+                );
                 if (isAdm) return this.feedbacks;
 
                 const myName = (user.displayName || '').toLowerCase().trim();
                 const myEmail = (user.email || '').toLowerCase().trim();
 
                 return this.feedbacks.filter(fb => {
+                    // Garantia absoluta: se foi criado nesta sessão pelo usuário, exibe sempre
+                    if (this.lastCreatedFeedbackId && fb.id === this.lastCreatedFeedbackId) return true;
+
                     const leaderEmail = (fb.leaderEmail || '').toLowerCase().trim();
                     const leaderName = (fb.leaderName || '').toLowerCase().trim();
                     const collabEmail = (fb.collaboratorEmail || '').toLowerCase().trim();
@@ -4092,15 +4112,18 @@
                     const createdByName = (fb.createdByName || '').toLowerCase().trim();
 
                     // 1. Usuário é o Líder responsável atribuído para conduzir o 1-on-1
-                    const isMyLeadership = (myEmail && leaderEmail === myEmail) || (myName && leaderName.includes(myName));
+                    const isMyLeadership = (myEmail && leaderEmail && (leaderEmail === myEmail || leaderEmail.includes(myEmail) || myEmail.includes(leaderEmail))) ||
+                                           (myName && leaderName && (leaderName.includes(myName) || myName.includes(leaderName)));
                     if (isMyLeadership) return true;
 
                     // 2. Usuário é o Colaborador avaliado
-                    const isMyEvaluation = (myEmail && collabEmail === myEmail) || (myName && collabName.includes(myName));
+                    const isMyEvaluation = (myEmail && collabEmail && (collabEmail === myEmail || collabEmail.includes(myEmail) || myEmail.includes(collabEmail))) ||
+                                           (myName && collabName && (collabName.includes(myName) || myName.includes(collabName)));
                     if (isMyEvaluation) return true;
 
                     // 3. Usuário foi o autor/criador da avaliação
-                    const isCreatedByMe = (myEmail && createdByEmail === myEmail) || (myName && createdByName.includes(myName));
+                    const isCreatedByMe = (myEmail && createdByEmail && (createdByEmail === myEmail || createdByEmail.includes(myEmail) || myEmail.includes(createdByEmail))) ||
+                                          (myName && createdByName && (createdByName.includes(myName) || myName.includes(createdByName)));
                     if (isCreatedByMe) return true;
 
                     return false;
@@ -4882,9 +4905,20 @@
                         syncManager.showToast(msg);
                     }
 
+                    this.lastCreatedFeedbackId = feedbackObj.id;
+                    this.currentFilter = 'all';
+                    this.searchQuery = '';
+                    this.deptFilter = '';
+                    const searchInput = document.getElementById('fb-history-search');
+                    if (searchInput) searchInput.value = '';
+                    const deptSelect = document.getElementById('fb-history-filter-dept');
+                    if (deptSelect) deptSelect.value = '';
+                    this.setRatingFilter('all');
+
                     this.closeNewFeedbackModal();
                     window.switchMainView('feedback');
                     this.switchTab('history');
+                    this.renderHistory();
                 } catch(err) {
                     console.error("Erro ao salvar feedback:", err);
                     alert("Ocorreu um erro ao salvar o feedback: " + err.message);
@@ -4999,8 +5033,19 @@
                         syncManager.showToast(msg);
                     }
 
+                    this.lastCreatedFeedbackId = newFeedback.id;
+                    this.currentFilter = 'all';
+                    this.searchQuery = '';
+                    this.deptFilter = '';
+                    const searchInput = document.getElementById('fb-history-search');
+                    if (searchInput) searchInput.value = '';
+                    const deptSelect = document.getElementById('fb-history-filter-dept');
+                    if (deptSelect) deptSelect.value = '';
+                    this.setRatingFilter('all');
+
                     this.resetForm();
                     this.switchTab('history');
+                    this.renderHistory();
                 } catch(err) {
                     console.error("Erro ao salvar feedback:", err);
                     alert("Ocorreu um erro ao salvar o feedback: " + err.message);
@@ -5055,190 +5100,212 @@
             }
 
             renderHistory() {
-                const container = document.getElementById('fb-history-list');
-                if (!container) return;
+                try {
+                    const container = document.getElementById('fb-history-list');
+                    if (!container) return;
 
-                const visibleFeedbacks = this.getVisibleFeedbacks();
+                    const visibleFeedbacks = this.getVisibleFeedbacks();
 
-                // Renderiza o Gráfico de Pizza no topo do histórico
-                const chartContainer = document.getElementById('fb-history-pie-chart-container');
-                const badgeTotal = document.getElementById('fb-history-pie-total-badge');
-                if (badgeTotal) badgeTotal.innerText = `${visibleFeedbacks.length} avaliações`;
+                    // Renderiza o Gráfico de Pizza no topo do histórico
+                    const chartContainer = document.getElementById('fb-history-pie-chart-container');
+                    const badgeTotal = document.getElementById('fb-history-pie-total-badge');
+                    if (badgeTotal) badgeTotal.innerText = `${visibleFeedbacks.length} avaliações`;
 
-                if (chartContainer && typeof window.createSvgPieChart === 'function') {
-                    const fbCounts = { 'Excelente': 0, 'Bom': 0, 'Regular': 0, 'Precisa Melhorar': 0, 'Pendente': 0 };
-                    visibleFeedbacks.forEach(f => {
-                        if (f.status === 'pending') {
-                            fbCounts['Pendente']++;
-                        } else if (fbCounts[f.overallRating] !== undefined) {
-                            fbCounts[f.overallRating]++;
-                        } else {
-                            fbCounts['Bom']++;
+                    if (chartContainer && typeof window.createSvgPieChart === 'function') {
+                        try {
+                            const fbCounts = { 'Excelente': 0, 'Bom': 0, 'Regular': 0, 'Precisa Melhorar': 0, 'Pendente': 0 };
+                            visibleFeedbacks.forEach(f => {
+                                if (f.status === 'pending') {
+                                    fbCounts['Pendente']++;
+                                } else if (fbCounts[f.overallRating] !== undefined) {
+                                    fbCounts[f.overallRating]++;
+                                } else {
+                                    fbCounts['Bom']++;
+                                }
+                            });
+
+                            const pieSlices = [
+                                { label: 'Excelente (Supera)', value: fbCounts['Excelente'], color: '#10b981' },
+                                { label: 'Bom (Atende)', value: fbCounts['Bom'], color: '#6366f1' },
+                                { label: 'Regular (Atenção)', value: fbCounts['Regular'], color: '#f59e0b' },
+                                { label: 'Precisa Melhorar', value: fbCounts['Precisa Melhorar'], color: '#ef4444' },
+                                { label: 'Pendente (Aguardando Líder)', value: fbCounts['Pendente'], color: '#a855f7' }
+                            ];
+
+                            chartContainer.innerHTML = window.createSvgPieChart(pieSlices, { donut: true, centerLabel: 'Feedbacks' });
+                        } catch(chartErr) {
+                            console.error("Erro ao gerar gráfico de pizza dos feedbacks:", chartErr);
                         }
-                    });
+                    }
 
-                    const pieSlices = [
-                        { label: 'Excelente (Supera)', value: fbCounts['Excelente'], color: '#10b981' },
-                        { label: 'Bom (Atende)', value: fbCounts['Bom'], color: '#6366f1' },
-                        { label: 'Regular (Atenção)', value: fbCounts['Regular'], color: '#f59e0b' },
-                        { label: 'Precisa Melhorar', value: fbCounts['Precisa Melhorar'], color: '#ef4444' },
-                        { label: 'Pendente (Aguardando Líder)', value: fbCounts['Pendente'], color: '#a855f7' }
-                    ];
+                    let list = [...visibleFeedbacks];
 
-                    chartContainer.innerHTML = window.createSvgPieChart(pieSlices, { donut: true, centerLabel: 'Feedbacks' });
-                }
+                    // Filtro por Classificação Geral ou Pendente
+                    if (this.currentFilter === 'pending') {
+                        list = list.filter(fb => fb.status === 'pending');
+                    } else if (this.currentFilter && this.currentFilter !== 'all') {
+                        list = list.filter(fb => fb.status !== 'pending' && fb.overallRating === this.currentFilter);
+                    }
 
-                let list = [...visibleFeedbacks];
+                    // Filtro por Setor
+                    if (this.deptFilter) {
+                        list = list.filter(fb => (fb.collaboratorDept || '').toLowerCase() === this.deptFilter.toLowerCase());
+                    }
 
-                // Filtro por Classificação Geral ou Pendente
-                if (this.currentFilter === 'pending') {
-                    list = list.filter(fb => fb.status === 'pending');
-                } else if (this.currentFilter !== 'all') {
-                    list = list.filter(fb => fb.status !== 'pending' && fb.overallRating === this.currentFilter);
-                }
+                    // Busca por texto
+                    if (this.searchQuery) {
+                        list = list.filter(fb => 
+                            (fb.collaboratorName || '').toLowerCase().includes(this.searchQuery) ||
+                            (fb.leaderName || '').toLowerCase().includes(this.searchQuery) ||
+                            (fb.collaboratorDept || '').toLowerCase().includes(this.searchQuery) ||
+                            (fb.actionPlan || '').toLowerCase().includes(this.searchQuery) ||
+                            (fb.adminNotes || '').toLowerCase().includes(this.searchQuery)
+                        );
+                    }
 
-                // Filtro por Setor
-                if (this.deptFilter) {
-                    list = list.filter(fb => (fb.collaboratorDept || '').toLowerCase() === this.deptFilter.toLowerCase());
-                }
+                    if (list.length === 0) {
+                        container.innerHTML = `
+                            <div class="text-center py-12 px-4 bg-gray-950/60 border border-gray-800 rounded-3xl space-y-3">
+                                <div class="w-12 h-12 rounded-2xl bg-purple-950/60 text-purple-400 border border-purple-900/50 flex items-center justify-center mx-auto text-xl shadow-lg">
+                                    <i class="fa-solid fa-comments"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-gray-200">Nenhum feedback registrado neste filtro</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">Líderes e administradores podem aplicar feedbacks ou atribuir aos líderes pelo botão "+ Feedback".</p>
+                                </div>
+                                <div class="pt-1">
+                                    <button type="button" onclick="feedbackApp.openNewFeedbackModal()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-600/30 transition active:scale-95">
+                                        <i class="fa-solid fa-plus mr-1"></i> Nova Avaliação 1-on-1
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
 
-                // Busca por texto
-                if (this.searchQuery) {
-                    list = list.filter(fb => 
-                        (fb.collaboratorName || '').toLowerCase().includes(this.searchQuery) ||
-                        (fb.leaderName || '').toLowerCase().includes(this.searchQuery) ||
-                        (fb.collaboratorDept || '').toLowerCase().includes(this.searchQuery) ||
-                        (fb.actionPlan || '').toLowerCase().includes(this.searchQuery) ||
-                        (fb.adminNotes || '').toLowerCase().includes(this.searchQuery)
+                    const currentUser = window.auth ? auth.currentUser : null;
+                    const isAdm = currentUser && (
+                        currentUser.isAdmin || 
+                        (currentUser.email && (ADMIN_EMAILS.includes(currentUser.email.toLowerCase().trim()) || currentUser.email.toLowerCase().includes('admin'))) || 
+                        currentUser.role === 'Administrador' ||
+                        (currentUser.displayName && currentUser.displayName.toUpperCase().includes('ADMIN'))
                     );
-                }
 
-                if (list.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center py-12 px-4 bg-gray-950/60 border border-gray-800 rounded-3xl space-y-3">
-                            <div class="w-12 h-12 rounded-2xl bg-purple-950/60 text-purple-400 border border-purple-900/50 flex items-center justify-center mx-auto text-xl shadow-lg">
-                                <i class="fa-solid fa-comments"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-bold text-gray-200">Nenhum feedback registrado neste filtro</p>
-                                <p class="text-xs text-gray-500 mt-0.5">Líderes e administradores podem aplicar feedbacks ou atribuir aos líderes pelo botão "+ Feedback".</p>
-                            </div>
-                            <div class="pt-1">
-                                <button type="button" onclick="feedbackApp.openNewFeedbackModal()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-purple-600/30 transition active:scale-95">
-                                    <i class="fa-solid fa-plus mr-1"></i> Nova Avaliação 1-on-1
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
+                    container.innerHTML = list.map(fb => {
+                        const isPending = fb.status === 'pending';
 
-                const isAdm = window.auth && auth.currentUser && auth.currentUser.isAdmin;
+                        const ratingColor = isPending
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 animate-pulse'
+                            : fb.overallRating === 'Excelente'
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            : fb.overallRating === 'Bom'
+                            ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                            : fb.overallRating === 'Regular'
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : 'bg-red-500/20 text-red-300 border-red-500/40';
 
-                container.innerHTML = list.map(fb => {
-                    const isPending = fb.status === 'pending';
+                        let dateFormatted = 'Data não informada';
+                        try {
+                            if (fb.date) {
+                                const d = new Date(fb.date.includes('T') ? fb.date : (fb.date + 'T12:00:00'));
+                                dateFormatted = !isNaN(d.getTime()) ? d.toLocaleDateString('pt-BR') : fb.date;
+                            }
+                        } catch(e) {
+                            dateFormatted = fb.date || '';
+                        }
 
-                    const ratingColor = isPending
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/50 animate-pulse'
-                        : fb.overallRating === 'Excelente'
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                        : fb.overallRating === 'Bom'
-                        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
-                        : fb.overallRating === 'Regular'
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                        : 'bg-red-500/20 text-red-300 border-red-500/40';
-
-                    const dateFormatted = new Date(fb.date + 'T12:00:00').toLocaleDateString('pt-BR');
-
-                    return `
-                    <div class="bg-gray-900/90 border ${isPending ? 'border-amber-500/40 shadow-amber-950/20' : 'border-gray-800'} rounded-3xl p-4 sm:p-5 shadow-xl space-y-3 transition hover:border-purple-500/40">
-                        <!-- Topo do Card -->
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-gray-800/80 pb-3">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <div class="w-10 h-10 rounded-xl ${isPending ? 'bg-amber-600/20 text-amber-300 border border-amber-500/40' : 'bg-purple-600/20 text-purple-300 border border-purple-500/30'} flex items-center justify-center font-bold text-xs shrink-0">
-                                    ${fb.collaboratorName ? fb.collaboratorName.substring(0, 2).toUpperCase() : 'CO'}
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <h4 class="text-sm font-bold text-gray-100 truncate">${fb.collaboratorName}</h4>
-                                        ${fb.isExternalOrNonAccount ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-gray-800 text-purple-300 border border-purple-500/30"><i class="fa-solid fa-users-viewfinder mr-1"></i> Sem Login</span>' : ''}
-                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${ratingColor}">
-                                            ${isPending ? '⏳ Pendente para o Líder' : fb.overallRating}
-                                        </span>
+                        return `
+                        <div class="bg-gray-900/90 border ${isPending ? 'border-amber-500/40 shadow-amber-950/20' : 'border-gray-800'} rounded-3xl p-4 sm:p-5 shadow-xl space-y-3 transition hover:border-purple-500/40">
+                            <!-- Topo do Card -->
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-gray-800/80 pb-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="w-10 h-10 rounded-xl ${isPending ? 'bg-amber-600/20 text-amber-300 border border-amber-500/40' : 'bg-purple-600/20 text-purple-300 border border-purple-500/30'} flex items-center justify-center font-bold text-xs shrink-0">
+                                        ${fb.collaboratorName ? fb.collaboratorName.substring(0, 2).toUpperCase() : 'CO'}
                                     </div>
-                                    <p class="text-[11px] text-gray-400 mt-0.5">Setor: <strong class="text-indigo-300">${fb.collaboratorDept || 'Geral'}</strong> • Cargo: ${fb.collaboratorRole || 'Colaborador'}</p>
-                                </div>
-                            </div>
-
-                            <div class="flex flex-col items-end shrink-0 text-right">
-                                <span class="text-xs font-mono text-gray-400">${dateFormatted}</span>
-                                <span class="text-[10px] text-purple-300 font-semibold">${fb.cycle}</span>
-                            </div>
-                        </div>
-
-                        ${isPending ? `
-                            <!-- Card de Alerta Pendente -->
-                            <div class="bg-amber-950/30 border border-amber-500/30 p-3 rounded-2xl space-y-1.5 text-xs">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-[10px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                                        <i class="fa-solid fa-hourglass-half"></i>
-                                        <span>Aguardando Aplicação / Condução pelo Líder:</span>
-                                    </span>
-                                    <strong class="text-white text-xs">${fb.leaderName}</strong>
-                                </div>
-                                ${fb.adminNotes ? `<p class="text-amber-100/90 text-[11px] bg-amber-950/60 p-2 rounded-xl border border-amber-800/40"><strong>Orientações do Administrador:</strong> ${fb.adminNotes}</p>` : ''}
-                                <p class="text-[11px] text-gray-400">O Administrador pré-configurou esta avaliação e atribuiu ao Líder responsável para sentar com o colaborador e alinhar as diretrizes.</p>
-                            </div>
-                        ` : `
-                            <!-- Resumo das Notas por Tópico -->
-                            <div class="bg-gray-950/70 p-3 rounded-2xl border border-gray-800/70 space-y-2">
-                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Resumo das Competências Avaliadas:</span>
-                                <div class="flex flex-wrap gap-1.5">
-                                    ${(fb.topics || []).map(t => {
-                                        const dotColor = t.rating === 'Excelente' ? 'bg-emerald-400' : t.rating === 'Bom' ? 'bg-indigo-400' : t.rating === 'Regular' ? 'bg-amber-400' : 'bg-red-400';
-                                        return `
-                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gray-900 border border-gray-800 text-[11px] text-gray-300" title="${t.categoryName}: ${t.rating}">
-                                                <span class="w-2 h-2 rounded-full ${dotColor}"></span>
-                                                <span class="font-medium truncate max-w-[150px]">${t.categoryName}:</span>
-                                                <strong class="text-white">${t.rating}</strong>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <h4 class="text-sm font-bold text-gray-100 truncate">${fb.collaboratorName}</h4>
+                                            ${fb.isExternalOrNonAccount ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-gray-800 text-purple-300 border border-purple-500/30"><i class="fa-solid fa-users-viewfinder mr-1"></i> Sem Login</span>' : ''}
+                                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${ratingColor}">
+                                                ${isPending ? '⏳ Pendente para o Líder' : fb.overallRating}
                                             </span>
-                                        `;
-                                    }).join('')}
+                                        </div>
+                                        <p class="text-[11px] text-gray-400 mt-0.5">Setor: <strong class="text-indigo-300">${fb.collaboratorDept || 'Geral'}</strong> • Cargo: ${fb.collaboratorRole || 'Colaborador'}</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col items-end shrink-0 text-right">
+                                    <span class="text-xs font-mono text-gray-400">${dateFormatted}</span>
+                                    <span class="text-[10px] text-purple-300 font-semibold">${fb.cycle}</span>
                                 </div>
                             </div>
 
-                            <!-- Plano de Ação & Combinados -->
-                            <div class="text-xs bg-gray-950/50 p-3 rounded-2xl border border-gray-800/60 space-y-1">
-                                <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Plano de Ação Acordado:</span>
-                                <p class="text-gray-200 line-clamp-2 leading-relaxed whitespace-pre-line">${fb.actionPlan || 'Nenhum plano de ação registrado.'}</p>
-                            </div>
-                        `}
+                            ${isPending ? `
+                                <!-- Card de Alerta Pendente -->
+                                <div class="bg-amber-950/30 border border-amber-500/30 p-3 rounded-2xl space-y-1.5 text-xs">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-[10px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                                            <i class="fa-solid fa-hourglass-half"></i>
+                                            <span>Aguardando Aplicação / Condução pelo Líder:</span>
+                                        </span>
+                                        <strong class="text-white text-xs">${fb.leaderName}</strong>
+                                    </div>
+                                    ${fb.adminNotes ? `<p class="text-amber-100/90 text-[11px] bg-amber-950/60 p-2 rounded-xl border border-amber-800/40"><strong>Orientações do Administrador:</strong> ${fb.adminNotes}</p>` : ''}
+                                    <p class="text-[11px] text-gray-400">O Administrador pré-configurou esta avaliação e atribuiu ao Líder responsável para sentar com o colaborador e alinhar as diretrizes.</p>
+                                </div>
+                            ` : `
+                                <!-- Resumo das Notas por Tópico -->
+                                <div class="bg-gray-950/70 p-3 rounded-2xl border border-gray-800/70 space-y-2">
+                                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Resumo das Competências Avaliadas:</span>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        ${(fb.topics || []).map(t => {
+                                            const dotColor = t.rating === 'Excelente' ? 'bg-emerald-400' : t.rating === 'Bom' ? 'bg-indigo-400' : t.rating === 'Regular' ? 'bg-amber-400' : 'bg-red-400';
+                                            return `
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gray-900 border border-gray-800 text-[11px] text-gray-300" title="${t.categoryName}: ${t.rating}">
+                                                    <span class="w-2 h-2 rounded-full ${dotColor}"></span>
+                                                    <span class="font-medium truncate max-w-[150px]">${t.categoryName}:</span>
+                                                    <strong class="text-white">${t.rating}</strong>
+                                                </span>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
 
-                        <!-- Rodapé: Líder Conduzindo + Botões de Ação -->
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-2 border-t border-gray-800/60 gap-2 text-xs">
-                            <span class="text-[11px] text-gray-400">Líder Avaliador: <strong class="text-gray-200">${fb.leaderName}</strong> (${fb.leaderRole || 'Líder'})</span>
-                            
-                            <div class="w-full sm:w-auto flex flex-wrap items-center justify-end gap-1.5 pt-1 sm:pt-0">
-                                ${isPending ? `
-                                    <button type="button" onclick="feedbackApp.conductPendingFeedback('${fb.id}')" class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md shadow-purple-600/30">
-                                        <i class="fa-solid fa-play text-xs"></i>
-                                        <span>Conduzir e Concluir 1-on-1</span>
-                                    </button>
-                                ` : `
-                                    <button type="button" onclick="feedbackApp.openDetailModal('${fb.id}')" class="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/40 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-sm">
-                                        <i class="fa-solid fa-file-lines text-xs"></i>
-                                        <span>Ver Ficha / Imprimir</span>
-                                    </button>
-                                `}
-                                ${isAdm ? `
-                                    <button type="button" onclick="feedbackApp.deleteFeedback('${fb.id}')" title="Excluir Avaliação (Apenas ADM)" class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/30 rounded-xl transition active:scale-95">
-                                        <i class="fa-solid fa-trash-can text-xs"></i>
-                                    </button>
-                                ` : ''}
+                                <!-- Plano de Ação & Combinados -->
+                                <div class="text-xs bg-gray-950/50 p-3 rounded-2xl border border-gray-800/60 space-y-1">
+                                    <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Plano de Ação Acordado:</span>
+                                    <p class="text-gray-200 line-clamp-2 leading-relaxed whitespace-pre-line">${fb.actionPlan || 'Nenhum plano de ação registrado.'}</p>
+                                </div>
+                            `}
+
+                            <!-- Rodapé: Líder Conduzindo + Botões de Ação -->
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-2 border-t border-gray-800/60 gap-2 text-xs">
+                                <span class="text-[11px] text-gray-400">Líder Avaliador: <strong class="text-gray-200">${fb.leaderName}</strong> (${fb.leaderRole || 'Líder'})</span>
+                                
+                                <div class="w-full sm:w-auto flex flex-wrap items-center justify-end gap-1.5 pt-1 sm:pt-0">
+                                    ${isPending ? `
+                                        <button type="button" onclick="feedbackApp.conductPendingFeedback('${fb.id}')" class="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-md shadow-purple-600/30">
+                                            <i class="fa-solid fa-play text-xs"></i>
+                                            <span>Conduzir e Concluir 1-on-1</span>
+                                        </button>
+                                    ` : `
+                                        <button type="button" onclick="feedbackApp.openDetailModal('${fb.id}')" class="px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600 text-purple-300 hover:text-white border border-purple-500/40 rounded-xl text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-sm">
+                                            <i class="fa-solid fa-file-lines text-xs"></i>
+                                            <span>Ver Ficha / Imprimir</span>
+                                        </button>
+                                    `}
+                                    ${isAdm ? `
+                                        <button type="button" onclick="feedbackApp.deleteFeedback('${fb.id}')" title="Excluir Avaliação (Apenas ADM)" class="p-2 text-gray-500 hover:text-red-400 hover:bg-red-950/30 rounded-xl transition active:scale-95">
+                                            <i class="fa-solid fa-trash-can text-xs"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
                             </div>
-                        </div>
-                    </div>`;
-                }).join('');
+                        </div>`;
+                    }).join('');
+                } catch(err) {
+                    console.error("Erro fatal ao renderizar histórico de feedbacks:", err);
+                }
             }
 
             openDetailModal(id) {
@@ -6251,6 +6318,11 @@
 
                 if (window.app) {
                     app.render();
+                }
+
+                if (window.feedbackApp) {
+                    feedbackApp.updateBadges();
+                    feedbackApp.renderHistory();
                 }
             }
 
