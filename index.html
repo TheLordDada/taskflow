@@ -608,6 +608,10 @@
                         <span>Feedback</span>
                         <span id="topbar-feedback-badge" class="hidden text-[10px] px-1 rounded-full bg-purple-500 text-white font-extrabold ml-0.5">0</span>
                     </button>
+                    <button type="button" id="topbar-switch-reports" onclick="admin.openPanel(); admin.switchTab('reports');" class="px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative" title="Relatórios com Gráficos de Pizza">
+                        <i class="fa-solid fa-chart-pie text-[11px] text-emerald-400"></i>
+                        <span>Relatórios</span>
+                    </button>
                 </div>
             </div>
             
@@ -992,6 +996,24 @@
                 <!-- ABA 2: HISTÓRICO CONSULTÁVEL DE FEEDBACKS                             -->
                 <!-- ===================================================================== -->
                 <div id="fb-view-history" class="space-y-4 hidden">
+                    <!-- CARD EXECUTIVO: GRÁFICO DE PIZZA DE DESEMPENHO DOS FEEDBACKS -->
+                    <div id="fb-history-pie-card" class="bg-gray-900 border border-purple-500/30 rounded-3xl p-4 sm:p-5 shadow-xl space-y-3">
+                        <div class="flex items-center justify-between border-b border-gray-800/80 pb-2.5">
+                            <div class="flex items-center gap-2">
+                                <span class="w-7 h-7 rounded-lg bg-purple-600/20 text-purple-400 border border-purple-500/30 flex items-center justify-center text-xs font-bold">
+                                    <i class="fa-solid fa-chart-pie"></i>
+                                </span>
+                                <div>
+                                    <h4 class="text-xs sm:text-sm font-bold text-gray-100">Gráfico de Desempenho dos Colaboradores</h4>
+                                    <p class="text-[11px] text-gray-400">Distribuição percentual das avaliações e alinhamentos 1-on-1</p>
+                                </div>
+                            </div>
+                            <span id="fb-history-pie-total-badge" class="text-[10px] text-purple-300 font-mono font-bold bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-800/40">0 avaliações</span>
+                        </div>
+                        <div id="fb-history-pie-chart-container">
+                            <!-- Injetado dinamicamente -->
+                        </div>
+                    </div>
                     <!-- Barra de Filtros do Histórico -->
                     <div class="bg-gray-950/90 border border-gray-800 rounded-2xl p-3 sm:p-4 space-y-3 shadow-lg">
                         <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
@@ -2311,6 +2333,107 @@
             return `${year}-${month}-${day}`;
         }
 
+        // =====================================================================
+        // GERADOR UNIVERSAL DE GRÁFICOS DE PIZZA (SVG PURO 100% OFFLINE)
+        // =====================================================================
+        window.createSvgPieChart = function(data, options = {}) {
+            const size = options.size || 220;
+            const cx = size / 2;
+            const cy = size / 2;
+            const r = options.radius || (size / 2 - 16);
+            const innerRadius = options.donut ? (r * 0.55) : 0;
+            
+            const validData = (data || []).filter(item => item && Number(item.value) > 0);
+            const total = validData.reduce((sum, item) => sum + Number(item.value), 0);
+
+            if (total === 0) {
+                return `
+                <div class="flex flex-col items-center justify-center p-6 text-gray-500 bg-gray-950/50 rounded-2xl border border-gray-800 text-xs text-center space-y-1">
+                    <i class="fa-solid fa-chart-pie text-2xl text-gray-600 mb-1"></i>
+                    <span class="font-medium">Nenhum dado registrado neste período.</span>
+                </div>`;
+            }
+
+            let cumulativeAngle = -Math.PI / 2; // Inicia às 12 horas
+            const slicesSvg = [];
+            const legendItems = [];
+
+            validData.forEach((slice) => {
+                const fraction = Number(slice.value) / total;
+                const sliceAngle = fraction * 2 * Math.PI;
+                const percent = Math.round(fraction * 100);
+
+                const startAngle = cumulativeAngle;
+                const endAngle = cumulativeAngle + sliceAngle;
+                cumulativeAngle = endAngle;
+
+                const x1 = cx + r * Math.cos(startAngle);
+                const y1 = cy + r * Math.sin(startAngle);
+                const x2 = cx + r * Math.cos(endAngle);
+                const y2 = cy + r * Math.sin(endAngle);
+
+                const largeArc = sliceAngle > Math.PI ? 1 : 0;
+
+                let pathD = '';
+                if (fraction >= 0.999) {
+                    if (innerRadius > 0) {
+                        pathD = `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} M ${cx} ${cy - innerRadius} A ${innerRadius} ${innerRadius} 0 1 0 ${cx} ${cy + innerRadius} A ${innerRadius} ${innerRadius} 0 1 0 ${cx} ${cy - innerRadius} Z`;
+                    } else {
+                        pathD = `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} Z`;
+                    }
+                } else if (innerRadius > 0) {
+                    const ix1 = cx + innerRadius * Math.cos(endAngle);
+                    const iy1 = cy + innerRadius * Math.sin(endAngle);
+                    const ix2 = cx + innerRadius * Math.cos(startAngle);
+                    const iy2 = cy + innerRadius * Math.sin(startAngle);
+                    pathD = `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} L ${ix1} ${iy1} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${ix2} ${iy2} Z`;
+                } else {
+                    pathD = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                }
+
+                slicesSvg.push(`
+                    <path d="${pathD}" fill="${slice.color}" stroke="#111827" stroke-width="2" class="transition-opacity duration-200 hover:opacity-80">
+                        <title>${slice.label}: ${slice.value} (${percent}%)</title>
+                    </path>
+                `);
+
+                legendItems.push(`
+                    <div class="flex items-center justify-between gap-2 p-1 rounded-lg hover:bg-gray-800/40 transition text-xs">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-3 h-3 rounded-full shrink-0 shadow-sm" style="background-color: ${slice.color};"></span>
+                            <span class="text-gray-200 truncate font-medium">${slice.label}</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
+                            <span class="text-white font-bold">${slice.value}</span>
+                            <span class="text-gray-400 font-semibold">(${percent}%)</span>
+                        </div>
+                    </div>
+                `);
+            });
+
+            return `
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 p-3 bg-gray-950/70 border border-gray-800 rounded-2xl shadow-lg">
+                <div class="relative shrink-0 flex items-center justify-center">
+                    <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" class="drop-shadow-md">
+                        ${slicesSvg.join('')}
+                    </svg>
+                    ${options.donut ? `
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                            <span class="text-[10px] uppercase font-extrabold text-gray-400 tracking-wider">${options.centerLabel || 'Total'}</span>
+                            <span class="text-lg font-black text-white">${total}</span>
+                        </div>
+                    ` : ''}
+                </div>
+                <div class="flex-1 w-full space-y-1 custom-scrollbar max-h-48 overflow-y-auto pr-1">
+                    <div class="text-[10px] uppercase font-bold text-gray-400 tracking-wider pb-1 border-b border-gray-800/80 mb-1 flex items-center justify-between">
+                        <span>Fatias & Legenda</span>
+                        <span class="text-indigo-400 font-mono">${total} total</span>
+                    </div>
+                    ${legendItems.join('')}
+                </div>
+            </div>`;
+        };
+
         // Auto-detecção de APK Android Offline com Internet ativa -> Redireciona para versão online mais recente
         if (window.location.protocol === 'file:' && navigator.onLine) {
             console.log("APK em modo local com conexão ativa. Redirecionando para nuvem...");
@@ -2771,6 +2894,7 @@
                             priority,
                             image: finalImage,
                             authorName,
+                            authorEmail: (auth.currentUser ? auth.currentUser.email : ''),
                             authorRole,
                             completed: false,
                             completedBy: null,
@@ -2936,25 +3060,72 @@
                 document.getElementById('pomo-start-btn').innerText = 'Iniciar';
             }
 
+            getVisibleTasks() {
+                const user = (window.auth && auth.currentUser) ? auth.currentUser : null;
+                if (!user) return this.tasks;
+
+                // Administrador vê TODAS as tarefas
+                const isAdm = user.isAdmin || user.role === 'Administrador' || (user.displayName && user.displayName.toUpperCase().includes('ADMIN'));
+                if (isAdm) return this.tasks;
+
+                const myName = (user.displayName || '').toLowerCase().trim();
+                const myEmail = (user.email || '').toLowerCase().trim();
+
+                return this.tasks.filter(t => {
+                    const assignee = (t.assignee || '').toLowerCase().trim();
+                    const authorName = (t.authorName || '').toLowerCase().trim();
+                    const authorEmail = (t.authorEmail || '').toLowerCase().trim();
+
+                    // 1. Sem definir pessoa a executar (livre para qualquer um / tarefas gerais)
+                    const isUnassigned = !assignee || assignee === '' || assignee === 'todos' || assignee === 'todos da equipe' || assignee === 'livre' || assignee === 'geral';
+                    if (isUnassigned) return true;
+
+                    // 2. Definida para ele
+                    const isAssignedToMe = (myName && assignee.includes(myName)) || (myEmail && assignee.includes(myEmail));
+                    if (isAssignedToMe) return true;
+
+                    // 3. Criada por ele
+                    const isCreatedByMe = (myName && authorName.includes(myName)) || (myEmail && authorEmail === myEmail);
+                    if (isCreatedByMe) return true;
+
+                    return false;
+                });
+            }
+
             render() {
                 const container = document.getElementById('tasks-container');
                 const todayStr = getLocalTodayString();
-                const myName = auth.currentUser ? auth.currentUser.displayName.toLowerCase() : '';
+                const user = (window.auth && auth.currentUser) ? auth.currentUser : null;
+                const myName = user ? (user.displayName || '').toLowerCase().trim() : '';
+                const myEmail = user ? (user.email || '').toLowerCase().trim() : '';
 
-                let filtered = this.tasks.filter(t => {
+                // Lista de tarefas visíveis para o perfil atual (Admin vê tudo; outros veem as suas, criadas por si ou livres)
+                const visibleTasks = this.getVisibleTasks();
+
+                let filtered = visibleTasks.filter(t => {
                     if (this.currentFilter === 'today') return t.date === todayStr;
                     if (this.currentFilter === 'upcoming') return t.date > todayStr;
                     if (this.currentFilter === 'mine') {
-                        return t.assignee && myName && t.assignee.toLowerCase().includes(myName);
+                        const assignee = (t.assignee || '').toLowerCase().trim();
+                        return (myName && assignee.includes(myName)) || (myEmail && assignee.includes(myEmail));
                     }
                     return true;
                 });
 
-                const countMine = this.tasks.filter(t => t.assignee && myName && t.assignee.toLowerCase().includes(myName)).length;
-                document.getElementById('count-all').innerText = this.tasks.length;
-                document.getElementById('count-mine').innerText = countMine;
-                document.getElementById('count-today').innerText = this.tasks.filter(t => t.date === todayStr).length;
-                document.getElementById('count-upcoming').innerText = this.tasks.filter(t => t.date > todayStr).length;
+                const countMine = visibleTasks.filter(t => {
+                    const assignee = (t.assignee || '').toLowerCase().trim();
+                    return (myName && assignee.includes(myName)) || (myEmail && assignee.includes(myEmail));
+                }).length;
+
+                const countAllEl = document.getElementById('count-all');
+                const countMineEl = document.getElementById('count-mine');
+                const countTodayEl = document.getElementById('count-today');
+                const countUpcomingEl = document.getElementById('count-upcoming');
+
+                if (countAllEl) countAllEl.innerText = visibleTasks.length;
+                if (countMineEl) countMineEl.innerText = countMine;
+                if (countTodayEl) countTodayEl.innerText = visibleTasks.filter(t => t.date === todayStr).length;
+                if (countUpcomingEl) countUpcomingEl.innerText = visibleTasks.filter(t => t.date > todayStr).length;
 
                 if(filtered.length === 0) {
                     container.innerHTML = `
@@ -3901,9 +4072,45 @@
                 }
             }
 
+            getVisibleFeedbacks() {
+                const user = (window.auth && auth.currentUser) ? auth.currentUser : null;
+                if (!user) return this.feedbacks;
+
+                // Administrador vê TODOS os feedbacks do sistema
+                const isAdm = user.isAdmin || user.role === 'Administrador' || (user.displayName && user.displayName.toUpperCase().includes('ADMIN'));
+                if (isAdm) return this.feedbacks;
+
+                const myName = (user.displayName || '').toLowerCase().trim();
+                const myEmail = (user.email || '').toLowerCase().trim();
+
+                return this.feedbacks.filter(fb => {
+                    const leaderEmail = (fb.leaderEmail || '').toLowerCase().trim();
+                    const leaderName = (fb.leaderName || '').toLowerCase().trim();
+                    const collabEmail = (fb.collaboratorEmail || '').toLowerCase().trim();
+                    const collabName = (fb.collaboratorName || '').toLowerCase().trim();
+                    const createdByEmail = (fb.createdByEmail || '').toLowerCase().trim();
+                    const createdByName = (fb.createdByName || '').toLowerCase().trim();
+
+                    // 1. Usuário é o Líder responsável atribuído para conduzir o 1-on-1
+                    const isMyLeadership = (myEmail && leaderEmail === myEmail) || (myName && leaderName.includes(myName));
+                    if (isMyLeadership) return true;
+
+                    // 2. Usuário é o Colaborador avaliado
+                    const isMyEvaluation = (myEmail && collabEmail === myEmail) || (myName && collabName.includes(myName));
+                    if (isMyEvaluation) return true;
+
+                    // 3. Usuário foi o autor/criador da avaliação
+                    const isCreatedByMe = (myEmail && createdByEmail === myEmail) || (myName && createdByName.includes(myName));
+                    if (isCreatedByMe) return true;
+
+                    return false;
+                });
+            }
+
             updateBadges() {
-                const count = this.feedbacks.length;
-                const pendingCount = this.feedbacks.filter(f => f.status === 'pending').length;
+                const visible = this.getVisibleFeedbacks();
+                const count = visible.length;
+                const pendingCount = visible.filter(f => f.status === 'pending').length;
 
                 const b1 = document.getElementById('fb-history-badge');
                 const b2 = document.getElementById('feedback-badge');
@@ -4622,6 +4829,7 @@
                     const followUpDate = document.getElementById('fb-modal-follow-up').value;
                     const adminNotes = isAssign ? (document.getElementById('fb-modal-assign-notes') ? document.getElementById('fb-modal-assign-notes').value.trim() : '') : '';
 
+                    const currentUser = window.auth ? auth.currentUser : null;
                     const feedbackObj = {
                         id: this.editingPendingFeedbackId || ('fb_' + Date.now()),
                         createdAt: Date.now(),
@@ -4635,6 +4843,10 @@
                         leaderName: leaderName,
                         leaderEmail: leaderEmail,
                         leaderRole: leaderRole,
+                        createdByEmail: currentUser ? currentUser.email : '',
+                        createdByName: currentUser ? currentUser.displayName : 'Administrador',
+                        createdByRole: currentUser ? (currentUser.role || (currentUser.isAdmin ? 'Administrador' : 'Líder')) : 'Administrador',
+                        createdByAdmin: currentUser ? !!(currentUser.isAdmin || currentUser.role === 'Administrador') : true,
                         assignedByAdmin: isAssign || !!this.editingPendingFeedbackId,
                         status: isAssign ? 'pending' : 'completed',
                         adminNotes: adminNotes,
@@ -4744,6 +4956,7 @@
                     const agreement = document.getElementById('fb-form-agreement').checked;
                     const adminNotes = isAssign ? (document.getElementById('fb-form-assign-notes') ? document.getElementById('fb-form-assign-notes').value.trim() : '') : '';
 
+                    const currentUserForm = window.auth ? auth.currentUser : null;
                     const newFeedback = {
                         id: 'fb_' + Date.now(),
                         createdAt: Date.now(),
@@ -4757,6 +4970,10 @@
                         leaderName: leaderName,
                         leaderEmail: leaderEmail,
                         leaderRole: leaderRole,
+                        createdByEmail: currentUserForm ? currentUserForm.email : '',
+                        createdByName: currentUserForm ? currentUserForm.displayName : 'Administrador',
+                        createdByRole: currentUserForm ? (currentUserForm.role || (currentUserForm.isAdmin ? 'Administrador' : 'Líder')) : 'Administrador',
+                        createdByAdmin: currentUserForm ? !!(currentUserForm.isAdmin || currentUserForm.role === 'Administrador') : true,
                         assignedByAdmin: isAssign,
                         status: isAssign ? 'pending' : 'completed',
                         adminNotes: adminNotes,
@@ -4841,7 +5058,37 @@
                 const container = document.getElementById('fb-history-list');
                 if (!container) return;
 
-                let list = [...this.feedbacks];
+                const visibleFeedbacks = this.getVisibleFeedbacks();
+
+                // Renderiza o Gráfico de Pizza no topo do histórico
+                const chartContainer = document.getElementById('fb-history-pie-chart-container');
+                const badgeTotal = document.getElementById('fb-history-pie-total-badge');
+                if (badgeTotal) badgeTotal.innerText = `${visibleFeedbacks.length} avaliações`;
+
+                if (chartContainer && typeof window.createSvgPieChart === 'function') {
+                    const fbCounts = { 'Excelente': 0, 'Bom': 0, 'Regular': 0, 'Precisa Melhorar': 0, 'Pendente': 0 };
+                    visibleFeedbacks.forEach(f => {
+                        if (f.status === 'pending') {
+                            fbCounts['Pendente']++;
+                        } else if (fbCounts[f.overallRating] !== undefined) {
+                            fbCounts[f.overallRating]++;
+                        } else {
+                            fbCounts['Bom']++;
+                        }
+                    });
+
+                    const pieSlices = [
+                        { label: 'Excelente (Supera)', value: fbCounts['Excelente'], color: '#10b981' },
+                        { label: 'Bom (Atende)', value: fbCounts['Bom'], color: '#6366f1' },
+                        { label: 'Regular (Atenção)', value: fbCounts['Regular'], color: '#f59e0b' },
+                        { label: 'Precisa Melhorar', value: fbCounts['Precisa Melhorar'], color: '#ef4444' },
+                        { label: 'Pendente (Aguardando Líder)', value: fbCounts['Pendente'], color: '#a855f7' }
+                    ];
+
+                    chartContainer.innerHTML = window.createSvgPieChart(pieSlices, { donut: true, centerLabel: 'Feedbacks' });
+                }
+
+                let list = [...visibleFeedbacks];
 
                 // Filtro por Classificação Geral ou Pendente
                 if (this.currentFilter === 'pending') {
@@ -6651,6 +6898,72 @@
                     occsBySector[sec].push(o);
                 });
 
+                // PREPARAÇÃO DOS DADOS PARA OS GRÁFICOS DE PIZZA (SVG)
+                const sectorColors = {
+                    'Reposição': '#ef4444',
+                    'Frente de Caixa': '#f59e0b',
+                    'Açougue': '#ec4899',
+                    'Padaria / Frios': '#8b5cf6',
+                    'Padaria': '#8b5cf6',
+                    'Hortifrúti': '#10b981',
+                    'Depósito / Estoque': '#3b82f6',
+                    'Depósito': '#3b82f6',
+                    'Fiscal de Loja': '#06b6d4',
+                    'Loja': '#6366f1',
+                    'Geral': '#64748b',
+                    'Outro Setor': '#94a3b8'
+                };
+
+                // Gráfico 1: Gargalos por Setor
+                const occPieData = Object.keys(occsBySector).map(sec => ({
+                    label: sec,
+                    value: occsBySector[sec].length,
+                    color: sectorColors[sec] || '#a855f7'
+                }));
+                const occPieChartHtml = (typeof window.createSvgPieChart === 'function') 
+                    ? window.createSvgPieChart(occPieData, { donut: true, centerLabel: 'Gargalos' })
+                    : '';
+
+                // Gráfico 2: Produtividade de Tarefas
+                const pendingTasksCount = filteredTasks.length - completedTasksCount;
+                const taskPieData = [
+                    { label: 'Tarefas Concluídas', value: completedTasksCount, color: '#10b981' },
+                    { label: 'Tarefas Pendentes', value: pendingTasksCount, color: '#6366f1' }
+                ];
+                const taskPieChartHtml = (typeof window.createSvgPieChart === 'function') 
+                    ? window.createSvgPieChart(taskPieData, { donut: true, centerLabel: 'Tarefas' })
+                    : '';
+
+                // Gráfico 3: Taxa de Resolução de Ocorrências
+                const pendingOccsCount = filteredOccs.length - resolvedCount;
+                const resPieData = [
+                    { label: 'Casos Resolvidos / Com Parecer', value: resolvedCount, color: '#10b981' },
+                    { label: 'Aguardando Decisão do Admin', value: pendingOccsCount, color: '#f59e0b' }
+                ];
+                const resPieChartHtml = (typeof window.createSvgPieChart === 'function') 
+                    ? window.createSvgPieChart(resPieData, { donut: true, centerLabel: 'Casos' })
+                    : '';
+
+                // Gráfico 4: Avaliações de Feedback
+                const allFeedbacks = window.feedbackApp ? window.feedbackApp.feedbacks : [];
+                const filteredFeedbacks = allFeedbacks.filter(filterByMonth);
+                const fbCountsReport = { 'Excelente': 0, 'Bom': 0, 'Regular': 0, 'Precisa Melhorar': 0, 'Pendente': 0 };
+                filteredFeedbacks.forEach(f => {
+                    if (f.status === 'pending') fbCountsReport['Pendente']++;
+                    else if (fbCountsReport[f.overallRating] !== undefined) fbCountsReport[f.overallRating]++;
+                    else fbCountsReport['Bom']++;
+                });
+                const fbPieData = [
+                    { label: 'Excelente (Supera)', value: fbCountsReport['Excelente'], color: '#10b981' },
+                    { label: 'Bom (Atende)', value: fbCountsReport['Bom'], color: '#6366f1' },
+                    { label: 'Regular (Atenção)', value: fbCountsReport['Regular'], color: '#f59e0b' },
+                    { label: 'Precisa Melhorar', value: fbCountsReport['Precisa Melhorar'], color: '#ef4444' },
+                    { label: 'Pendente (Aguardando)', value: fbCountsReport['Pendente'], color: '#a855f7' }
+                ];
+                const fbPieChartHtml = (typeof window.createSvgPieChart === 'function') 
+                    ? window.createSvgPieChart(fbPieData, { donut: true, centerLabel: 'Feedbacks' })
+                    : '';
+
                 container.innerHTML = `
                     <!-- CABEÇALHO OFICIAL DO RELATÓRIO EXECUTIVO -->
                     <div class="border-b-2 border-indigo-500/80 pb-4 page-break-avoid">
@@ -6717,6 +7030,54 @@
                                 </div>
                                 <h3 class="text-2xl font-black text-purple-300">${completedTasksCount} / ${filteredTasks.length}</h3>
                                 <p class="text-[11px] text-gray-400">${taskRate}% de conclusão no mês</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RISCO SEPARADOR SÓLIDO -->
+                    <div class="report-divider-solid"></div>
+
+                    <!-- DIAGNÓSTICO EM GRÁFICOS DE PIZZA (PRODUTIVIDADE & GARGALOS) -->
+                    <div class="space-y-3.5 page-break-avoid">
+                        <div class="report-section-title">
+                            <i class="fa-solid fa-chart-pie text-indigo-400"></i>
+                            <span>Diagnóstico Visual em Gráficos de Pizza</span>
+                        </div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <!-- Gráfico 1: Ocorrências e Gargalos por Setor -->
+                            <div class="bg-gray-900/90 border border-gray-800 rounded-2xl p-4 space-y-2">
+                                <h5 class="text-xs font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                                    <span>Gargalos & Ocorrências por Setor</span>
+                                </h5>
+                                ${occPieChartHtml}
+                            </div>
+
+                            <!-- Gráfico 2: Produtividade de Tarefas Operacionais -->
+                            <div class="bg-gray-900/90 border border-gray-800 rounded-2xl p-4 space-y-2">
+                                <h5 class="text-xs font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+                                    <span>Produtividade de Tarefas (Concluídas vs Pendentes)</span>
+                                </h5>
+                                ${taskPieChartHtml}
+                            </div>
+
+                            <!-- Gráfico 3: Taxa de Resolução de Ocorrências -->
+                            <div class="bg-gray-900/90 border border-gray-800 rounded-2xl p-4 space-y-2">
+                                <h5 class="text-xs font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                                    <span>Índice de Resolução das Ocorrências</span>
+                                </h5>
+                                ${resPieChartHtml}
+                            </div>
+
+                            <!-- Gráfico 4: Avaliações de Desempenho 1-on-1 -->
+                            <div class="bg-gray-900/90 border border-gray-800 rounded-2xl p-4 space-y-2">
+                                <h5 class="text-xs font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
+                                    <span>Panorama de Feedbacks & Desempenho</span>
+                                </h5>
+                                ${fbPieChartHtml}
                             </div>
                         </div>
                     </div>
