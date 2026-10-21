@@ -1111,13 +1111,10 @@
                 </div>
             </div>
 
-        </div>
-
-        
             <!-- ========================================== -->
             <!-- MÓDULO 4: ESCALA DIÁRIA & TURNOS (GOOGLE)  -->
             <!-- ========================================== -->
-            <div id="view-schedule-container" class="hidden space-y-4 pb-20 md:pb-6">
+            <div id="view-schedule-container" class="hidden space-y-4 pb-32 md:pb-12">
                 <!-- Cabeçalho Informativo e Barra de Conexão Google Sheets -->
                 <div class="bg-gray-950/80 p-3 sm:p-4 rounded-2xl border border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -1140,7 +1137,7 @@
                             <i class="fa-solid fa-rotate" id="icon-schedule-sync"></i>
                             <span class="hidden sm:inline">Atualizar Planilha</span>
                         </button>
-                        <button type="button" onclick="scheduleApp.openConfigModal()" class="px-3 py-2 bg-teal-600 hover:bg-teal-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition shadow-lg shadow-teal-600/30" title="Configurar URL do Web App do Google">
+                        <button type="button" id="btn-schedule-config-gear" onclick="scheduleApp.openConfigModal()" class="${(auth.currentUser && auth.currentUser.isAdmin) ? '' : 'hidden '}px-3 py-2 bg-teal-600 hover:bg-teal-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition shadow-lg shadow-teal-600/30" title="Configurar URL do Web App do Google">
                             <i class="fa-solid fa-gear"></i>
                             <span>Conectar Planilha</span>
                         </button>
@@ -1247,6 +1244,7 @@
                     <!-- Injetado dinamicamente via scheduleApp.renderSlots() -->
                 </div>
             </div>
+        </div>
 
         <!-- Bottom Navigation Bar Mobile -->
         <nav class="md:hidden bg-gray-900/95 backdrop-blur border-t border-gray-800 px-3 py-2 flex items-center justify-around shrink-0 z-40">
@@ -6824,6 +6822,10 @@
 
                         <!-- Linha de Edição Rápida: Cargo, Setor e Senha -->
                         <div class="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
+                            <button type="button" onclick="admin.toggleScheduleEditor('${acc.email}')" class="flex items-center gap-1.5 ${(acc.canEditSchedule || isAdm) ? 'bg-teal-950/80 border-teal-700/80 text-teal-300' : 'bg-gray-900 border-gray-800 text-gray-400 hover:text-gray-200'} border rounded-xl px-2.5 py-1 text-xs transition active:scale-95" title="Permitir ou bloquear edição da Escala Diária">
+                                <i class="fa-solid fa-calendar-check text-[10px] ${(acc.canEditSchedule || isAdm) ? 'text-teal-400' : 'text-gray-500'}"></i>
+                                <span>Escala: <strong>${isAdm ? 'Admin (Livre)' : (acc.canEditSchedule ? 'Pode Editar' : 'Apenas Ver')}</strong></span>
+                            </button>
                             <div class="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl px-2 py-1">
                                 <span class="text-[10px] text-gray-500 font-bold uppercase shrink-0">Cargo:</span>
                                 <select onchange="admin.changeUserRole('${acc.email}', this.value)" class="bg-transparent text-indigo-300 text-xs font-semibold focus:outline-none cursor-pointer max-w-[130px] truncate">
@@ -9216,6 +9218,45 @@
                     }
                 }
 
+                
+                if (payload.type === 'USER_SCHEDULE_PERMISSION_UPDATE' && payload.email) {
+                    let accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                    const acc = accounts.find(a => a.email.toLowerCase() === payload.email.toLowerCase());
+                    if (acc) {
+                        acc.canEditSchedule = payload.canEditSchedule;
+                        localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                    }
+                    if (auth.currentUser && auth.currentUser.email.toLowerCase() === payload.email.toLowerCase()) {
+                        auth.currentUser.canEditSchedule = payload.canEditSchedule;
+                        localStorage.setItem('taskflow_user', JSON.stringify(auth.currentUser));
+                    }
+                    if (window.scheduleApp) scheduleApp.render();
+                    if (window.admin) admin.renderAdminUsers();
+                }
+
+                if (payload.type === 'SCHEDULE_CONFIG_UPDATE' && payload.webAppUrl) {
+                    localStorage.setItem('taskflow_schedule_webapp_url', payload.webAppUrl);
+                    if (window.scheduleApp) {
+                        scheduleApp.webAppUrl = payload.webAppUrl;
+                        scheduleApp.updateSyncStatus();
+                        scheduleApp.syncWithGoogleSheets(true);
+                    }
+                }
+
+                if (payload.type === 'SCHEDULE_SLOT_UPDATE' && payload.dia && payload.linha) {
+                    if (window.scheduleApp && scheduleApp.data && scheduleApp.data.dias && scheduleApp.data.dias[payload.dia]) {
+                        const slots = scheduleApp.data.dias[payload.dia].slots || [];
+                        const slot = slots.find(s => s.linha === payload.linha);
+                        if (slot) {
+                            slot.nome = payload.nome;
+                            slot.isVago = (!payload.nome || payload.nome.toUpperCase() === 'X');
+                            slot.corFundo = slot.isVago ? '#ea4335' : '';
+                            localStorage.setItem('taskflow_schedule_data', JSON.stringify(scheduleApp.data));
+                            scheduleApp.render();
+                        }
+                    }
+                }
+
                 if (payload.type === 'FEEDBACK_UPSERT' && payload.feedback) {
                     if (window.feedbackApp) {
                         feedbackApp.handleIncomingFeedback(payload.feedback);
@@ -9603,6 +9644,25 @@
         // MÓDULO: ESCALA DIÁRIA & TURNOS (SINCRONIZAÇÃO BIDIRECIONAL GOOGLE SHEETS)
         // =========================================================================
         class ScheduleApp {
+
+            canUserEdit() {
+                if (!auth.currentUser) return false;
+                const email = String(auth.currentUser.email || '').toLowerCase();
+
+                // 1. Administrador sempre pode editar
+                if (auth.currentUser.isAdmin || ADMIN_EMAILS.includes(email)) return true;
+
+                // 2. Permissão direta no currentUser
+                if (auth.currentUser.canEditSchedule === true) return true;
+
+                // 3. Permissão salva nas contas
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                const acc = accounts.find(a => a.email.toLowerCase() === email);
+                if (acc && acc.canEditSchedule === true) return true;
+
+                return false;
+            }
+
             constructor() {
                 this.webAppUrl = localStorage.getItem('taskflow_schedule_webapp_url') || '';
                 this.currentDay = this.getTodayDayName();
@@ -9836,6 +9896,14 @@
                 this.webAppUrl = url;
                 localStorage.setItem('taskflow_schedule_webapp_url', url);
                 this.closeConfigModal();
+
+                if (window.syncManager) {
+                    window.syncManager.publish({
+                        type: 'SCHEDULE_CONFIG_UPDATE',
+                        webAppUrl: url,
+                        timestamp: Date.now()
+                    });
+                }
                 this.updateSyncStatus();
 
                 if (window.notifications) {
@@ -9845,6 +9913,14 @@
             }
 
             openEditSlotModal(dia, linha, colunaLetra, nome, horario, isVago) {
+                if (!this.canUserEdit()) {
+                    if (window.notifications) {
+                        notifications.showToast('Permissão restrita: Apenas administradores ou colaboradores autorizados no Painel Admin podem editar a escala.', 'warning');
+                    } else {
+                        alert('Permissão restrita: Apenas administradores ou colaboradores autorizados no Painel Admin podem editar a escala.');
+                    }
+                    return;
+                }
                 const modal = document.getElementById('modal-schedule-edit-slot');
                 document.getElementById('modal-sched-dia').value = dia;
                 document.getElementById('modal-sched-linha').value = linha;
@@ -9979,6 +10055,15 @@
                         '&t=' + Date.now();
 
                     try {
+                        if (window.syncManager) {
+                            window.syncManager.publish({
+                                type: 'SCHEDULE_SLOT_UPDATE',
+                                dia: dia,
+                                linha: linha,
+                                nome: novoNome,
+                                timestamp: Date.now()
+                            });
+                        }
                         const res = await fetch(sendUrl, { redirect: 'follow' });
                         const resJson = await res.json();
                         if (resJson && resJson.success) {
@@ -10152,10 +10237,16 @@
                                     <span class="w-1.5 h-1.5 rounded-full ${isVacant ? 'bg-rose-500 animate-ping' : 'bg-emerald-400'}"></span>
                                     <span>${isVacant ? 'Requer Substituto' : 'Confirmado na Escala'}</span>
                                 </span>
+                                ${this.canUserEdit() ? `
                                 <button type="button" onclick="scheduleApp.openEditSlotModal('${this.currentDay}', ${s.linha}, '${s.colunaLetra}', '${(s.nome || '').replace(/'/g, "\\'")}', '${(s.horario || '').replace(/'/g, "\\'")}', ${isVacant})" class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition active:scale-95 flex items-center gap-1.5 ${isVacant ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm' : 'bg-gray-800 hover:bg-gray-750 text-teal-300 border border-teal-500/30'}">
                                     <i class="fa-solid ${isVacant ? 'fa-plus' : 'fa-pen-to-square'} text-[10px]"></i>
                                     <span>${isVacant ? 'Alocar' : 'Substituir'}</span>
                                 </button>
+                                ` : `
+                                <span class="px-2 py-1 text-[10px] font-semibold text-gray-500 flex items-center gap-1 bg-gray-900/60 rounded-lg border border-gray-800/80">
+                                    <i class="fa-solid fa-lock text-[9px]"></i> Somente Leitura
+                                </span>
+                                `}
                             </div>
                         </div>
                     `;
