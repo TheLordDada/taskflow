@@ -530,6 +530,13 @@
                     </span>
                     <span id="feedback-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-purple-500 text-white font-extrabold animate-pulse shrink-0">0</span>
                 </button>
+                <button type="button" id="main-switch-schedule" onclick="window.switchMainView('schedule')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition" title="Escala Diária de Colaboradores & Turnos">
+                    <span class="flex items-center gap-2.5 min-w-0">
+                        <i class="fa-solid fa-calendar-days w-4 text-xs text-teal-400"></i>
+                        <span class="truncate">Escala Diária & Turnos</span>
+                    </span>
+                    <span id="schedule-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-teal-500 text-black font-extrabold shrink-0">0</span>
+                </button>
             </div>
 
             <!-- Navegação e Filtros de Tarefas -->
@@ -616,6 +623,11 @@
                         <i class="fa-solid fa-comments text-[11px] text-purple-400"></i>
                         <span>Feedback</span>
                         <span id="topbar-feedback-badge" class="hidden text-[10px] px-1 rounded-full bg-purple-500 text-white font-extrabold ml-0.5">0</span>
+                    </button>
+                    <button type="button" id="topbar-switch-schedule" onclick="window.switchMainView('schedule')" class="px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative" title="Escala Diária & Turnos">
+                        <i class="fa-solid fa-calendar-days text-[11px] text-teal-400"></i>
+                        <span>Escala</span>
+                        <span id="topbar-schedule-badge" class="hidden text-[10px] px-1 rounded-full bg-teal-500 text-black font-extrabold ml-0.5">0</span>
                     </button>
                     <button type="button" id="topbar-switch-reports" onclick="admin.openPanel(); admin.switchTab('reports');" class="px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative" title="Relatórios com Gráficos de Pizza">
                         <i class="fa-solid fa-chart-pie text-[11px] text-emerald-400"></i>
@@ -1101,11 +1113,151 @@
 
         </div>
 
+        
+            <!-- ========================================== -->
+            <!-- MÓDULO 4: ESCALA DIÁRIA & TURNOS (GOOGLE)  -->
+            <!-- ========================================== -->
+            <div id="view-schedule-container" class="hidden space-y-4 pb-20 md:pb-6">
+                <!-- Cabeçalho Informativo e Barra de Conexão Google Sheets -->
+                <div class="bg-gray-950/80 p-3 sm:p-4 rounded-2xl border border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-400 border border-teal-500/30 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-calendar-days text-lg"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-bold text-sm text-gray-100">Escala Diária & Turnos</h3>
+                                <span id="schedule-sync-pill" class="text-[10px] px-2 py-0.5 rounded-full bg-teal-950 border border-teal-800/80 text-teal-300 font-semibold flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse"></span>
+                                    <span id="schedule-sync-pill-text">Planilha Conectada</span>
+                                </span>
+                            </div>
+                            <p id="schedule-last-sync-text" class="text-[11px] text-gray-400 truncate">Sincronização bidirecional em tempo real com o Google Sheets</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button type="button" onclick="scheduleApp.syncWithGoogleSheets()" id="btn-schedule-sync" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 active:scale-95 text-teal-300 border border-teal-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow" title="Recarregar dados da planilha Google">
+                            <i class="fa-solid fa-rotate" id="icon-schedule-sync"></i>
+                            <span class="hidden sm:inline">Atualizar Planilha</span>
+                        </button>
+                        <button type="button" onclick="scheduleApp.openConfigModal()" class="px-3 py-2 bg-teal-600 hover:bg-teal-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition shadow-lg shadow-teal-600/30" title="Configurar URL do Web App do Google">
+                            <i class="fa-solid fa-gear"></i>
+                            <span>Conectar Planilha</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Banner de Alerta / Guia caso ainda não tenha configurado a URL -->
+                <div id="schedule-unconfigured-alert" class="hidden bg-gradient-to-r from-teal-950/70 via-gray-900 to-gray-900 p-4 rounded-2xl border border-teal-500/40 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center shrink-0 mt-0.5">
+                            <i class="fa-solid fa-sheet-plastic text-base"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-xs sm:text-sm text-teal-200">Conecte sua Planilha Google em 1 Minuto</h4>
+                            <p class="text-xs text-gray-400 mt-0.5">Cole a URL do seu Web App Google para sincronizar as escalas, folgas e alterações na mesma hora.</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="scheduleApp.openConfigModal()" class="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition shadow-lg shadow-teal-600/30 whitespace-nowrap self-start md:self-auto">
+                        Configurar Agora
+                    </button>
+                </div>
+
+                <!-- Seletor dos Dias da Semana (Segunda a Domingo) -->
+                <div class="bg-gray-950/70 p-1.5 sm:p-2 rounded-2xl border border-gray-800">
+                    <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto custom-scrollbar pb-1 sm:pb-0" id="schedule-days-selector">
+                        <!-- Injetado via scheduleApp.renderDaysSelector() -->
+                    </div>
+                </div>
+
+                <!-- Resumo Estatístico do Dia Selecionado -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div class="bg-gray-950/80 p-3 rounded-2xl border border-gray-800 flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-users text-sm"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Total Postos</p>
+                            <p id="stat-schedule-total" class="text-base sm:text-lg font-black text-gray-100">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-950/80 p-3 rounded-2xl border border-gray-800 flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-user-check text-sm"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Alocados</p>
+                            <p id="stat-schedule-presentes" class="text-base sm:text-lg font-black text-emerald-400">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-950/80 p-3 rounded-2xl border border-gray-800 flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-triangle-exclamation text-sm"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Vagas Abertas</p>
+                            <p id="stat-schedule-vagos" class="text-base sm:text-lg font-black text-rose-400">0</p>
+                        </div>
+                    </div>
+                    <div class="bg-gray-950/80 p-3 rounded-2xl border border-gray-800 flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-umbrella-beach text-sm"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Ausências / Folga</p>
+                            <p id="stat-schedule-ausencias" class="text-base sm:text-lg font-black text-amber-400">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quadro de Ausências do Dia (Linhas 6 a 13 da Planilha) -->
+                <div id="schedule-absences-card" class="bg-gray-950/80 p-3.5 rounded-2xl border border-gray-800 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-user-clock text-amber-400 text-xs"></i>
+                            <h4 class="text-xs font-bold text-gray-200">Quadro de Ausências & Folgas do Dia</h4>
+                            <span id="schedule-absences-count" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 font-extrabold border border-amber-800/60">0</span>
+                        </div>
+                        <span class="text-[10px] text-gray-500">Linhas 6 a 13 da Planilha</span>
+                    </div>
+                    <div id="schedule-absences-list" class="flex flex-wrap gap-2 pt-1">
+                        <!-- Injetado dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Barra de Filtros e Busca de Postos -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 custom-scrollbar">
+                        <button type="button" onclick="scheduleApp.setFilter('all')" id="sched-filter-all" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-teal-600 text-white shadow-sm">Todos</button>
+                        <button type="button" onclick="scheduleApp.setFilter('vacant')" id="sched-filter-vacant" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 text-gray-400 hover:text-gray-200 border border-gray-800">
+                            <i class="fa-solid fa-circle-exclamation text-rose-400 text-[10px]"></i> Apenas Vagas Abertas
+                        </button>
+                        <button type="button" onclick="scheduleApp.setFilter('assigned')" id="sched-filter-assigned" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 text-gray-400 hover:text-gray-200 border border-gray-800">
+                            <i class="fa-solid fa-circle-check text-emerald-400 text-[10px]"></i> Apenas Alocados
+                        </button>
+                    </div>
+                    <div class="relative flex-1 sm:max-w-xs">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
+                        <input type="text" id="schedule-search-input" oninput="scheduleApp.handleSearch(this.value)" placeholder="Buscar colaborador ou horário..." class="w-full bg-gray-950 border border-gray-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-teal-500 transition">
+                    </div>
+                </div>
+
+                <!-- Grade de Postos / Horários da Escala Diária (Linhas 18 a 50) -->
+                <div id="schedule-slots-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    <!-- Injetado dinamicamente via scheduleApp.renderSlots() -->
+                </div>
+            </div>
+
         <!-- Bottom Navigation Bar Mobile -->
         <nav class="md:hidden bg-gray-900/95 backdrop-blur border-t border-gray-800 px-3 py-2 flex items-center justify-around shrink-0 z-40">
             <button onclick="window.switchMainView('tasks')" id="mob-nav-tasks" class="flex flex-col items-center gap-1 text-indigo-400 py-1 px-2.5 transition active:scale-90">
                 <i class="fa-solid fa-list-check text-base"></i>
                 <span class="text-[10px] font-semibold">Tarefas</span>
+            </button>
+            <button onclick="window.switchMainView('schedule')" id="mob-nav-schedule" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1.5 transition active:scale-90 relative">
+                <i class="fa-solid fa-calendar-days text-base text-teal-400"></i>
+                <span class="text-[9px] font-semibold">Escala</span>
+                <span id="mob-schedule-badge" class="hidden absolute top-0 right-1 w-2 h-2 rounded-full bg-teal-500 animate-ping"></span>
             </button>
             <button onclick="window.switchMainView('occurrences')" id="mob-nav-occurrences" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2.5 transition active:scale-90 relative">
                 <i class="fa-solid fa-clipboard-user text-base text-amber-400"></i>
@@ -3418,6 +3570,7 @@
             const tasksSec = document.getElementById('view-tasks-container');
             const occSec = document.getElementById('view-occurrences-container');
             const fbSec = document.getElementById('view-feedback-container');
+            const schedSec = document.getElementById('view-schedule-container');
 
             const viewTitle = document.getElementById('current-view-title');
             const btnNewTask = document.getElementById('topbar-new-task-btn');
@@ -3428,21 +3581,25 @@
             const switchTasks = document.getElementById('main-switch-tasks');
             const switchOcc = document.getElementById('main-switch-occurrences');
             const switchFb = document.getElementById('main-switch-feedback');
+            const switchSched = document.getElementById('main-switch-schedule');
 
             // Botões topbar
             const topbarTasks = document.getElementById('topbar-switch-tasks');
             const topbarOcc = document.getElementById('topbar-switch-occurrences');
             const topbarFb = document.getElementById('topbar-switch-feedback');
+            const topbarSched = document.getElementById('topbar-switch-schedule');
 
             // Botões mobile
             const mobTasks = document.getElementById('mob-nav-tasks');
             const mobOcc = document.getElementById('mob-nav-occurrences');
             const mobFb = document.getElementById('mob-nav-feedback');
+            const mobSched = document.getElementById('mob-nav-schedule');
 
             // Oculta todas as seções primeiro
             if (tasksSec) tasksSec.classList.add('hidden');
             if (occSec) occSec.classList.add('hidden');
             if (fbSec) fbSec.classList.add('hidden');
+            if (schedSec) schedSec.classList.add('hidden');
 
             // Controle de Botões de Criação no Topbar (Aparecem no Desktop, Ocultos no Mobile para usar o FAB)
             if (btnNewTask) {
@@ -3525,6 +3682,18 @@
                     } else {
                         feedbackApp.switchTab('history');
                     }
+                }
+            } else if (view === 'schedule') {
+                if (mobFab) mobFab.classList.add('hidden');
+                if (schedSec) schedSec.classList.remove('hidden');
+                if (viewTitle) viewTitle.innerText = "Escala Diária & Turnos";
+
+                if (switchSched) switchSched.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition bg-teal-600 text-white shadow-md shadow-teal-600/30";
+                if (topbarSched) topbarSched.className = "px-2.5 py-1 text-xs font-bold rounded-lg bg-teal-600 text-white transition flex items-center gap-1 relative shadow-sm";
+                if (mobSched) mobSched.className = "flex flex-col items-center gap-1 text-teal-400 py-1 px-1.5 transition active:scale-90 relative";
+
+                if (window.scheduleApp) {
+                    window.scheduleApp.render();
                 }
             }
         };
@@ -9428,6 +9597,579 @@
         window.addEventListener('popstate', function(e) {
             window.handleAndroidBackPressed();
         });
+    
+
+// =========================================================================
+        // MÓDULO: ESCALA DIÁRIA & TURNOS (SINCRONIZAÇÃO BIDIRECIONAL GOOGLE SHEETS)
+        // =========================================================================
+        class ScheduleApp {
+            constructor() {
+                this.webAppUrl = localStorage.getItem('taskflow_schedule_webapp_url') || '';
+                this.currentDay = this.getTodayDayName();
+                this.currentFilter = 'all';
+                this.searchQuery = '';
+                this.isSyncing = false;
+                this.data = this.loadInitialData();
+            }
+
+            getTodayDayName() {
+                const dayIndex = new Date().getDay();
+                const map = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                return map[dayIndex] || 'Segunda';
+            }
+
+            loadInitialData() {
+                const cached = localStorage.getItem('taskflow_schedule_data');
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        if (parsed && parsed.dias) return parsed;
+                    } catch (e) {}
+                }
+
+                // Modelo inicial completo baseado na estrutura real da planilha
+                const diasNomes = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+                const diasObj = {};
+
+                const turnosPadrao = [
+                    '07:00 às 15:20', '08:00 às 16:20', '08:00 às 16:20', '09:00 às 17:20',
+                    '10:00 às 18:20', '11:00 às 19:20', '12:00 às 20:20', '13:00 às 21:20',
+                    '13:40 às 22:00', '13:40 às 22:00', '14:00 às 22:20', 'Fechamento Geral'
+                ];
+
+                const colaboradoresMock = [
+                    'CARLOS SILVA', 'MARCOS SOUZA', 'ANA PAULA', 'FERNANDO DIAS',
+                    'JULIANA COSTA', 'RODRIGO LIMA', 'BEATRIZ MENDES', 'LUCAS PEREIRA',
+                    'GABRIEL ROCHA', 'CAMILA SANTOS', 'FELIPE ALVES', 'PATRICIA RAMOS'
+                ];
+
+                diasNomes.forEach((d, idx) => {
+                    const slots = [];
+                    const isSunday = (d === 'Domingo');
+                    const startRow = isSunday ? 19 : 18;
+                    const endRow = isSunday ? 32 : 36;
+
+                    for (let r = startRow; r <= endRow; r++) {
+                        const slotIdx = r - startRow;
+                        const isVacant = (slotIdx === 3 || slotIdx === 7);
+                        slots.push({
+                            linha: r,
+                            colunaLetra: isSunday ? 'BE' : 'C',
+                            nome: isVacant ? '' : (colaboradoresMock[slotIdx % colaboradoresMock.length] || 'COLABORADOR ' + r),
+                            horario: isSunday ? ('CORREDOR ' + (slotIdx + 1)) : (turnosPadrao[slotIdx % turnosPadrao.length] || '08:00 às 16:20'),
+                            isVago: isVacant,
+                            corFundo: isVacant ? '#ea4335' : ''
+                        });
+                    }
+
+                    diasObj[d] = {
+                        diaSemana: d,
+                        data: getLocalTodayString().split('-').reverse().join('/'),
+                        slots: slots,
+                        ausencias: (idx % 2 === 0) ? ['MARIA EDUARDA (Folga)', 'ROBERTO COSTA (Atestado)'] : ['JULIO CESAR (Folga)']
+                    };
+                });
+
+                return {
+                    dias: diasObj,
+                    colaboradores: colaboradoresMock.map((m, i) => ({
+                        nome: m,
+                        escala: (i % 2 === 0) ? 'AZUL' : 'VERMELHA',
+                        folga: diasNomes[(i + 2) % 7],
+                        cracha: '10' + (i + 1),
+                        departamento: 'GERAL'
+                    })),
+                    atualizadoEm: 'Dados Locais'
+                };
+            }
+
+            init() {
+                this.updateSyncStatus();
+                this.render();
+                if (this.webAppUrl) {
+                    this.syncWithGoogleSheets(true);
+                }
+            }
+
+            updateSyncStatus() {
+                const pill = document.getElementById('schedule-sync-pill');
+                const pillText = document.getElementById('schedule-sync-pill-text');
+                const unconfigAlert = document.getElementById('schedule-unconfigured-alert');
+                const lastSyncText = document.getElementById('schedule-last-sync-text');
+
+                if (!this.webAppUrl) {
+                    if (pill) {
+                        pill.className = "text-[10px] px-2 py-0.5 rounded-full bg-amber-950 border border-amber-800 text-amber-300 font-semibold flex items-center gap-1";
+                        if (pillText) pillText.innerText = "Modo Demonstração (Sem URL)";
+                    }
+                    if (unconfigAlert) unconfigAlert.classList.remove('hidden');
+                    if (lastSyncText) lastSyncText.innerText = "Clique em Conectar Planilha para vincular seu Google Sheets ao vivo";
+                } else {
+                    if (pill) {
+                        pill.className = "text-[10px] px-2 py-0.5 rounded-full bg-teal-950 border border-teal-800 text-teal-300 font-semibold flex items-center gap-1";
+                        if (pillText) pillText.innerText = "Planilha Conectada";
+                    }
+                    if (unconfigAlert) unconfigAlert.classList.add('hidden');
+                    if (lastSyncText && this.data.atualizadoEm) {
+                        lastSyncText.innerText = "Sincronizado: " + this.data.atualizadoEm;
+                    }
+                }
+            }
+
+            switchDay(dayName) {
+                this.currentDay = dayName;
+                this.render();
+            }
+
+            setFilter(filter) {
+                this.currentFilter = filter;
+                const btnAll = document.getElementById('sched-filter-all');
+                const btnVacant = document.getElementById('sched-filter-vacant');
+                const btnAssigned = document.getElementById('sched-filter-assigned');
+
+                const activeClass = "px-3 py-1.5 rounded-xl text-xs font-bold transition bg-teal-600 text-white shadow-sm";
+                const inactiveClass = "px-3 py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 text-gray-400 hover:text-gray-200 border border-gray-800";
+
+                if (btnAll) btnAll.className = (filter === 'all') ? activeClass : inactiveClass;
+                if (btnVacant) btnVacant.className = (filter === 'vacant') ? activeClass : inactiveClass;
+                if (btnAssigned) btnAssigned.className = (filter === 'assigned') ? activeClass : inactiveClass;
+
+                this.renderSlots();
+            }
+
+            handleSearch(val) {
+                this.searchQuery = String(val || '').toLowerCase().trim();
+                this.renderSlots();
+            }
+
+            async syncWithGoogleSheets(isSilent = false) {
+                if (!this.webAppUrl) {
+                    if (!isSilent) this.openConfigModal();
+                    return;
+                }
+
+                if (this.isSyncing) return;
+                this.isSyncing = true;
+
+                const icon = document.getElementById('icon-schedule-sync');
+                if (icon) icon.classList.add('fa-spin');
+
+                try {
+                    const fetchUrl = this.webAppUrl + (this.webAppUrl.includes('?') ? '&' : '?') + 'action=get_schedule&t=' + Date.now();
+                    const response = await fetch(fetchUrl, { redirect: 'follow' });
+                    const resJson = await response.json();
+
+                    if (resJson && resJson.success && resJson.dias) {
+                        this.data = resJson;
+                        localStorage.setItem('taskflow_schedule_data', JSON.stringify(this.data));
+                        this.updateSyncStatus();
+                        this.render();
+                        if (!isSilent && window.notifications) {
+                            notifications.showToast('Escalas sincronizadas com o Google Sheets!', 'success');
+                        }
+                    } else {
+                        throw new Error(resJson ? resJson.error : 'Resposta inválida do Google Sheets');
+                    }
+                } catch (err) {
+                    console.error('[Schedule] Erro na sincronização:', err);
+                    if (!isSilent && window.notifications) {
+                        notifications.showToast('Não foi possível conectar à planilha: ' + err.message, 'error');
+                    }
+                } finally {
+                    this.isSyncing = false;
+                    if (icon) icon.classList.remove('fa-spin');
+                }
+            }
+
+            openConfigModal() {
+                const modal = document.getElementById('modal-schedule-config');
+                const input = document.getElementById('schedule-config-webapp-url');
+                if (input) input.value = this.webAppUrl;
+                if (modal) {
+                    modal.style.display = 'flex';
+                    modal.classList.remove('hidden');
+                }
+            }
+
+            closeConfigModal() {
+                const modal = document.getElementById('modal-schedule-config');
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.classList.add('hidden');
+                }
+            }
+
+            async testConnection() {
+                const input = document.getElementById('schedule-config-webapp-url');
+                const url = input ? input.value.trim() : '';
+                const btn = document.getElementById('btn-test-sched-conn');
+
+                if (!url) {
+                    alert('Insira a URL do Web App antes de testar.');
+                    return;
+                }
+
+                if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Testando...</span>';
+
+                try {
+                    const testUrl = url + (url.includes('?') ? '&' : '?') + 'action=get_schedule&t=' + Date.now();
+                    const res = await fetch(testUrl, { redirect: 'follow' });
+                    const json = await res.json();
+
+                    if (json && json.success) {
+                        alert('✓ Conexão bem-sucedida! Planilha respondeu perfeitamente com ' + Object.keys(json.dias || {}).length + ' blocos de dias.');
+                    } else {
+                        alert('Aviso da Planilha: ' + (json ? json.error : 'Erro desconhecido'));
+                    }
+                } catch (e) {
+                    alert('Erro ao conectar: ' + e.message + '\n\nCertifique-se de que a implantação do Apps Script foi configurada com acesso: "Qualquer pessoa" (Anyone).');
+                } finally {
+                    if (btn) btn.innerHTML = '<i class="fa-solid fa-vial"></i> <span>Testar Conexão</span>';
+                }
+            }
+
+            handleSaveConfig(e) {
+                if (e) e.preventDefault();
+                const input = document.getElementById('schedule-config-webapp-url');
+                const url = input ? input.value.trim() : '';
+
+                this.webAppUrl = url;
+                localStorage.setItem('taskflow_schedule_webapp_url', url);
+                this.closeConfigModal();
+                this.updateSyncStatus();
+
+                if (window.notifications) {
+                    notifications.showToast('Configuração salva! Sincronizando...', 'success');
+                }
+                this.syncWithGoogleSheets(false);
+            }
+
+            openEditSlotModal(dia, linha, colunaLetra, nome, horario, isVago) {
+                const modal = document.getElementById('modal-schedule-edit-slot');
+                document.getElementById('modal-sched-dia').value = dia;
+                document.getElementById('modal-sched-linha').value = linha;
+                document.getElementById('modal-sched-coluna').value = colunaLetra;
+
+                document.getElementById('modal-sched-slot-desc').innerText = dia + ' • Linha ' + linha + ' (' + colunaLetra + ')';
+                document.getElementById('modal-sched-horario-label').innerText = horario || 'Sem especificação';
+
+                const statusEl = document.getElementById('modal-sched-current-status');
+                if (isVago) {
+                    statusEl.innerText = "Vaga Aberta / Falta";
+                    statusEl.className = "text-xs px-2.5 py-1 rounded-xl font-bold bg-rose-950 text-rose-300 border border-rose-800";
+                } else {
+                    statusEl.innerText = "Alocado: " + nome;
+                    statusEl.className = "text-xs px-2.5 py-1 rounded-xl font-bold bg-teal-950 text-teal-300 border border-teal-800";
+                }
+
+                document.getElementById('modal-sched-collab-name').value = isVago ? '' : nome;
+                this.populateCollabSelect(isVago ? '' : nome);
+
+                if (modal) {
+                    modal.style.display = 'flex';
+                    modal.classList.remove('hidden');
+                }
+            }
+
+            closeEditSlotModal() {
+                const modal = document.getElementById('modal-schedule-edit-slot');
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.classList.add('hidden');
+                }
+            }
+
+            populateCollabSelect(selectedName = '') {
+                const select = document.getElementById('modal-sched-collab-select');
+                if (!select) return;
+
+                select.innerHTML = '<option value="">-- Selecione um colaborador cadastrado --</option>';
+
+                // 1. Colaboradores do Banco de Dados da Planilha
+                const colabsSheet = (this.data && this.data.colaboradores) ? this.data.colaboradores : [];
+                if (colabsSheet.length > 0) {
+                    const optGroupSheet = document.createElement('optgroup');
+                    optGroupSheet.label = "Colaboradores do Banco de Dados";
+                    colabsSheet.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.nome;
+                        opt.textContent = c.nome + (c.escala ? ' (' + c.escala + ')' : '') + (c.folga ? ' - Folga ' + c.folga : '');
+                        if (c.nome.toUpperCase() === String(selectedName).toUpperCase()) opt.selected = true;
+                        optGroupSheet.appendChild(opt);
+                    });
+                    select.appendChild(optGroupSheet);
+                }
+
+                // 2. Colaboradores cadastrados no app TaskFlow
+                const teamUsers = JSON.parse(localStorage.getItem('taskflow_users') || '[]');
+                if (teamUsers.length > 0) {
+                    const optGroupApp = document.createElement('optgroup');
+                    optGroupApp.label = "Usuários do TaskFlow";
+                    teamUsers.forEach(u => {
+                        const opt = document.createElement('option');
+                        opt.value = u.name;
+                        opt.textContent = u.name + (u.role ? ' [' + u.role + ']' : '');
+                        if (u.name.toUpperCase() === String(selectedName).toUpperCase()) opt.selected = true;
+                        optGroupApp.appendChild(opt);
+                    });
+                    select.appendChild(optGroupApp);
+                }
+            }
+
+            onSelectCollabChange(val) {
+                const nameInput = document.getElementById('modal-sched-collab-name');
+                if (nameInput && val) {
+                    nameInput.value = val;
+                }
+            }
+
+            markAsVacant() {
+                const nameInput = document.getElementById('modal-sched-collab-name');
+                const select = document.getElementById('modal-sched-collab-select');
+                if (nameInput) nameInput.value = '';
+                if (select) select.value = '';
+                this.handleSaveSlot();
+            }
+
+            async handleSaveSlot(e) {
+                if (e) e.preventDefault();
+
+                const dia = document.getElementById('modal-sched-dia').value;
+                const linha = parseInt(document.getElementById('modal-sched-linha').value, 10);
+                const colLetra = document.getElementById('modal-sched-coluna').value;
+                const nomeInput = document.getElementById('modal-sched-collab-name').value.trim();
+
+                const btn = document.getElementById('btn-save-sched-slot');
+                if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Salvando...</span>';
+
+                try {
+                    await this.updateSlot(dia, linha, colLetra, nomeInput);
+                    this.closeEditSlotModal();
+                    if (window.notifications) {
+                        notifications.showToast('Escala salva e enviada para a Planilha Google!', 'success');
+                    }
+                } catch (err) {
+                    alert('Erro ao salvar: ' + err.message);
+                } finally {
+                    if (btn) btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> <span>Salvar & Sincronizar</span>';
+                }
+            }
+
+            async updateSlot(dia, linha, colLetra, novoNome) {
+                // Atualização otimista na memória local
+                if (this.data && this.data.dias && this.data.dias[dia]) {
+                    const slots = this.data.dias[dia].slots || [];
+                    const slot = slots.find(s => s.linha === linha);
+                    if (slot) {
+                        slot.nome = novoNome;
+                        slot.isVago = (novoNome === '' || novoNome.toUpperCase() === 'X');
+                        slot.corFundo = slot.isVago ? '#ea4335' : '';
+                    }
+                    localStorage.setItem('taskflow_schedule_data', JSON.stringify(this.data));
+                    this.render();
+                }
+
+                // Envio para o Google Apps Script se configurado
+                if (this.webAppUrl) {
+                    const sendUrl = this.webAppUrl + (this.webAppUrl.includes('?') ? '&' : '?') + 
+                        'action=update_slot&dia=' + encodeURIComponent(dia) + 
+                        '&linha=' + linha + 
+                        '&colunaLetra=' + encodeURIComponent(colLetra) + 
+                        '&nome=' + encodeURIComponent(novoNome) + 
+                        '&t=' + Date.now();
+
+                    try {
+                        const res = await fetch(sendUrl, { redirect: 'follow' });
+                        const resJson = await res.json();
+                        if (resJson && resJson.success) {
+                            console.log('[Schedule] Sincronizado com Google Sheets:', resJson);
+                        }
+                    } catch (netErr) {
+                        console.warn('[Schedule] Erro de rede ao sincronizar com Google Sheets:', netErr);
+                    }
+                }
+            }
+
+            render() {
+                this.renderDaysSelector();
+                this.renderStatsAndAbsences();
+                this.renderSlots();
+            }
+
+            renderDaysSelector() {
+                const container = document.getElementById('schedule-days-selector');
+                if (!container) return;
+
+                const diasNomes = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+                const hojeNome = this.getTodayDayName();
+
+                let html = '';
+                diasNomes.forEach(d => {
+                    const isActive = (d === this.currentDay);
+                    const isToday = (d === hojeNome);
+                    const diaInfo = (this.data && this.data.dias && this.data.dias[d]) ? this.data.dias[d] : null;
+                    const dataStr = diaInfo ? diaInfo.data : '';
+
+                    const baseClass = "shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ";
+                    const activeClass = isActive 
+                        ? "bg-teal-600 text-white shadow-lg shadow-teal-600/30 border border-teal-400/40" 
+                        : "bg-gray-900/90 text-gray-400 hover:text-gray-200 hover:bg-gray-850 border border-gray-800";
+
+                    html += `
+                        <button type="button" onclick="scheduleApp.switchDay('${d}')" class="${baseClass} ${activeClass}">
+                            <div class="flex flex-col text-left">
+                                <div class="flex items-center gap-1.5">
+                                    <span>${d}</span>
+                                    ${isToday ? '<span class="text-[9px] px-1.5 py-0.2 rounded-md bg-teal-400 text-black font-black uppercase">Hoje</span>' : ''}
+                                </div>
+                                ${dataStr ? `<span class="text-[10px] font-normal opacity-80">${dataStr}</span>` : ''}
+                            </div>
+                        </button>
+                    `;
+                });
+
+                container.innerHTML = html;
+            }
+
+            renderStatsAndAbsences() {
+                const diaInfo = (this.data && this.data.dias && this.data.dias[this.currentDay]) ? this.data.dias[this.currentDay] : null;
+                const slots = diaInfo ? (diaInfo.slots || []) : [];
+                const ausencias = diaInfo ? (diaInfo.ausencias || []) : [];
+
+                const total = slots.length;
+                const vagos = slots.filter(s => s.isVago).length;
+                const presentes = total - vagos;
+
+                const statTotal = document.getElementById('stat-schedule-total');
+                const statPres = document.getElementById('stat-schedule-presentes');
+                const statVagos = document.getElementById('stat-schedule-vagos');
+                const statAus = document.getElementById('stat-schedule-ausencias');
+
+                if (statTotal) statTotal.innerText = total;
+                if (statPres) statPres.innerText = presentes;
+                if (statVagos) statVagos.innerText = vagos;
+                if (statAus) statAus.innerText = ausencias.length;
+
+                // Atualiza badge de vagas abertas no sidebar se houver
+                const schedBadge = document.getElementById('schedule-badge');
+                const topbarBadge = document.getElementById('topbar-schedule-badge');
+                const mobBadge = document.getElementById('mob-schedule-badge');
+
+                if (vagos > 0) {
+                    if (schedBadge) { schedBadge.innerText = vagos; schedBadge.classList.remove('hidden'); }
+                    if (topbarBadge) { topbarBadge.innerText = vagos; topbarBadge.classList.remove('hidden'); }
+                    if (mobBadge) mobBadge.classList.remove('hidden');
+                } else {
+                    if (schedBadge) schedBadge.classList.add('hidden');
+                    if (topbarBadge) topbarBadge.classList.add('hidden');
+                    if (mobBadge) mobBadge.classList.add('hidden');
+                }
+
+                // Renderiza ausências
+                const absencesList = document.getElementById('schedule-absences-list');
+                const absencesCount = document.getElementById('schedule-absences-count');
+                if (absencesCount) absencesCount.innerText = ausencias.length;
+
+                if (absencesList) {
+                    if (ausencias.length === 0) {
+                        absencesList.innerHTML = '<span class="text-xs text-gray-500 italic">Nenhum colaborador ausente ou de folga cadastrado para este dia.</span>';
+                    } else {
+                        absencesList.innerHTML = ausencias.map(a => `
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold bg-rose-950/70 border border-rose-800/80 text-rose-300">
+                                <i class="fa-solid fa-umbrella-beach text-[10px] text-rose-400"></i>
+                                <span>${a}</span>
+                            </span>
+                        `).join('');
+                    }
+                }
+            }
+
+            renderSlots() {
+                const container = document.getElementById('schedule-slots-grid');
+                if (!container) return;
+
+                const diaInfo = (this.data && this.data.dias && this.data.dias[this.currentDay]) ? this.data.dias[this.currentDay] : null;
+                if (!diaInfo || !diaInfo.slots || diaInfo.slots.length === 0) {
+                    container.innerHTML = '<div class="col-span-full p-8 text-center text-gray-500 text-xs">Nenhum posto cadastrado para este dia na planilha.</div>';
+                    return;
+                }
+
+                let slots = diaInfo.slots;
+
+                // Filtros
+                if (this.currentFilter === 'vacant') {
+                    slots = slots.filter(s => s.isVago);
+                } else if (this.currentFilter === 'assigned') {
+                    slots = slots.filter(s => !s.isVago);
+                }
+
+                // Busca
+                if (this.searchQuery) {
+                    slots = slots.filter(s => 
+                        String(s.nome || '').toLowerCase().includes(this.searchQuery) ||
+                        String(s.horario || '').toLowerCase().includes(this.searchQuery) ||
+                        String(s.linha || '').includes(this.searchQuery)
+                    );
+                }
+
+                if (slots.length === 0) {
+                    container.innerHTML = '<div class="col-span-full p-8 text-center text-gray-500 text-xs">Nenhum posto encontrado com o filtro atual.</div>';
+                    return;
+                }
+
+                let html = '';
+                slots.forEach(s => {
+                    const isVacant = s.isVago;
+                    const cardBorder = isVacant ? 'border-rose-600/60 bg-rose-950/20' : 'border-gray-800 bg-gray-950/80';
+                    const avatarBg = isVacant ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-teal-500/20 text-teal-400 border border-teal-500/30';
+                    const initials = isVacant ? '!' : (s.nome ? s.nome.substring(0, 2).toUpperCase() : '??');
+
+                    html += `
+                        <div class="p-3 sm:p-3.5 rounded-2xl border ${cardBorder} flex flex-col justify-between gap-3 shadow-md hover:border-gray-700 transition">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <div class="w-10 h-10 rounded-xl ${avatarBg} flex items-center justify-center font-bold text-xs shrink-0">
+                                        ${initials}
+                                    </div>
+                                    <div class="min-w-0">
+                                        ${isVacant 
+                                            ? '<h5 class="text-xs sm:text-sm font-extrabold text-rose-400 flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-rose-500 text-xs animate-pulse"></i> VAGA ABERTA / FALTA</h5>'
+                                            : `<h5 class="text-xs sm:text-sm font-bold text-gray-100 truncate">${s.nome}</h5>`
+                                        }
+                                        <div class="flex items-center gap-1.5 text-[11px] text-gray-400 mt-0.5">
+                                            <i class="fa-solid fa-clock text-[10px] text-teal-400"></i>
+                                            <span class="truncate font-medium">${s.horario || 'Turno Padrão'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="text-[10px] px-2 py-0.5 rounded-lg bg-gray-900 border border-gray-800 text-gray-400 font-mono font-bold shrink-0" title="Linha na Planilha Google">
+                                    L${s.linha}
+                                </span>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-gray-850">
+                                <span class="text-[10px] font-semibold ${isVacant ? 'text-rose-400' : 'text-emerald-400'} flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full ${isVacant ? 'bg-rose-500 animate-ping' : 'bg-emerald-400'}"></span>
+                                    <span>${isVacant ? 'Requer Substituto' : 'Confirmado na Escala'}</span>
+                                </span>
+                                <button type="button" onclick="scheduleApp.openEditSlotModal('${this.currentDay}', ${s.linha}, '${s.colunaLetra}', '${(s.nome || '').replace(/'/g, "\\'")}', '${(s.horario || '').replace(/'/g, "\\'")}', ${isVacant})" class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition active:scale-95 flex items-center gap-1.5 ${isVacant ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm' : 'bg-gray-800 hover:bg-gray-750 text-teal-300 border border-teal-500/30'}">
+                                    <i class="fa-solid ${isVacant ? 'fa-plus' : 'fa-pen-to-square'} text-[10px]"></i>
+                                    <span>${isVacant ? 'Alocar' : 'Substituir'}</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            }
+        }
+
+        // Inicializa o módulo de Escalas Diárias
+        window.scheduleApp = new ScheduleApp();
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.scheduleApp) window.scheduleApp.init();
+        });
     </script>
 
 
@@ -9701,6 +10443,132 @@
                 <div class="flex gap-2 pt-2">
                     <button type="button" onclick="feedbackApp.closeCategoryModal()" class="flex-1 py-2.5 text-xs rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition active:scale-95">Cancelar</button>
                     <button type="submit" class="flex-1 py-2.5 text-xs rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold shadow-lg shadow-purple-600/30 transition active:scale-95">Salvar Tópico</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- MODAL: EDITAR / SUBSTITUIR COLABORADOR     -->
+    <!-- ========================================== -->
+    <div id="modal-schedule-edit-slot" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-gray-900 border border-teal-500/40 rounded-3xl w-full max-w-lg p-5 shadow-2xl overflow-y-auto max-h-[92vh] custom-scrollbar">
+            <div class="flex items-center justify-between pb-3.5 border-b border-gray-800">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-teal-500/20 text-teal-400 border border-teal-500/30 flex items-center justify-center">
+                        <i class="fa-solid fa-user-pen text-base"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-gray-100">Alocação de Posto / Turno</h3>
+                        <p id="modal-sched-slot-desc" class="text-[11px] text-teal-300 font-medium">Segunda-feira • Linha 18</p>
+                    </div>
+                </div>
+                <button type="button" onclick="scheduleApp.closeEditSlotModal()" class="text-gray-400 hover:text-gray-200 w-8 h-8 rounded-lg flex items-center justify-center bg-gray-800">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form onsubmit="scheduleApp.handleSaveSlot(event)" class="space-y-4 mt-4">
+                <input type="hidden" id="modal-sched-dia">
+                <input type="hidden" id="modal-sched-linha">
+                <input type="hidden" id="modal-sched-coluna">
+
+                <!-- Informações do Posto -->
+                <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Horário / Posto na Planilha</span>
+                        <p id="modal-sched-horario-label" class="text-sm font-bold text-gray-200 mt-0.5">08:00 às 16:20</p>
+                    </div>
+                    <span id="modal-sched-current-status" class="text-xs px-2.5 py-1 rounded-xl font-bold bg-gray-800 text-gray-300">Atual</span>
+                </div>
+
+                <!-- Seleção Rápida de Colaboradores do Banco de Dados -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">Escolher Colaborador do Banco de Dados</label>
+                    <select id="modal-sched-collab-select" onchange="scheduleApp.onSelectCollabChange(this.value)" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-teal-500 transition">
+                        <!-- Preenchido via scheduleApp.populateCollabSelect() -->
+                    </select>
+                </div>
+
+                <!-- Ou Digitar Nome Manual -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">Ou Digitar Nome Personalizado / Substituto</label>
+                    <input type="text" id="modal-sched-collab-name" placeholder="Ex: Lucas Silva (Substituto)" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-teal-500 transition">
+                </div>
+
+                <!-- Opção de Deixar Vago / Marcar Falta -->
+                <div class="p-3 rounded-2xl bg-rose-950/20 border border-rose-900/40 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fa-solid fa-triangle-exclamation text-rose-400 text-sm"></i>
+                        <div>
+                            <p class="text-xs font-bold text-rose-300">Marcar como Vaga Aberta / Falta</p>
+                            <p class="text-[10px] text-gray-400">Pintará a célula de vermelho (#ea4335) na planilha para alerta.</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="scheduleApp.markAsVacant()" class="px-3 py-1.5 bg-rose-600/30 hover:bg-rose-600 text-rose-200 text-xs font-bold rounded-xl transition border border-rose-500/40">
+                        Marcar Vago
+                    </button>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="scheduleApp.closeEditSlotModal()" class="flex-1 py-2.5 text-xs rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition active:scale-95">Cancelar</button>
+                    <button type="submit" id="btn-save-sched-slot" class="flex-1 py-2.5 text-xs rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold shadow-lg shadow-teal-600/30 transition active:scale-95 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Salvar & Sincronizar</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: CONFIGURAR CONEXÃO GOOGLE SHEETS    -->
+    <!-- ========================================== -->
+    <div id="modal-schedule-config" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-gray-900 border border-teal-500/40 rounded-3xl w-full max-w-lg p-5 sm:p-6 shadow-2xl overflow-y-auto max-h-[94vh] custom-scrollbar">
+            <div class="flex items-center justify-between pb-3.5 border-b border-gray-800">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-400 border border-teal-500/30 flex items-center justify-center">
+                        <i class="fa-brands fa-google text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-gray-100">Conectar Google Planilhas</h3>
+                        <p class="text-[11px] text-teal-300 font-medium">Sincronização bidirecional em tempo real</p>
+                    </div>
+                </div>
+                <button type="button" onclick="scheduleApp.closeConfigModal()" class="text-gray-400 hover:text-gray-200 w-8 h-8 rounded-lg flex items-center justify-center bg-gray-800">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form onsubmit="scheduleApp.handleSaveConfig(event)" class="space-y-4 mt-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">URL do Web App do Google Apps Script *</label>
+                    <input type="url" id="schedule-config-webapp-url" required placeholder="https://script.google.com/macros/s/AKfycb.../exec" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-gray-100 focus:outline-none focus:border-teal-500 transition font-mono">
+                    <p class="text-[10px] text-gray-500 mt-1">Cole a URL gerada na sua planilha em <em>Implantar > App da Web</em>.</p>
+                </div>
+
+                <!-- Passo a passo simplificado -->
+                <div class="bg-gray-950 p-3.5 rounded-2xl border border-gray-800 text-xs text-gray-300 space-y-2">
+                    <p class="font-bold text-teal-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info"></i> Como obter sua URL em 3 passos:
+                    </p>
+                    <ol class="list-decimal list-inside space-y-1 text-[11px] text-gray-400">
+                        <li>Na sua planilha, vá em <strong>Extensões > Apps Script</strong>.</li>
+                        <li>Crie um arquivo chamado <code>api_taskflow.gs</code> e cole o código fornecido.</li>
+                        <li>Clique em <strong>Implantar > Nova Implantação > App da Web</strong> (Acesso: Qualquer pessoa) e copie a URL gerada!</li>
+                    </ol>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="scheduleApp.testConnection()" id="btn-test-sched-conn" class="px-3.5 py-2.5 text-xs rounded-xl bg-gray-800 hover:bg-gray-700 text-teal-300 font-semibold transition active:scale-95 flex items-center gap-1.5">
+                        <i class="fa-solid fa-vial"></i>
+                        <span>Testar Conexão</span>
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 text-xs rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold shadow-lg shadow-teal-600/30 transition active:scale-95">
+                        Salvar e Conectar
+                    </button>
                 </div>
             </form>
         </div>
