@@ -20,6 +20,20 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+        
+        /* Suporte nativo a Safe Area do iPhone (Notch & Dynamic Island) */
+        .pt-safe-top {
+            padding-top: max(env(safe-area-inset-top, 0px), 12px) !important;
+        }
+        .header-safe-top {
+            padding-top: max(env(safe-area-inset-top, 0px), 8px) !important;
+            min-height: calc(3.75rem + env(safe-area-inset-top, 0px)) !important;
+            height: auto !important;
+        }
+        .pb-safe-bottom {
+            padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px) !important;
+        }
+
         :root {
             --safe-bottom: env(safe-area-inset-bottom, 16px);
             --safe-top: env(safe-area-inset-top, 0px);
@@ -9664,7 +9678,13 @@
             }
 
             constructor() {
-                this.webAppUrl = localStorage.getItem('taskflow_schedule_webapp_url') || '';
+                this.defaultOfficialUrl = 'https://script.google.com/macros/s/AKfycbzlmXyjnVs5uH41a_9bddnNfIn-M2KMU4arwHreAlRkB0DFw3ziMLeR5MOVRarQy_4r/exec';
+                const savedUrl = localStorage.getItem('taskflow_schedule_webapp_url');
+                this.webAppUrl = (savedUrl && savedUrl.trim() !== '') ? savedUrl.trim() : this.defaultOfficialUrl;
+                // Garante que a URL oficial fique salva no localStorage de qualquer novo aparelho
+                if (!savedUrl || savedUrl.trim() === '') {
+                    localStorage.setItem('taskflow_schedule_webapp_url', this.defaultOfficialUrl);
+                }
                 this.currentDay = this.getTodayDayName();
                 this.currentFilter = 'all';
                 this.searchQuery = '';
