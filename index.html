@@ -10136,9 +10136,33 @@
                 container.innerHTML = html;
             }
 
+            
+            getCleanSlots(diaName) {
+                const diaInfo = (this.data && this.data.dias && this.data.dias[diaName]) ? this.data.dias[diaName] : null;
+                if (!diaInfo || !diaInfo.slots) return [];
+
+                return diaInfo.slots.filter(s => {
+                    const nome = String(s.nome || '').trim().toUpperCase();
+                    const horario = String(s.horario || '').trim().toUpperCase();
+                    const linha = Number(s.linha);
+
+                    // Ignora cabeçalhos ("NOME" / "ESCALA" / "HORÁRIO")
+                    if (nome === 'NOME' || horario === 'ESCALA' || horario === 'HORARIO' || horario === 'HORÁRIO') {
+                        return false;
+                    }
+
+                    // Ignora linha de espaçamento antes do início real dos colaboradores (L18 nos dias de semana)
+                    if (diaName !== 'Domingo' && linha < 20 && !s.nome && !s.horario) {
+                        return false;
+                    }
+
+                    return true;
+                });
+            }
+
             renderStatsAndAbsences() {
                 const diaInfo = (this.data && this.data.dias && this.data.dias[this.currentDay]) ? this.data.dias[this.currentDay] : null;
-                const slots = diaInfo ? (diaInfo.slots || []) : [];
+                const slots = this.getCleanSlots(this.currentDay);
                 const ausencias = diaInfo ? (diaInfo.ausencias || []) : [];
 
                 const total = slots.length;
@@ -10199,7 +10223,7 @@
                     return;
                 }
 
-                let slots = diaInfo.slots;
+                let slots = this.getCleanSlots(this.currentDay);
 
                 // Filtros
                 if (this.currentFilter === 'vacant') {
