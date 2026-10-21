@@ -1812,19 +1812,19 @@
 
 
     <!-- ========================================== -->
-    <!-- MODAL NOVA / EDITAR TAREFA                 -->
+    <!-- MODAL NOVA / EDITAR TAREFA (FORMULÁRIO)    -->
     <!-- ========================================== -->
     <div id="task-modal" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-2 sm:p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[94vh] overflow-hidden">
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[94vh] overflow-hidden">
             <!-- Header Fixo -->
-            <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-800 shrink-0">
+            <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-800 shrink-0 bg-gray-950/90">
                 <div class="flex items-center gap-2.5">
                     <div class="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-sm shadow-md">
                         <i class="fa-solid fa-list-check"></i>
                     </div>
                     <div>
                         <h3 class="font-bold text-base text-gray-100" id="modal-title">Nova Tarefa</h3>
-                        <p class="text-[11px] text-indigo-300 font-medium">Gestão operacional, fotos e comunicação em equipe</p>
+                        <p class="text-[11px] text-indigo-300 font-medium">Gestão operacional, fotos e inconsistências</p>
                     </div>
                 </div>
                 <button type="button" onclick="app.closeModal()" class="text-gray-400 hover:text-gray-200 w-8 h-8 rounded-xl flex items-center justify-center bg-gray-800/80 active:scale-95 transition">
@@ -1832,153 +1832,173 @@
                 </button>
             </div>
 
-            <!-- Corpo Dividido: Formulário e Fotos (Esquerda) + Chat da Tarefa (Direita) -->
-            <div class="flex flex-col md:flex-row flex-1 overflow-hidden divide-y md:divide-y-0 md:divide-x divide-gray-800">
-                
-                <!-- Coluna Esquerda: Formulário de Cadastro, Fotos e Inconsistências -->
-                <form id="task-form" onsubmit="app.saveTask(event)" class="flex flex-col flex-1 overflow-hidden">
-                    <div class="p-4 sm:p-5 overflow-y-auto space-y-3.5 custom-scrollbar flex-1">
-                        <input type="hidden" id="task-id">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Título da Tarefa *</label>
-                            <input type="text" id="task-title" required placeholder="Ex: Fechamento de estoque ou conferência de notas..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Atribuir a</label>
-                                <input type="text" id="task-assignee" list="collaborators-datalist" placeholder="Ex: Carlos, Gerência..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
-                                <datalist id="collaborators-datalist"></datalist>
+            <!-- Formulário de Cadastro, Fotos e Inconsistências -->
+            <form id="task-form" onsubmit="app.saveTask(event)" class="flex flex-col flex-1 overflow-hidden">
+                <div class="p-4 sm:p-5 overflow-y-auto space-y-3.5 custom-scrollbar flex-1">
+                    <input type="hidden" id="task-id">
+                    
+                    <!-- Botão de Acesso Rápido ao Chat Dedicado (quando editando tarefa existente) -->
+                    <div id="task-open-chat-container" class="hidden">
+                        <button type="button" onclick="app.openTaskChatFromModal()" class="w-full py-2.5 px-3.5 rounded-2xl bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-700/60 text-indigo-300 text-xs font-bold flex items-center justify-between transition active:scale-98 shadow-sm group">
+                            <div class="flex items-center gap-2">
+                                <span class="w-7 h-7 rounded-lg bg-indigo-600/30 text-indigo-400 border border-indigo-500/40 flex items-center justify-center text-xs group-hover:scale-105 transition">
+                                    <i class="fa-solid fa-comments"></i>
+                                </span>
+                                <span id="task-open-chat-label">Abrir Chat da Tarefa (0 msgs)</span>
                             </div>
+                            <i class="fa-solid fa-chevron-right text-indigo-400 text-xs"></i>
+                        </button>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Título da Tarefa *</label>
+                        <input type="text" id="task-title" required placeholder="Ex: Fechamento de estoque ou conferência de notas..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Atribuir a</label>
+                            <input type="text" id="task-assignee" list="collaborators-datalist" placeholder="Ex: Carlos, Gerência..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
+                            <datalist id="collaborators-datalist"></datalist>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Prioridade</label>
+                            <select id="task-priority" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
+                                <option value="baixa">Baixa</option>
+                                <option value="media" selected>Média</option>
+                                <option value="alta">Alta</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Data de Conclusão / Vencimento</label>
+                        <input type="date" id="task-date" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition font-mono">
+                    </div>
+
+                    <!-- SEÇÃO: GERAR INCONSISTÊNCIA OPERACIONAL PARA RELATÓRIOS -->
+                    <div class="p-3.5 rounded-2xl bg-amber-950/25 border border-amber-900/50 space-y-2.5">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" id="task-inconsistency-toggle" onchange="app.toggleInconsistencyFields(this.checked)" class="accent-amber-500 rounded w-4 h-4">
                             <div>
-                                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Prioridade</label>
-                                <select id="task-priority" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
-                                    <option value="baixa">Baixa</option>
-                                    <option value="media" selected>Média</option>
-                                    <option value="alta">Alta</option>
+                                <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Gerar Inconsistência Operacional para Relatórios
+                                </span>
+                                <p class="text-[10px] text-gray-400">Alimenta o Relatório Mensal com falhas, rupturas e avarias.</p>
+                            </div>
+                        </label>
+                        <div id="task-inconsistency-fields" class="hidden space-y-2 pt-2 border-t border-amber-900/40">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Motivo / Tipo da Inconsistência *</label>
+                                <select id="task-inconsistency-reason" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-amber-200 font-semibold focus:outline-none focus:border-amber-500 transition">
+                                    <option value="Ruptura Quase Total / Parcial">Ruptura Quase Total / Parcial (Pouco produto na gôndola)</option>
+                                    <option value="Ruptura Total (Gôndola Vazia)">Ruptura Total (Gôndola Vazia / Falta Crítica)</option>
+                                    <option value="Avaria de Produto / Embalagem Danificada">Avaria de Produto / Embalagem Danificada</option>
+                                    <option value="Falta de Abastecimento / Estoque Parado">Falta de Abastecimento / Estoque Parado</option>
+                                    <option value="Produto Vencido / Próximo do Vencimento">Produto Vencido / Próximo do Vencimento</option>
+                                    <option value="Divergência de Preço / Etiqueta Ausente">Divergência de Preço / Etiqueta Ausente</option>
+                                    <option value="Outra Inconsistência Operacional">Outra Inconsistência Operacional</option>
                                 </select>
                             </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Data de Conclusão / Vencimento</label>
-                            <input type="date" id="task-date" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition font-mono">
-                        </div>
-
-                        <!-- SEÇÃO: GERAR INCONSISTÊNCIA OPERACIONAL PARA RELATÓRIOS -->
-                        <div class="p-3.5 rounded-2xl bg-amber-950/25 border border-amber-900/50 space-y-2.5">
-                            <label class="flex items-center gap-2 cursor-pointer select-none">
-                                <input type="checkbox" id="task-inconsistency-toggle" onchange="app.toggleInconsistencyFields(this.checked)" class="accent-amber-500 rounded w-4 h-4">
-                                <div>
-                                    <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                                        <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Gerar Inconsistência Operacional para Relatórios
-                                    </span>
-                                    <p class="text-[10px] text-gray-400">Alimenta o Relatório Mensal com falhas, rupturas e avarias.</p>
-                                </div>
-                            </label>
-                            <div id="task-inconsistency-fields" class="hidden space-y-2 pt-2 border-t border-amber-900/40">
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Motivo / Tipo da Inconsistência *</label>
-                                    <select id="task-inconsistency-reason" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-amber-200 font-semibold focus:outline-none focus:border-amber-500 transition">
-                                        <option value="Ruptura Quase Total / Parcial">Ruptura Quase Total / Parcial (Pouco produto na gôndola)</option>
-                                        <option value="Ruptura Total (Gôndola Vazia)">Ruptura Total (Gôndola Vazia / Falta Crítica)</option>
-                                        <option value="Avaria de Produto / Embalagem Danificada">Avaria de Produto / Embalagem Danificada</option>
-                                        <option value="Falta de Abastecimento / Estoque Parado">Falta de Abastecimento / Estoque Parado</option>
-                                        <option value="Produto Vencido / Próximo do Vencimento">Produto Vencido / Próximo do Vencimento</option>
-                                        <option value="Divergência de Preço / Etiqueta Ausente">Divergência de Preço / Etiqueta Ausente</option>
-                                        <option value="Outra Inconsistência Operacional">Outra Inconsistência Operacional</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Setor / Departamento Afetado *</label>
-                                    <select id="task-inconsistency-sector" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-100 focus:outline-none focus:border-amber-500 transition">
-                                        <!-- Injetado dinamicamente -->
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Detalhes do Motivo / Observação</label>
-                                    <textarea id="task-inconsistency-notes" rows="2" placeholder="Ex: Geladeira da cerveja estourada sem reposição há mais de 2 horas..." class="w-full bg-gray-950 border border-gray-800 rounded-xl p-2.5 text-xs text-gray-200 focus:outline-none focus:border-amber-500 transition"></textarea>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- SEÇÃO: FOTOS MÚLTIPLAS / ANEXOS -->
-                        <div id="task-image-section" class="space-y-2">
-                            <div class="flex items-center justify-between">
-                                <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                                    <i class="fa-solid fa-camera text-indigo-400"></i>
-                                    <span>Fotos & Anexos (<span id="task-photos-count" class="text-indigo-300 font-bold">0</span>)</span>
-                                </label>
-                                <span class="text-[10px] text-gray-500">Múltiplas fotos permitidas</span>
-                            </div>
-                            <div class="flex gap-2">
-                                <button type="button" onclick="app.openCamera()" class="flex-1 bg-gray-800 hover:bg-gray-750 active:scale-98 text-gray-200 py-2.5 px-3 rounded-xl text-xs font-semibold transition border border-gray-700 flex items-center justify-center gap-2">
-                                    <i class="fa-solid fa-camera text-indigo-400"></i> <span>Tirar Foto</span>
-                                </button>
-                                <button type="button" onclick="document.getElementById('task-image-input').click()" class="flex-1 bg-gray-800 hover:bg-gray-750 active:scale-98 text-gray-200 py-2.5 px-3 rounded-xl text-xs font-semibold transition border border-gray-700 flex items-center justify-center gap-2 cursor-pointer">
-                                    <i class="fa-solid fa-images text-indigo-400"></i> <span>+ Galeria</span>
-                                </button>
-                                <input type="file" id="task-image-input" accept="image/*" multiple class="hidden" onchange="app.handleImageUpload(event)">
-                                <input type="file" id="camera-fallback-input" accept="image/*" capture="environment" class="hidden" onchange="app.handleImageUpload(event)">
-                            </div>
-                            <p class="text-[10px] text-gray-400 flex items-center gap-1.5 pt-0.5">
-                                <i class="fa-solid fa-circle-info text-indigo-400 text-[10px]"></i>
-                                <span>No celular: segure a foto para marcar várias ou toque em <strong>+ Galeria</strong> novamente para adicionar mais fotos.</span>
-                            </p>
-                            <!-- Miniaturas das fotos anexadas com clique para ampliar e excluir -->
-                            <div id="task-photos-gallery" class="flex flex-wrap gap-2 pt-1.5 min-h-[44px]">
-                                <!-- Injetado via app.renderTaskPhotosPreview() -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Rodapé Fixo do Formulário -->
-                    <div class="p-3.5 sm:p-4 border-t border-gray-800 bg-gray-950/95 flex items-center justify-end gap-2.5 shrink-0 pb-safe">
-                        <button type="button" onclick="app.closeModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300 transition active:scale-95">Cancelar</button>
-                        <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center gap-1.5">
-                            <i class="fa-solid fa-floppy-disk"></i>
-                            <span>Salvar Tarefa</span>
-                        </button>
-                    </div>
-                </form>
-
-                <!-- Coluna Direita: Chat & Discussão da Tarefa com @ Menções -->
-                <div class="flex flex-col flex-1 bg-gray-950/70 p-4 sm:p-5 overflow-hidden">
-                    <div class="flex items-center justify-between pb-3 border-b border-gray-800 shrink-0">
-                        <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-sm border border-indigo-500/30">
-                                <i class="fa-solid fa-comments"></i>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Setor / Departamento Afetado *</label>
+                                <select id="task-inconsistency-sector" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-100 focus:outline-none focus:border-amber-500 transition">
+                                    <!-- Injetado dinamicamente -->
+                                </select>
                             </div>
                             <div>
-                                <h4 class="text-xs font-bold text-gray-100">Chat & Discussão da Tarefa</h4>
-                                <p class="text-[10px] text-gray-400">Use <strong class="text-indigo-400">@nome</strong> para notificar</p>
+                                <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Detalhes do Motivo / Observação</label>
+                                <textarea id="task-inconsistency-notes" rows="2" placeholder="Ex: Geladeira da cerveja estourada sem reposição há mais de 2 horas..." class="w-full bg-gray-950 border border-gray-800 rounded-xl p-2.5 text-xs text-gray-200 focus:outline-none focus:border-amber-500 transition"></textarea>
                             </div>
                         </div>
-                        <span id="task-chat-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-950 border border-indigo-800 text-indigo-300 font-bold">0 msg</span>
                     </div>
 
-                    <!-- Mensagens do Chat -->
-                    <div id="task-chat-messages" class="flex-1 overflow-y-auto space-y-2.5 py-3 custom-scrollbar text-xs min-h-[220px] max-h-[340px] md:max-h-[420px]">
-                        <!-- Injetado via app.renderTaskChat() -->
-                    </div>
-
-                    <!-- Dropdown de Menção @ (Autocomplete Popover) -->
-                    <div id="task-mention-dropdown" class="hidden bg-gray-900 border border-indigo-500/50 rounded-xl p-1.5 shadow-2xl mb-1.5 max-h-36 overflow-y-auto custom-scrollbar space-y-0.5">
-                        <!-- Injetado dinamicamente -->
-                    </div>
-
-                    <!-- Caixa de Entrada do Chat -->
-                    <div class="pt-2.5 border-t border-gray-800 flex items-center gap-1.5 shrink-0 relative">
-                        <button type="button" onclick="app.toggleMentionDropdown()" title="Mencionar Colaborador (@)" class="w-8 h-8 rounded-xl bg-gray-800 hover:bg-gray-700 text-indigo-400 font-black text-xs flex items-center justify-center transition border border-gray-700 active:scale-95">
-                            @
-                        </button>
-                        <input type="text" id="task-chat-input" onkeydown="app.handleChatKeyDown(event)" placeholder="Escreva uma mensagem... (use @ para marcar)" class="flex-1 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition">
-                        <button type="button" onclick="app.sendTaskComment()" class="w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-xs shadow-md transition active:scale-95">
-                            <i class="fa-solid fa-paper-plane"></i>
-                        </button>
+                    <!-- SEÇÃO: FOTOS MÚLTIPLAS / ANEXOS -->
+                    <div id="task-image-section" class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-camera text-indigo-400"></i>
+                                <span>Fotos & Anexos (<span id="task-photos-count" class="text-indigo-300 font-bold">0</span>)</span>
+                            </label>
+                            <span class="text-[10px] text-gray-500">Múltiplas fotos permitidas</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="app.openCamera()" class="flex-1 bg-gray-800 hover:bg-gray-750 active:scale-98 text-gray-200 py-2.5 px-3 rounded-xl text-xs font-semibold transition border border-gray-700 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-camera text-indigo-400"></i> <span>Tirar Foto</span>
+                            </button>
+                            <button type="button" onclick="document.getElementById('task-image-input').click()" class="flex-1 bg-gray-800 hover:bg-gray-750 active:scale-98 text-gray-200 py-2.5 px-3 rounded-xl text-xs font-semibold transition border border-gray-700 flex items-center justify-center gap-2 cursor-pointer">
+                                <i class="fa-solid fa-images text-indigo-400"></i> <span>+ Galeria</span>
+                            </button>
+                            <input type="file" id="task-image-input" accept="image/*" multiple class="hidden" onchange="app.handleImageUpload(event)">
+                            <input type="file" id="camera-fallback-input" accept="image/*" capture="environment" class="hidden" onchange="app.handleImageUpload(event)">
+                        </div>
+                        <p class="text-[10px] text-gray-400 flex items-center gap-1.5 pt-0.5">
+                            <i class="fa-solid fa-circle-info text-indigo-400 text-[10px]"></i>
+                            <span>Toque em <strong>+ Galeria</strong> ou <strong>Tirar Foto</strong> para adicionar mais fotos à tarefa.</span>
+                        </p>
+                        <!-- Miniaturas das fotos anexadas com clique para ampliar e excluir -->
+                        <div id="task-photos-gallery" class="flex flex-wrap gap-2 pt-1.5 min-h-[44px]">
+                            <!-- Injetado via app.renderTaskPhotosPreview() -->
+                        </div>
                     </div>
                 </div>
 
+                <!-- Rodapé Fixo do Formulário -->
+                <div class="p-3.5 sm:p-4 border-t border-gray-800 bg-gray-950/95 flex items-center justify-end gap-2.5 shrink-0 pb-safe">
+                    <button type="button" onclick="app.closeModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300 transition active:scale-95">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center gap-1.5">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>Salvar Tarefa</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- MODAL DEDICADO: CHAT DA TAREFA & @ MENÇÕES -->
+    <!-- ========================================== -->
+    <div id="modal-task-chat" style="display: none; z-index: 100001;" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100001] hidden flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col h-[90vh] sm:h-[82vh] max-h-[720px] overflow-hidden">
+            <!-- Header do Chat -->
+            <div class="flex items-center justify-between p-3.5 sm:p-4 border-b border-gray-800 shrink-0 bg-gray-950/95">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-sm shadow-md shrink-0">
+                        <i class="fa-solid fa-comments"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-sm sm:text-base text-gray-100 truncate" id="task-chat-modal-title">Chat da Tarefa</h3>
+                            <span id="task-chat-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-950 border border-indigo-800 text-indigo-300 font-bold shrink-0">0 msgs</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 truncate" id="task-chat-modal-subtitle">Use @ para marcar colaboradores</p>
+                    </div>
+                </div>
+                <button type="button" onclick="app.closeTaskChat()" class="text-gray-400 hover:text-gray-200 w-8 h-8 rounded-xl flex items-center justify-center bg-gray-800/80 active:scale-95 transition shrink-0 ml-2">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Feed de Mensagens do Chat -->
+            <div id="task-chat-messages" class="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3 custom-scrollbar text-xs bg-gray-950/50">
+                <!-- Injetado via app.renderTaskChat() -->
+            </div>
+
+            <!-- Dropdown de Menção @ (Autocomplete Popover) -->
+            <div id="task-mention-dropdown" class="hidden mx-3 mb-2 bg-gray-900 border border-indigo-500/50 rounded-xl p-1.5 shadow-2xl max-h-40 overflow-y-auto custom-scrollbar space-y-0.5 shrink-0">
+                <!-- Injetado dinamicamente -->
+            </div>
+
+            <!-- Rodapé / Barra de Envio de Mensagem com padding seguro para mobile (pb-safe) -->
+            <div class="p-3 sm:p-3.5 border-t border-gray-800 bg-gray-950/95 flex items-center gap-2 shrink-0 pb-safe">
+                <button type="button" onclick="app.toggleMentionDropdown()" title="Mencionar Colaborador (@)" class="w-10 h-10 rounded-xl bg-gray-800 hover:bg-gray-750 text-indigo-400 font-black text-sm flex items-center justify-center transition border border-gray-700 active:scale-95 shrink-0">
+                    @
+                </button>
+                <input type="text" id="task-chat-input" onkeydown="app.handleChatKeyDown(event)" placeholder="Escreva uma mensagem... (@ para marcar)" class="flex-1 bg-gray-900 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition">
+                <button type="button" onclick="app.sendTaskComment()" class="w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-xs sm:text-sm shadow-md shadow-indigo-600/30 transition active:scale-95 shrink-0">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -3045,6 +3065,9 @@
 
                 this.populateInconsistencySectors();
 
+                const openChatContainer = document.getElementById('task-open-chat-container');
+                const openChatLabel = document.getElementById('task-open-chat-label');
+
                 if(task) {
                     document.getElementById('modal-title').innerText = 'Editar Tarefa';
                     document.getElementById('task-id').value = task.id;
@@ -3079,6 +3102,13 @@
                     }
 
                     this.currentChatTaskId = task.id;
+
+                    // Mostra botão para abrir chat dedicado desta tarefa
+                    if (openChatContainer) openChatContainer.classList.remove('hidden');
+                    if (openChatLabel) {
+                        const count = (task.comments && Array.isArray(task.comments)) ? task.comments.length : 0;
+                        openChatLabel.innerText = `Abrir Chat da Tarefa (${count} msg${count !== 1 ? 's' : ''})`;
+                    }
                 } else {
                     document.getElementById('modal-title').innerText = 'Nova Tarefa';
                     document.getElementById('task-form').reset();
@@ -3091,10 +3121,12 @@
                     const incToggle = document.getElementById('task-inconsistency-toggle');
                     if (incToggle) incToggle.checked = false;
                     this.toggleInconsistencyFields(false);
+
+                    // Oculta botão de chat ao criar nova tarefa
+                    if (openChatContainer) openChatContainer.classList.add('hidden');
                 }
 
                 this.renderTaskPhotosPreview();
-                this.renderTaskChat();
             }
 
             closeModal() {
@@ -3104,8 +3136,56 @@
                     m.classList.add('hidden');
                     m.style.display = 'none';
                 }
+            }
+
+            // ==========================================
+            // MODAL DEDICADO DE CHAT DA TAREFA
+            // ==========================================
+            openTaskChat(taskId) {
+                if (!taskId) return;
+                const task = this.tasks.find(t => t.id == taskId);
+                if (!task) return;
+
+                this.currentChatTaskId = task.id;
+
+                const modal = document.getElementById('modal-task-chat');
+                if (!modal) return;
+
+                const titleEl = document.getElementById('task-chat-modal-title');
+                const subtitleEl = document.getElementById('task-chat-modal-subtitle');
+
+                if (titleEl) titleEl.innerText = task.title || 'Chat da Tarefa';
+                if (subtitleEl) subtitleEl.innerText = `Responsável: ${task.assignee || 'Equipe'}`;
+
+                this.renderTaskChat();
+
+                // Fecha modal de tarefa se estiver aberto
+                this.closeModal();
+
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                modal.style.zIndex = '100001';
+
+                const input = document.getElementById('task-chat-input');
+                if (input) {
+                    setTimeout(() => input.focus(), 150);
+                }
+            }
+
+            closeTaskChat() {
+                const modal = document.getElementById('modal-task-chat');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                }
                 const drop = document.getElementById('task-mention-dropdown');
                 if (drop) drop.classList.add('hidden');
+            }
+
+            openTaskChatFromModal() {
+                if (this.currentChatTaskId) {
+                    this.openTaskChat(this.currentChatTaskId);
+                }
             }
 
             toggleInconsistencyFields(checked) {
@@ -3753,18 +3833,19 @@
                 try { this.playNotificationSound(); } catch(e) {}
                 if (window.syncManager) syncManager.showToast("✓ Mensagem enviada para o chat da tarefa!");
 
-                // Se houver menções, dispara notificação local
-                if (mentionsClean.length > 0) {
-                    const notifTitle = `TaskFlow - @Menção em Tarefa`;
-                    const notifBody = `${authorName} mencionou ${mentionsClean.join(', ')} na tarefa: "${task.title}"`;
-                    try { this.dispatchNotification(notifTitle, notifBody); } catch(e) {}
-                }
+                // Dispara notificação no envio (com menção ou geral)
+                const notifTitle = mentionsClean.length > 0 ? `TaskFlow - @Menção em Tarefa` : `TaskFlow - Chat da Tarefa`;
+                const notifBody = mentionsClean.length > 0 
+                    ? `${authorName} mencionou ${mentionsClean.join(', ')} na tarefa: "${task.title}"`
+                    : `${authorName}: "${text}" na tarefa "${task.title}"`;
+                try { this.dispatchNotification(notifTitle, notifBody); } catch(e) {}
 
                 input.value = '';
                 const drop = document.getElementById('task-mention-dropdown');
                 if (drop) drop.classList.add('hidden');
 
                 this.renderTaskChat();
+                this.render(); // Atualiza contador do card na lista de tarefas imediatamente!
             }
 
             async saveTask(e) {
@@ -4145,7 +4226,7 @@
                                         </span>
                                     ` : ''}
                                     ${commentsCount > 0 ? `
-                                        <button type="button" onclick='app.openModal(${safeTaskJson})' title="Ver conversa da tarefa" class="bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-800/80 text-indigo-300 px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 transition">
+                                        <button type="button" onclick="app.openTaskChat('${t.id}')" title="Ver conversa da tarefa" class="bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-800/80 text-indigo-300 px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 transition">
                                             <i class="fa-solid fa-comments text-[9px]"></i>
                                             <span>${commentsCount}</span>
                                         </button>
@@ -4162,7 +4243,7 @@
                                     ${photos.length > 1 ? `<span class="absolute -bottom-1 -right-1 bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow border border-indigo-400 leading-tight flex items-center gap-0.5"><i class="fa-solid fa-images text-[8px]"></i>+${photos.length - 1}</span>` : ''}
                                 </div>
                             ` : ''}
-                            <button onclick='app.openModal(${safeTaskJson})' title="Abrir Chat & Detalhes da Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-300 hover:bg-gray-800 transition active:scale-95">
+                            <button onclick="app.openTaskChat('${t.id}')" title="Abrir Chat da Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-300 hover:bg-gray-800 transition active:scale-95">
                                 <i class="fa-solid fa-comments text-xs"></i>
                             </button>
                             <button onclick='app.openModal(${safeTaskJson})' title="Editar Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition active:scale-95">
@@ -10236,27 +10317,29 @@
                                 task.comments.push(payload.comment);
                                 task.updatedAt = Date.now();
                                 app.saveLocally();
+                                app.render(); // Atualiza contador na lista de tarefas em tempo real
                             }
                         }
 
-                        // Se o modal estiver aberto nesta tarefa, atualiza o chat ao vivo
+                        // Se o modal de chat estiver aberto nesta tarefa, atualiza o feed ao vivo
                         if (app.currentChatTaskId == payload.taskId) {
                             app.renderTaskChat();
                         }
 
-                        // Notifica se o usuário atual foi mencionado ou se é o criador da tarefa
+                        // Notifica se o usuário atual foi mencionado, é o criador, é o responsável ou administrador
                         if (notify && auth.currentUser) {
                             const myName = (auth.currentUser.displayName || '').toLowerCase().trim();
                             const myEmail = (auth.currentUser.email || '').toLowerCase().trim();
                             const isMentioned = (payload.comment.mentions || []).some(m => String(m).toLowerCase().trim() === myName);
                             const isCreator = (payload.taskAuthorEmail && payload.taskAuthorEmail.toLowerCase() === myEmail);
                             const isAssignee = (payload.taskAssignee && payload.taskAssignee.toLowerCase().includes(myName));
+                            const isAdmin = !!auth.currentUser.isAdmin;
 
-                            if (isMentioned || isCreator || isAssignee) {
-                                app.playNotificationSound();
-                                const notifTitle = isMentioned ? `TaskFlow - @Menção de ${payload.comment.authorName}` : `TaskFlow - Comentário na Tarefa`;
+                            if (isMentioned || isCreator || isAssignee || isAdmin) {
+                                try { app.playNotificationSound(); } catch(e) {}
+                                const notifTitle = isMentioned ? `TaskFlow - @Menção de ${payload.comment.authorName}` : `TaskFlow - Mensagem na Tarefa`;
                                 const notifBody = `${payload.comment.authorName}: "${payload.comment.text}" (${payload.taskTitle || 'Tarefa'})`;
-                                app.dispatchNotification(notifTitle, notifBody);
+                                try { app.dispatchNotification(notifTitle, notifBody); } catch(e) {}
                                 this.showToast(`💬 ${payload.comment.authorName}: "${payload.comment.text}"`);
                             }
                         }
@@ -10528,6 +10611,18 @@
                 } else {
                     replyModal.classList.add('hidden');
                     replyModal.style.display = 'none';
+                }
+                return true;
+            }
+
+            // 3.5. Modal de Chat Dedicado da Tarefa
+            const taskChatModal = document.getElementById('modal-task-chat');
+            if (taskChatModal && !taskChatModal.classList.contains('hidden') && taskChatModal.style.display !== 'none') {
+                if (window.app && typeof window.app.closeTaskChat === 'function') {
+                    window.app.closeTaskChat();
+                } else {
+                    taskChatModal.classList.add('hidden');
+                    taskChatModal.style.display = 'none';
                 }
                 return true;
             }
