@@ -2044,20 +2044,56 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- MODAL VISUALIZAÇÃO DE FOTO EM TELA CHEIA   -->
+    <!-- MODAL GALERIA DE FOTOS (LIGHTBOX / CAROUSEL) -->
     <!-- ========================================== -->
-    <div id="modal-view-image" style="display: none; z-index: 100002;" class="fixed inset-0 bg-black/95 backdrop-blur-md z-[100002] hidden flex flex-col items-center justify-center p-3 sm:p-6" onclick="app.closeFullImage()">
-        <!-- Botão Fechar no Topo Direito -->
-        <button type="button" onclick="app.closeFullImage()" class="absolute top-4 right-4 z-50 bg-gray-900/90 hover:bg-gray-800 text-white w-10 h-10 rounded-full flex items-center justify-center text-base border border-gray-700 shadow-2xl transition active:scale-90">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-
-        <!-- Container da Foto -->
-        <div class="relative max-w-4xl max-h-[90vh] w-full flex items-center justify-center" onclick="event.stopPropagation()">
-            <img id="view-image-full" src="" alt="Foto da Tarefa" class="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-gray-800">
+    <div id="modal-view-image" style="display: none; z-index: 100002;" class="fixed inset-0 bg-black/95 backdrop-blur-md z-[100002] hidden flex flex-col items-center justify-between p-2 sm:p-4 select-none" onclick="app.closeFullImage()">
+        <!-- Top Bar: Título, Contador e Botão Fechar -->
+        <div class="w-full max-w-4xl flex items-center justify-between px-3 py-2 shrink-0 z-50 bg-gray-950/80 rounded-2xl border border-gray-800/80 backdrop-blur-sm" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-images text-xs"></i>
+                </div>
+                <div class="min-w-0">
+                    <h4 class="text-xs font-bold text-gray-100 truncate" id="gallery-task-title">Galeria da Tarefa</h4>
+                    <p class="text-[10px] text-gray-400">Fotos anexadas à tarefa</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <span id="gallery-counter-badge" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-800 shadow">1 de 1</span>
+                <button type="button" onclick="app.closeFullImage()" class="bg-gray-800 hover:bg-gray-700 text-white w-8 h-8 rounded-full flex items-center justify-center text-xs border border-gray-700 shadow transition active:scale-90">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
         </div>
 
-        <p class="text-xs text-gray-400 mt-3 text-center pointer-events-none">Toque em qualquer lugar ou no X para fechar</p>
+        <!-- Área Central com Botões Prev / Next e Imagem -->
+        <div class="relative max-w-4xl w-full flex-1 flex items-center justify-center min-h-0 py-2" onclick="event.stopPropagation()">
+            <!-- Botão Foto Anterior -->
+            <button type="button" id="gallery-btn-prev" onclick="app.prevGalleryImage()" title="Foto anterior" class="absolute left-1 sm:left-4 z-50 bg-gray-900/80 hover:bg-indigo-600 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm sm:text-base border border-gray-700 shadow-2xl transition active:scale-90">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+
+            <!-- Imagem Central em Destaque -->
+            <div class="w-full h-full flex items-center justify-center p-1 sm:p-2">
+                <img id="view-image-full" src="" alt="Foto da Tarefa" class="max-w-full max-h-[68vh] sm:max-h-[72vh] object-contain rounded-2xl shadow-2xl border border-gray-800 transition-all duration-150">
+            </div>
+
+            <!-- Botão Próxima Foto -->
+            <button type="button" id="gallery-btn-next" onclick="app.nextGalleryImage()" title="Próxima foto" class="absolute right-1 sm:right-4 z-50 bg-gray-900/80 hover:bg-indigo-600 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm sm:text-base border border-gray-700 shadow-2xl transition active:scale-90">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Rodapé da Galeria: Miniaturas & Dica de Deslize Touch -->
+        <div class="w-full max-w-4xl flex flex-col items-center gap-1.5 shrink-0 z-50 bg-gray-950/80 p-2 rounded-2xl border border-gray-800/80 backdrop-blur-sm" onclick="event.stopPropagation()">
+            <div id="gallery-thumbnails-strip" class="flex items-center justify-center gap-2 overflow-x-auto max-w-full py-0.5 px-2">
+                <!-- Miniaturas das fotos -->
+            </div>
+            <p class="text-[10px] text-gray-400 text-center pointer-events-none">
+                <span class="sm:hidden">👉 Deslize com o dedo para passar as fotos ou toque nas miniaturas</span>
+                <span class="hidden sm:inline">Use as setas do teclado (← / →) ou clique nos botões para navegar</span>
+            </p>
+        </div>
     </div>
 
 
@@ -3130,7 +3166,7 @@
 
                 let html = this.currentTaskPhotos.map((src, idx) => `
                     <div class="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-700 shrink-0 group shadow-md bg-gray-950">
-                        <img src="${src}" onclick="app.viewFullImage('${src.replace(/'/g, "\\'")}')" title="Clique para ampliar" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition">
+                        <img src="${src}" onclick="app.openTaskPhotosGallery(${idx})" title="Clique para ampliar na galeria" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition">
                         <button type="button" onclick="app.removePhoto(${idx})" title="Remover esta foto" class="absolute top-1 right-1 bg-rose-600 hover:bg-rose-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow-lg transition active:scale-90">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
@@ -3394,29 +3430,108 @@
             }
 
             viewFullImage(target) {
-                if (!target) return;
-                let src = '';
+                this.openGallery(target, 0);
+            }
+
+            openGallery(target, initialIndex = 0) {
+                let images = [];
+                let title = 'Galeria de Fotos';
+
                 if (typeof target === 'string') {
-                    if (target.startsWith('data:') || target.startsWith('http') || target.startsWith('blob:') || target.startsWith('/')) {
-                        src = target;
-                    } else {
-                        const task = this.tasks.find(t => t.id == target);
-                        if (task && task.image) src = task.image;
+                    const task = this.tasks.find(t => t.id == target);
+                    if (task) {
+                        title = task.title || 'Foto da Tarefa';
+                        if (task.images && Array.isArray(task.images) && task.images.length > 0) {
+                            images = [...task.images];
+                        } else if (task.image) {
+                            images = [task.image];
+                        }
+                    } else if (target.startsWith('data:') || target.startsWith('http') || target.startsWith('blob:') || target.startsWith('/')) {
+                        images = [target];
                     }
-                } else if (target && target.src) {
-                    src = target.src;
+                } else if (Array.isArray(target)) {
+                    images = [...target];
+                } else if (target && typeof target === 'object') {
+                    if (target.images && Array.isArray(target.images)) images = [...target.images];
+                    else if (target.image) images = [target.image];
+                    if (target.title) title = target.title;
                 }
-                if (!src) return;
+
+                if (!images || images.length === 0) return;
+
+                this.activeGalleryImages = images;
+                this.activeGalleryIndex = Math.max(0, Math.min(initialIndex, images.length - 1));
+                this.activeGalleryTitle = title;
 
                 const modal = document.getElementById('modal-view-image');
-                const img = document.getElementById('view-image-full');
-                if (modal && img) {
-                    img.src = src;
+                if (modal) {
                     modal.style.zIndex = '100002';
                     modal.classList.remove('hidden');
                     modal.style.display = 'flex';
-                    try { history.pushState({ modal: 'photo' }, ''); } catch(e) {}
+                    this.updateGalleryUI();
+                    try { history.pushState({ modal: 'photo_gallery' }, ''); } catch(e) {}
                 }
+            }
+
+            openTaskPhotosGallery(initialIndex = 0) {
+                if (this.currentTaskPhotos && this.currentTaskPhotos.length > 0) {
+                    const taskTitle = document.getElementById('task-title') ? document.getElementById('task-title').value : 'Nova Tarefa';
+                    this.openGallery(this.currentTaskPhotos, initialIndex);
+                    if (this.activeGalleryTitle) this.activeGalleryTitle = taskTitle || 'Fotos da Tarefa';
+                    this.updateGalleryUI();
+                }
+            }
+
+            updateGalleryUI() {
+                if (!this.activeGalleryImages || this.activeGalleryImages.length === 0) return;
+                const total = this.activeGalleryImages.length;
+                const idx = this.activeGalleryIndex;
+                const currentSrc = this.activeGalleryImages[idx];
+
+                const img = document.getElementById('view-image-full');
+                if (img) img.src = currentSrc;
+
+                const titleEl = document.getElementById('gallery-task-title');
+                if (titleEl) titleEl.innerText = this.activeGalleryTitle || 'Foto da Tarefa';
+
+                const badgeEl = document.getElementById('gallery-counter-badge');
+                if (badgeEl) badgeEl.innerText = `${idx + 1} de ${total}`;
+
+                const btnPrev = document.getElementById('gallery-btn-prev');
+                const btnNext = document.getElementById('gallery-btn-next');
+                if (btnPrev) btnPrev.style.display = (total > 1) ? 'flex' : 'none';
+                if (btnNext) btnNext.style.display = (total > 1) ? 'flex' : 'none';
+
+                const strip = document.getElementById('gallery-thumbnails-strip');
+                if (strip) {
+                    if (total <= 1) {
+                        strip.innerHTML = '';
+                    } else {
+                        strip.innerHTML = this.activeGalleryImages.map((src, i) => `
+                            <button type="button" onclick="app.goToGalleryImage(${i})" class="w-11 h-11 rounded-xl overflow-hidden border-2 shrink-0 transition ${i === idx ? 'border-indigo-500 scale-105 shadow-lg' : 'border-gray-700 opacity-60 hover:opacity-100'}">
+                                <img src="${src}" class="w-full h-full object-cover">
+                            </button>
+                        `).join('');
+                    }
+                }
+            }
+
+            nextGalleryImage() {
+                if (!this.activeGalleryImages || this.activeGalleryImages.length <= 1) return;
+                this.activeGalleryIndex = (this.activeGalleryIndex + 1) % this.activeGalleryImages.length;
+                this.updateGalleryUI();
+            }
+
+            prevGalleryImage() {
+                if (!this.activeGalleryImages || this.activeGalleryImages.length <= 1) return;
+                this.activeGalleryIndex = (this.activeGalleryIndex - 1 + this.activeGalleryImages.length) % this.activeGalleryImages.length;
+                this.updateGalleryUI();
+            }
+
+            goToGalleryImage(index) {
+                if (!this.activeGalleryImages || index < 0 || index >= this.activeGalleryImages.length) return;
+                this.activeGalleryIndex = index;
+                this.updateGalleryUI();
             }
 
             closeFullImage() {
@@ -3425,6 +3540,7 @@
                     modal.classList.add('hidden');
                     modal.style.display = 'none';
                 }
+                this.activeGalleryImages = [];
             }
 
             // ==========================================
@@ -3836,11 +3952,13 @@
                     this.tasks.unshift(remoteTask);
                 }
                 this.saveLocally();
+                this.render();
             }
 
             applyRemoteDelete(taskId) {
                 this.tasks = this.tasks.filter(t => t.id != taskId);
                 this.saveLocally();
+                this.render();
             }
 
             openPomodoro() { 
@@ -4039,9 +4157,9 @@
                         </div>
                         <div class="flex items-center gap-2 shrink-0 self-center">
                             ${photos.length > 0 ? `
-                                <div class="relative inline-block cursor-pointer" onclick="app.viewFullImage('${photos[0].replace(/'/g, "\\'")}')" title="Clique para ver foto">
+                                <div class="relative inline-block cursor-pointer" onclick="app.openGallery('${t.id}', 0)" title="Ver ${photos.length > 1 ? `todas as ${photos.length} fotos` : 'foto'}">
                                     <img src="${photos[0]}" class="w-9 h-9 object-cover rounded-xl border border-gray-700 shrink-0 hover:border-indigo-400 hover:scale-105 active:scale-95 transition shadow-sm">
-                                    ${photos.length > 1 ? `<span class="absolute -bottom-1 -right-1 bg-indigo-600 text-white text-[9px] font-black px-1 rounded-full shadow border border-indigo-400 leading-tight">+${photos.length - 1}</span>` : ''}
+                                    ${photos.length > 1 ? `<span class="absolute -bottom-1 -right-1 bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow border border-indigo-400 leading-tight flex items-center gap-0.5"><i class="fa-solid fa-images text-[8px]"></i>+${photos.length - 1}</span>` : ''}
                                 </div>
                             ` : ''}
                             <button onclick='app.openModal(${safeTaskJson})' title="Abrir Chat & Detalhes da Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-300 hover:bg-gray-800 transition active:scale-95">
@@ -9909,9 +10027,15 @@
 
                 try {
                     this.showToast("Enviando para a equipe...");
+                    const payloadStr = JSON.stringify(actionData);
+                    const headers = {};
+                    if (payloadStr.length > 3500) {
+                        headers['Filename'] = 'payload.json';
+                    }
                     await fetch(this.getPublishUrl(), {
                         method: 'POST',
-                        body: JSON.stringify(actionData)
+                        headers: headers,
+                        body: payloadStr
                     });
                     this.showToast("✓ Atualizado na nuvem!");
                 } catch(err) {
@@ -10520,6 +10644,49 @@
         window.addEventListener('popstate', function(e) {
             window.handleAndroidBackPressed();
         });
+
+        // ==========================================
+        // NAVEGAÇÃO DE FOTOS POR TECLADO E GESTO SWIPE MOBILE
+        // ==========================================
+        window.addEventListener('keydown', function(e) {
+            const photoModal = document.getElementById('modal-view-image');
+            if (photoModal && !photoModal.classList.contains('hidden') && photoModal.style.display !== 'none') {
+                if (e.key === 'ArrowLeft') {
+                    if (window.app) window.app.prevGalleryImage();
+                } else if (e.key === 'ArrowRight') {
+                    if (window.app) window.app.nextGalleryImage();
+                } else if (e.key === 'Escape') {
+                    if (window.app) window.app.closeFullImage();
+                }
+            }
+        });
+
+        (function setupGalleryTouchSwipe() {
+            let touchStartX = 0;
+            let touchEndX = 0;
+            const modal = document.getElementById('modal-view-image');
+            if (!modal) return;
+
+            modal.addEventListener('touchstart', (e) => {
+                if (e.changedTouches && e.changedTouches[0]) {
+                    touchStartX = e.changedTouches[0].screenX;
+                }
+            }, { passive: true });
+
+            modal.addEventListener('touchend', (e) => {
+                if (e.changedTouches && e.changedTouches[0]) {
+                    touchEndX = e.changedTouches[0].screenX;
+                    const diff = touchEndX - touchStartX;
+                    if (Math.abs(diff) > 40) {
+                        if (diff < 0 && window.app) {
+                            window.app.nextGalleryImage();
+                        } else if (diff > 0 && window.app) {
+                            window.app.prevGalleryImage();
+                        }
+                    }
+                }
+            }, { passive: true });
+        })();
     
 
 // =========================================================================
