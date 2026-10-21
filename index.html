@@ -1915,12 +1915,16 @@
                                 <button type="button" onclick="app.openCamera()" class="flex-1 bg-gray-800 hover:bg-gray-750 active:scale-98 text-gray-200 py-2.5 px-3 rounded-xl text-xs font-semibold transition border border-gray-700 flex items-center justify-center gap-2">
                                     <i class="fa-solid fa-camera text-indigo-400"></i> <span>Tirar Foto</span>
                                 </button>
-                                <label class="flex-1 bg-gray-800 hover:bg-gray-750 active:scale-98 text-gray-200 py-2.5 px-3 rounded-xl text-xs font-semibold transition border border-gray-700 flex items-center justify-center gap-2 cursor-pointer">
+                                <button type="button" onclick="document.getElementById('task-image-input').click()" class="flex-1 bg-gray-800 hover:bg-gray-750 active:scale-98 text-gray-200 py-2.5 px-3 rounded-xl text-xs font-semibold transition border border-gray-700 flex items-center justify-center gap-2 cursor-pointer">
                                     <i class="fa-solid fa-images text-indigo-400"></i> <span>+ Galeria</span>
-                                    <input type="file" id="task-image-input" accept="image/*" multiple class="hidden" onchange="app.handleImageUpload(event)">
-                                </label>
+                                </button>
+                                <input type="file" id="task-image-input" accept="image/*" multiple class="hidden" onchange="app.handleImageUpload(event)">
                                 <input type="file" id="camera-fallback-input" accept="image/*" capture="environment" class="hidden" onchange="app.handleImageUpload(event)">
                             </div>
+                            <p class="text-[10px] text-gray-400 flex items-center gap-1.5 pt-0.5">
+                                <i class="fa-solid fa-circle-info text-indigo-400 text-[10px]"></i>
+                                <span>No celular: segure a foto para marcar várias ou toque em <strong>+ Galeria</strong> novamente para adicionar mais fotos.</span>
+                            </p>
                             <!-- Miniaturas das fotos anexadas com clique para ampliar e excluir -->
                             <div id="task-photos-gallery" class="flex flex-wrap gap-2 pt-1.5 min-h-[44px]">
                                 <!-- Injetado via app.renderTaskPhotosPreview() -->
@@ -1981,14 +1985,60 @@
 
 
     <!-- ========================================== -->
-    <!-- MODAL CAMERA NATIVA MOBILE                 -->
+    <!-- MODAL CAMERA TASKFLOW                      -->
     <!-- ========================================== -->
-    <div id="camera-modal" style="display: none;" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col items-center justify-center p-4">
-        <div class="relative w-full max-w-md bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 shadow-2xl">
-            <video id="camera-stream" autoplay playsinline muted class="w-full h-80 object-cover bg-black"></video>
-            <div class="p-4 flex items-center justify-around bg-gray-900/95">
-                <button type="button" onclick="app.closeCamera()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm font-medium">Cancelar</button>
-                <button type="button" onclick="app.capturePhoto()" class="w-14 h-14 bg-white rounded-full border-4 border-indigo-600 flex items-center justify-center shadow-lg active:scale-90 transition"></button>
+    <div id="camera-modal" style="display: none; z-index: 100000;" class="fixed inset-0 bg-black/95 z-[100000] hidden flex flex-col items-center justify-center p-2 sm:p-4">
+        <div class="relative w-full max-w-lg bg-gray-900 rounded-3xl overflow-hidden border border-gray-800 shadow-2xl flex flex-col max-h-[96vh]">
+            <!-- Header da Câmera -->
+            <div class="p-3 sm:p-4 border-b border-gray-800 flex items-center justify-between bg-gray-950/90 shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-camera"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs sm:text-sm font-bold text-gray-100">Câmera TaskFlow</h4>
+                        <p class="text-[10px] text-gray-400">Tire quantas fotos precisar</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="camera-session-count" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800">0 fotos</span>
+                    <button type="button" onclick="app.closeCamera()" class="w-8 h-8 rounded-lg bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center transition">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Viewfinder com Flash effect -->
+            <div class="relative w-full bg-black flex-1 min-h-[260px] sm:min-h-[340px] flex items-center justify-center overflow-hidden">
+                <video id="camera-stream" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                <div id="camera-shutter-flash" class="absolute inset-0 bg-white opacity-0 pointer-events-none transition-opacity duration-150"></div>
+                <canvas id="capture-canvas" class="hidden"></canvas>
+            </div>
+
+            <!-- Faixa de Miniaturas Capturadas nesta sessão -->
+            <div id="camera-session-strip" class="p-2 bg-gray-950 border-t border-gray-800 flex items-center gap-2 overflow-x-auto min-h-[52px]">
+                <span class="text-[10px] text-gray-500 italic px-2">Toque no círculo branco abaixo para tirar fotos.</span>
+            </div>
+
+            <!-- Barra de Controles Inferior -->
+            <div class="p-3 sm:p-4 bg-gray-900 border-t border-gray-800 flex flex-col gap-2 shrink-0">
+                <div class="flex items-center justify-between gap-3">
+                    <button type="button" onclick="app.triggerNativeCamera()" title="Usar app de câmera nativa do celular" class="px-3 py-2.5 bg-gray-800 hover:bg-gray-750 text-gray-300 rounded-xl text-xs font-semibold border border-gray-700 flex items-center gap-1.5 transition active:scale-95">
+                        <i class="fa-solid fa-mobile-screen text-indigo-400"></i>
+                        <span class="hidden sm:inline">Câmera</span> Nativa
+                    </button>
+
+                    <!-- Botão Disparador / Shutter -->
+                    <button type="button" onclick="app.capturePhoto()" title="Tirar Foto" class="w-14 h-14 bg-white hover:bg-gray-100 rounded-full border-4 border-indigo-600 flex items-center justify-center shadow-lg active:scale-90 transition shrink-0">
+                        <div class="w-10 h-10 rounded-full bg-indigo-600/10 border-2 border-dashed border-indigo-400"></div>
+                    </button>
+
+                    <!-- Botão Concluir com contador de fotos -->
+                    <button type="button" onclick="app.finishCameraSession()" id="camera-btn-finish" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 transition active:scale-95">
+                        <span>Anexar</span>
+                        <i class="fa-solid fa-check"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1996,7 +2046,7 @@
     <!-- ========================================== -->
     <!-- MODAL VISUALIZAÇÃO DE FOTO EM TELA CHEIA   -->
     <!-- ========================================== -->
-    <div id="modal-view-image" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/95 backdrop-blur-md hidden flex flex-col items-center justify-center p-3 sm:p-6" onclick="app.closeFullImage()">
+    <div id="modal-view-image" style="display: none; z-index: 100002;" class="fixed inset-0 bg-black/95 backdrop-blur-md z-[100002] hidden flex flex-col items-center justify-center p-3 sm:p-6" onclick="app.closeFullImage()">
         <!-- Botão Fechar no Topo Direito -->
         <button type="button" onclick="app.closeFullImage()" class="absolute top-4 right-4 z-50 bg-gray-900/90 hover:bg-gray-800 text-white w-10 h-10 rounded-full flex items-center justify-center text-base border border-gray-700 shadow-2xl transition active:scale-90">
             <i class="fa-solid fa-xmark"></i>
@@ -2947,6 +2997,9 @@
                     return;
                 }
 
+                this.closeCamera();
+                this.cameraSessionPhotos = [];
+
                 const m = document.getElementById('task-modal');
                 if (m) {
                     m.classList.remove('hidden');
@@ -3009,6 +3062,7 @@
             }
 
             closeModal() {
+                this.closeCamera();
                 const m = document.getElementById('task-modal');
                 if (m) {
                     m.classList.add('hidden');
@@ -3065,7 +3119,8 @@
                 const gallery = document.getElementById('task-photos-gallery');
                 const countBadge = document.getElementById('task-photos-count');
 
-                if (countBadge) countBadge.innerText = this.currentTaskPhotos ? this.currentTaskPhotos.length : 0;
+                const totalPhotos = this.currentTaskPhotos ? this.currentTaskPhotos.length : 0;
+                if (countBadge) countBadge.innerText = totalPhotos;
                 if (!gallery) return;
 
                 if (!this.currentTaskPhotos || this.currentTaskPhotos.length === 0) {
@@ -3073,27 +3128,42 @@
                     return;
                 }
 
-                gallery.innerHTML = this.currentTaskPhotos.map((src, idx) => `
+                let html = this.currentTaskPhotos.map((src, idx) => `
                     <div class="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-700 shrink-0 group shadow-md bg-gray-950">
-                        <img src="${src}" onclick="app.viewFullImage('${src}')" title="Clique para ampliar" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition">
-                        <button type="button" onclick="app.removePhoto(${idx})" title="Remover esta foto" class="absolute top-1 right-1 bg-rose-600/90 hover:bg-rose-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow-lg transition active:scale-90">
+                        <img src="${src}" onclick="app.viewFullImage('${src.replace(/'/g, "\\'")}')" title="Clique para ampliar" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition">
+                        <button type="button" onclick="app.removePhoto(${idx})" title="Remover esta foto" class="absolute top-1 right-1 bg-rose-600 hover:bg-rose-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow-lg transition active:scale-90">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     </div>
                 `).join('');
+
+                // Botão de atalho para adicionar mais fotos direto na galeria
+                html += `
+                    <button type="button" onclick="document.getElementById('task-image-input').click()" title="Adicionar mais fotos da galeria" class="w-16 h-16 rounded-xl border-2 border-dashed border-gray-700 hover:border-indigo-500 bg-gray-900/60 hover:bg-gray-800 text-gray-400 hover:text-indigo-300 flex flex-col items-center justify-center gap-1 transition shrink-0 active:scale-95 cursor-pointer">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span class="text-[9px] font-bold">+ Foto</span>
+                    </button>
+                `;
+
+                gallery.innerHTML = html;
             }
 
             removePhoto(idx) {
-                if (this.currentTaskPhotos && this.currentTaskPhotos[idx]) {
+                if (this.currentTaskPhotos && this.currentTaskPhotos[idx] !== undefined) {
                     this.currentTaskPhotos.splice(idx, 1);
                     this.renderTaskPhotosPreview();
                 }
             }
 
-            compressImage(fileOrDataUrl, maxWidth = 640, quality = 0.65) {
+            compressImage(fileOrDataUrl, maxWidth = 800, quality = 0.7) {
                 return new Promise((resolve) => {
                     const img = new Image();
+                    let blobUrl = null;
+
                     img.onload = () => {
+                        if (blobUrl) {
+                            try { URL.revokeObjectURL(blobUrl); } catch(e) {}
+                        }
                         let w = img.width;
                         let h = img.height;
                         if (w > maxWidth || h > maxWidth) {
@@ -3113,10 +3183,26 @@
                         const compressed = canvas.toDataURL('image/jpeg', quality);
                         resolve(compressed);
                     };
-                    img.onerror = () => resolve(null);
+
+                    img.onerror = () => {
+                        if (blobUrl) {
+                            try { URL.revokeObjectURL(blobUrl); } catch(e) {}
+                        }
+                        resolve(null);
+                    };
 
                     if (typeof fileOrDataUrl === 'string') {
                         img.src = fileOrDataUrl;
+                    } else if (window.URL && typeof window.URL.createObjectURL === 'function') {
+                        try {
+                            blobUrl = URL.createObjectURL(fileOrDataUrl);
+                            img.src = blobUrl;
+                        } catch(e) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => { img.src = e.target.result; };
+                            reader.onerror = () => resolve(null);
+                            reader.readAsDataURL(fileOrDataUrl);
+                        }
                     } else {
                         const reader = new FileReader();
                         reader.onload = (e) => { img.src = e.target.result; };
@@ -3130,12 +3216,13 @@
                 const files = e.target.files;
                 if (!files || files.length === 0) return;
 
-                if (window.syncManager) window.syncManager.showToast(`Otimizando ${files.length} foto(s)...`);
+                const count = files.length;
+                if (window.syncManager) window.syncManager.showToast(`Processando ${count} foto(s)...`);
 
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
                     try {
-                        const compressed = await this.compressImage(file, 640, 0.65);
+                        const compressed = await this.compressImage(file, 800, 0.7);
                         if (compressed) {
                             if (!this.currentTaskPhotos) this.currentTaskPhotos = [];
                             this.currentTaskPhotos.push(compressed);
@@ -3146,38 +3233,71 @@
                 }
 
                 this.renderTaskPhotosPreview();
-                if (window.syncManager) window.syncManager.showToast("✓ Foto(s) anexada(s) à tarefa com sucesso!");
-                e.target.value = ''; // Limpa para permitir subir a mesma foto de novo se necessário
+                if (window.syncManager) window.syncManager.showToast(`✓ ${count} foto(s) anexada(s)!`);
+                e.target.value = ''; // Permite selecionar mais fotos em seguida
             }
 
             async openCamera() {
                 const modal = document.getElementById('camera-modal');
                 const video = document.getElementById('camera-stream');
-                
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+
+                // Garante que o modal esteja visível com o maior z-index
+                if (modal) {
+                    modal.style.zIndex = '100000';
                     modal.classList.remove('hidden');
                     modal.style.display = 'flex';
+                }
+
+                this.cameraSessionPhotos = [];
+                this.updateCameraSessionUI();
+
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                     try {
                         this.mediaStream = await navigator.mediaDevices.getUserMedia({
-                            video: { facingMode: { ideal: 'environment' } },
+                            video: { 
+                                facingMode: { ideal: 'environment' },
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 }
+                            },
                             audio: false
                         });
-                        video.srcObject = this.mediaStream;
+                        if (video) {
+                            video.srcObject = this.mediaStream;
+                            video.play().catch(() => {});
+                        }
                         return;
                     } catch(err) {
-                        this.closeCamera();
+                        console.warn("getUserMedia falhou ou foi bloqueado:", err);
                     }
                 }
-                
+
+                // Fallback automático para a câmera nativa do celular se não puder rodar stream de vídeo
+                this.closeCamera();
                 const fallbackInput = document.getElementById('camera-fallback-input');
-                if (fallbackInput) fallbackInput.click();
+                if (fallbackInput) {
+                    if (window.syncManager) window.syncManager.showToast("Abrindo câmera do aparelho...");
+                    fallbackInput.click();
+                }
+            }
+
+            triggerNativeCamera() {
+                this.closeCamera();
+                const fallbackInput = document.getElementById('camera-fallback-input');
+                if (fallbackInput) {
+                    fallbackInput.click();
+                }
             }
 
             closeCamera() {
-                if(this.mediaStream) {
-                    this.mediaStream.getTracks().forEach(track => track.stop());
+                if (this.mediaStream) {
+                    try {
+                        this.mediaStream.getTracks().forEach(track => track.stop());
+                    } catch(e) {}
                     this.mediaStream = null;
                 }
+                const video = document.getElementById('camera-stream');
+                if (video) video.srcObject = null;
+
                 const modal = document.getElementById('camera-modal');
                 if (modal) {
                     modal.classList.add('hidden');
@@ -3187,9 +3307,21 @@
 
             async capturePhoto() {
                 const video = document.getElementById('camera-stream');
-                let w = video.videoWidth || 640;
-                let h = video.videoHeight || 480;
-                const maxDim = 640;
+                if (!video || !video.videoWidth) {
+                    if (window.syncManager) window.syncManager.showToast("Iniciando câmera... Aguarde 1 segundo.");
+                    return;
+                }
+
+                // Efeito visual de Flash no visor
+                const flash = document.getElementById('camera-shutter-flash');
+                if (flash) {
+                    flash.style.opacity = '0.85';
+                    setTimeout(() => { flash.style.opacity = '0'; }, 150);
+                }
+
+                let w = video.videoWidth || 800;
+                let h = video.videoHeight || 600;
+                const maxDim = 800;
                 if (w > maxDim || h > maxDim) {
                     if (w > h) {
                         h = Math.round((h * maxDim) / w);
@@ -3199,18 +3331,66 @@
                         h = maxDim;
                     }
                 }
-                const canvas = document.getElementById('capture-canvas');
+
+                const canvas = document.getElementById('capture-canvas') || document.createElement('canvas');
                 canvas.width = w;
                 canvas.height = h;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, w, h);
-                const captured = canvas.toDataURL('image/jpeg', 0.65);
-                this.closeCamera();
+                const captured = canvas.toDataURL('image/jpeg', 0.7);
 
                 if (!this.currentTaskPhotos) this.currentTaskPhotos = [];
                 this.currentTaskPhotos.push(captured);
+
+                if (!this.cameraSessionPhotos) this.cameraSessionPhotos = [];
+                this.cameraSessionPhotos.push(captured);
+
+                this.updateCameraSessionUI();
                 this.renderTaskPhotosPreview();
-                if (window.syncManager) window.syncManager.showToast("✓ Foto capturada!");
+
+                if (window.syncManager) {
+                    window.syncManager.showToast(`✓ Foto ${this.cameraSessionPhotos.length} capturada! Pode tirar mais.`);
+                }
+            }
+
+            updateCameraSessionUI() {
+                const countBadge = document.getElementById('camera-session-count');
+                const strip = document.getElementById('camera-session-strip');
+                const btnFinish = document.getElementById('camera-btn-finish');
+
+                const totalSession = (this.cameraSessionPhotos && this.cameraSessionPhotos.length) || 0;
+                const totalAll = (this.currentTaskPhotos && this.currentTaskPhotos.length) || 0;
+
+                if (countBadge) {
+                    countBadge.innerText = `${totalAll} fotos`;
+                }
+
+                if (btnFinish) {
+                    btnFinish.innerHTML = `<span>Anexar (${totalAll})</span> <i class="fa-solid fa-check"></i>`;
+                }
+
+                if (strip) {
+                    if (!this.cameraSessionPhotos || this.cameraSessionPhotos.length === 0) {
+                        strip.innerHTML = '<span class="text-[10px] text-gray-500 italic px-2">Toque no círculo branco abaixo para tirar fotos.</span>';
+                    } else {
+                        strip.innerHTML = this.cameraSessionPhotos.map((src, sIdx) => `
+                            <div class="relative w-11 h-11 rounded-lg overflow-hidden border border-gray-700 shrink-0 bg-black">
+                                <img src="${src}" class="w-full h-full object-cover">
+                                <span class="absolute bottom-0 right-0 bg-indigo-600 text-[8px] font-bold px-1 text-white">${sIdx + 1}</span>
+                            </div>
+                        `).join('');
+                        strip.scrollLeft = strip.scrollWidth;
+                    }
+                }
+            }
+
+            finishCameraSession() {
+                this.closeCamera();
+                this.renderTaskPhotosPreview();
+                if (window.syncManager) {
+                    const total = (this.currentTaskPhotos && this.currentTaskPhotos.length) || 0;
+                    window.syncManager.showToast(`✓ ${total} foto(s) anexada(s) à tarefa!`);
+                }
             }
 
             viewFullImage(target) {
@@ -3232,6 +3412,7 @@
                 const img = document.getElementById('view-image-full');
                 if (modal && img) {
                     img.src = src;
+                    modal.style.zIndex = '100002';
                     modal.classList.remove('hidden');
                     modal.style.display = 'flex';
                     try { history.pushState({ modal: 'photo' }, ''); } catch(e) {}
