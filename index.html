@@ -1236,20 +1236,43 @@
                     </div>
                 </div>
 
+                <!-- Alerta de Setores Sem Cobertura / Vagas Abertas -->
+                <div id="schedule-uncovered-alert" class="hidden p-3.5 rounded-2xl bg-rose-950/40 border border-rose-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-triangle-exclamation text-sm animate-pulse"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-rose-300" id="schedule-uncovered-alert-title">Atenção Líder: Setores Descobertos</p>
+                            <p class="text-[11px] text-gray-300" id="schedule-uncovered-alert-desc">Há postos sem colaboradores alocados para este dia.</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="scheduleApp.setFilter('vacant')" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] transition shrink-0 active:scale-95 shadow-md shadow-rose-600/30 flex items-center gap-1.5">
+                        <i class="fa-solid fa-filter text-[10px]"></i> Ver Apenas Vagas Abertas
+                    </button>
+                </div>
+
                 <!-- Barra de Filtros e Busca de Postos -->
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 custom-scrollbar">
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 custom-scrollbar flex-wrap">
                         <button type="button" onclick="scheduleApp.setFilter('all')" id="sched-filter-all" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-teal-600 text-white shadow-sm">Todos</button>
                         <button type="button" onclick="scheduleApp.setFilter('vacant')" id="sched-filter-vacant" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 text-gray-400 hover:text-gray-200 border border-gray-800">
-                            <i class="fa-solid fa-circle-exclamation text-rose-400 text-[10px]"></i> Apenas Vagas Abertas
+                            <i class="fa-solid fa-circle-exclamation text-rose-400 text-[10px]"></i> Vagas Abertas
                         </button>
                         <button type="button" onclick="scheduleApp.setFilter('assigned')" id="sched-filter-assigned" class="px-3 py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 text-gray-400 hover:text-gray-200 border border-gray-800">
-                            <i class="fa-solid fa-circle-check text-emerald-400 text-[10px]"></i> Apenas Alocados
+                            <i class="fa-solid fa-circle-check text-emerald-400 text-[10px]"></i> Alocados
                         </button>
+                        <!-- Filtro de Departamento / Setor -->
+                        <div class="relative shrink-0">
+                            <select id="sched-filter-dept" onchange="scheduleApp.setDeptFilter(this.value)" class="bg-gray-900 border border-gray-800 hover:border-teal-500/50 rounded-xl px-2.5 py-1.5 text-xs text-teal-300 font-bold focus:outline-none focus:border-teal-500 transition">
+                                <option value="all">🏢 Todos os Departamentos</option>
+                                <option value="uncovered">⚠️ Departamentos Sem Ninguém</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="relative flex-1 sm:max-w-xs">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs"></i>
-                        <input type="text" id="schedule-search-input" oninput="scheduleApp.handleSearch(this.value)" placeholder="Buscar colaborador ou horário..." class="w-full bg-gray-950 border border-gray-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-teal-500 transition">
+                        <input type="text" id="schedule-search-input" oninput="scheduleApp.handleSearch(this.value)" placeholder="Buscar colaborador, horário ou setor..." class="w-full bg-gray-950 border border-gray-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-teal-500 transition">
                     </div>
                 </div>
 
@@ -1791,74 +1814,168 @@
     <!-- ========================================== -->
     <!-- MODAL NOVA / EDITAR TAREFA                 -->
     <!-- ========================================== -->
-    <div id="task-modal" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-3 sm:p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+    <div id="task-modal" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[94vh] overflow-hidden">
             <!-- Header Fixo -->
             <div class="flex items-center justify-between p-4 sm:p-5 border-b border-gray-800 shrink-0">
-                <h3 class="font-bold text-base text-gray-100" id="modal-title">Nova Tarefa</h3>
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-sm shadow-md">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-gray-100" id="modal-title">Nova Tarefa</h3>
+                        <p class="text-[11px] text-indigo-300 font-medium">Gestão operacional, fotos e comunicação em equipe</p>
+                    </div>
+                </div>
                 <button type="button" onclick="app.closeModal()" class="text-gray-400 hover:text-gray-200 w-8 h-8 rounded-xl flex items-center justify-center bg-gray-800/80 active:scale-95 transition">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
-            <!-- Formulário com Corpo Rolável e Rodapé Fixo -->
-            <form id="task-form" onsubmit="app.saveTask(event)" class="flex flex-col flex-1 overflow-hidden">
-                <div class="p-4 sm:p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1">
-                    <input type="hidden" id="task-id">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Título da Tarefa</label>
-                        <input type="text" id="task-title" required placeholder="Ex: Fechamento de estoque ou conferência de notas..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-sm text-gray-100 focus:outline-none focus:border-indigo-500">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3 sm:gap-4">
+            <!-- Corpo Dividido: Formulário e Fotos (Esquerda) + Chat da Tarefa (Direita) -->
+            <div class="flex flex-col md:flex-row flex-1 overflow-hidden divide-y md:divide-y-0 md:divide-x divide-gray-800">
+                
+                <!-- Coluna Esquerda: Formulário de Cadastro, Fotos e Inconsistências -->
+                <form id="task-form" onsubmit="app.saveTask(event)" class="flex flex-col flex-1 overflow-hidden">
+                    <div class="p-4 sm:p-5 overflow-y-auto space-y-3.5 custom-scrollbar flex-1">
+                        <input type="hidden" id="task-id">
                         <div>
-                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Atribuir a</label>
-                            <input type="text" id="task-assignee" list="collaborators-datalist" placeholder="Ex: Carlos, Gerência..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 sm:px-4 py-2.5 text-sm text-gray-100 focus:outline-none focus:border-indigo-500">
-                            <datalist id="collaborators-datalist"></datalist>
+                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Título da Tarefa *</label>
+                            <input type="text" id="task-title" required placeholder="Ex: Fechamento de estoque ou conferência de notas..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
                         </div>
+
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Atribuir a</label>
+                                <input type="text" id="task-assignee" list="collaborators-datalist" placeholder="Ex: Carlos, Gerência..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
+                                <datalist id="collaborators-datalist"></datalist>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Prioridade</label>
+                                <select id="task-priority" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
+                                    <option value="baixa">Baixa</option>
+                                    <option value="media" selected>Média</option>
+                                    <option value="alta">Alta</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div>
-                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Prioridade</label>
-                            <select id="task-priority" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 sm:px-4 py-2.5 text-sm text-gray-100 focus:outline-none focus:border-indigo-500">
-                                <option value="baixa">Baixa</option>
-                                <option value="media" selected>Média</option>
-                                <option value="alta">Alta</option>
-                            </select>
+                            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Data de Conclusão / Vencimento</label>
+                            <input type="date" id="task-date" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition font-mono">
                         </div>
-                    </div>
 
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Data de Conclusão / Vencimento</label>
-                        <input type="date" id="task-date" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-sm text-gray-100 focus:outline-none focus:border-indigo-500">
-                    </div>
-
-                    <!-- Área da Câmera (Pode ser desativada pelo Admin) -->
-                    <div id="task-image-section">
-                        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Anexo / Foto</label>
-                        <div class="flex gap-2">
-                            <button type="button" onclick="app.openCamera()" class="flex-1 bg-gray-800 hover:bg-gray-700 active:scale-98 text-gray-200 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium transition border border-gray-700 flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-camera text-indigo-400"></i> <span class="whitespace-nowrap">Tirar Foto</span>
-                            </button>
-                            <label class="flex-1 bg-gray-800 hover:bg-gray-700 active:scale-98 text-gray-200 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium transition border border-gray-700 flex items-center justify-center gap-2 cursor-pointer">
-                                <i class="fa-solid fa-image text-indigo-400"></i> <span class="whitespace-nowrap">Galeria</span>
-                                <input type="file" id="task-image-input" accept="image/*" class="hidden" onchange="app.handleImageUpload(event)">
+                        <!-- SEÇÃO: GERAR INCONSISTÊNCIA OPERACIONAL PARA RELATÓRIOS -->
+                        <div class="p-3.5 rounded-2xl bg-amber-950/25 border border-amber-900/50 space-y-2.5">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" id="task-inconsistency-toggle" onchange="app.toggleInconsistencyFields(this.checked)" class="accent-amber-500 rounded w-4 h-4">
+                                <div>
+                                    <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Gerar Inconsistência Operacional para Relatórios
+                                    </span>
+                                    <p class="text-[10px] text-gray-400">Alimenta o Relatório Mensal com falhas, rupturas e avarias.</p>
+                                </div>
                             </label>
-                            <input type="file" id="camera-fallback-input" accept="image/*" capture="environment" class="hidden" onchange="app.handleImageUpload(event)">
+                            <div id="task-inconsistency-fields" class="hidden space-y-2 pt-2 border-t border-amber-900/40">
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Motivo / Tipo da Inconsistência *</label>
+                                    <select id="task-inconsistency-reason" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-amber-200 font-semibold focus:outline-none focus:border-amber-500 transition">
+                                        <option value="Ruptura Quase Total / Parcial">Ruptura Quase Total / Parcial (Pouco produto na gôndola)</option>
+                                        <option value="Ruptura Total (Gôndola Vazia)">Ruptura Total (Gôndola Vazia / Falta Crítica)</option>
+                                        <option value="Avaria de Produto / Embalagem Danificada">Avaria de Produto / Embalagem Danificada</option>
+                                        <option value="Falta de Abastecimento / Estoque Parado">Falta de Abastecimento / Estoque Parado</option>
+                                        <option value="Produto Vencido / Próximo do Vencimento">Produto Vencido / Próximo do Vencimento</option>
+                                        <option value="Divergência de Preço / Etiqueta Ausente">Divergência de Preço / Etiqueta Ausente</option>
+                                        <option value="Outra Inconsistência Operacional">Outra Inconsistência Operacional</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Setor / Departamento Afetado *</label>
+                                    <select id="task-inconsistency-sector" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-100 focus:outline-none focus:border-amber-500 transition">
+                                        <!-- Injetado dinamicamente -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Detalhes do Motivo / Observação</label>
+                                    <textarea id="task-inconsistency-notes" rows="2" placeholder="Ex: Geladeira da cerveja estourada sem reposição há mais de 2 horas..." class="w-full bg-gray-950 border border-gray-800 rounded-xl p-2.5 text-xs text-gray-200 focus:outline-none focus:border-amber-500 transition"></textarea>
+                                </div>
+                            </div>
                         </div>
-                        <div id="image-preview-container" class="mt-3 hidden relative w-24 h-24 rounded-xl overflow-hidden border border-gray-700">
-                            <img id="image-preview" src="" onclick="app.viewFullImage(this.src)" title="Clique para ver em tela cheia" class="w-full h-full object-cover cursor-pointer hover:opacity-90 transition">
-                            <button type="button" onclick="app.removeImage()" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
+
+                        <!-- SEÇÃO: FOTOS MÚLTIPLAS / ANEXOS -->
+                        <div id="task-image-section" class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="fa-solid fa-camera text-indigo-400"></i>
+                                    <span>Fotos & Anexos (<span id="task-photos-count" class="text-indigo-300 font-bold">0</span>)</span>
+                                </label>
+                                <span class="text-[10px] text-gray-500">Múltiplas fotos permitidas</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="app.openCamera()" class="flex-1 bg-gray-800 hover:bg-gray-750 active:scale-98 text-gray-200 py-2.5 px-3 rounded-xl text-xs font-semibold transition border border-gray-700 flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-camera text-indigo-400"></i> <span>Tirar Foto</span>
+                                </button>
+                                <label class="flex-1 bg-gray-800 hover:bg-gray-750 active:scale-98 text-gray-200 py-2.5 px-3 rounded-xl text-xs font-semibold transition border border-gray-700 flex items-center justify-center gap-2 cursor-pointer">
+                                    <i class="fa-solid fa-images text-indigo-400"></i> <span>+ Galeria</span>
+                                    <input type="file" id="task-image-input" accept="image/*" multiple class="hidden" onchange="app.handleImageUpload(event)">
+                                </label>
+                                <input type="file" id="camera-fallback-input" accept="image/*" capture="environment" class="hidden" onchange="app.handleImageUpload(event)">
+                            </div>
+                            <!-- Miniaturas das fotos anexadas com clique para ampliar e excluir -->
+                            <div id="task-photos-gallery" class="flex flex-wrap gap-2 pt-1.5 min-h-[44px]">
+                                <!-- Injetado via app.renderTaskPhotosPreview() -->
+                            </div>
                         </div>
+                    </div>
+
+                    <!-- Rodapé Fixo do Formulário -->
+                    <div class="p-3.5 sm:p-4 border-t border-gray-800 bg-gray-950/95 flex items-center justify-end gap-2.5 shrink-0 pb-safe">
+                        <button type="button" onclick="app.closeModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300 transition active:scale-95">Cancelar</button>
+                        <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center gap-1.5">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>Salvar Tarefa</span>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Coluna Direita: Chat & Discussão da Tarefa com @ Menções -->
+                <div class="flex flex-col flex-1 bg-gray-950/70 p-4 sm:p-5 overflow-hidden">
+                    <div class="flex items-center justify-between pb-3 border-b border-gray-800 shrink-0">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-sm border border-indigo-500/30">
+                                <i class="fa-solid fa-comments"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-100">Chat & Discussão da Tarefa</h4>
+                                <p class="text-[10px] text-gray-400">Use <strong class="text-indigo-400">@nome</strong> para notificar</p>
+                            </div>
+                        </div>
+                        <span id="task-chat-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-950 border border-indigo-800 text-indigo-300 font-bold">0 msg</span>
+                    </div>
+
+                    <!-- Mensagens do Chat -->
+                    <div id="task-chat-messages" class="flex-1 overflow-y-auto space-y-2.5 py-3 custom-scrollbar text-xs min-h-[220px] max-h-[340px] md:max-h-[420px]">
+                        <!-- Injetado via app.renderTaskChat() -->
+                    </div>
+
+                    <!-- Dropdown de Menção @ (Autocomplete Popover) -->
+                    <div id="task-mention-dropdown" class="hidden bg-gray-900 border border-indigo-500/50 rounded-xl p-1.5 shadow-2xl mb-1.5 max-h-36 overflow-y-auto custom-scrollbar space-y-0.5">
+                        <!-- Injetado dinamicamente -->
+                    </div>
+
+                    <!-- Caixa de Entrada do Chat -->
+                    <div class="pt-2.5 border-t border-gray-800 flex items-center gap-1.5 shrink-0 relative">
+                        <button type="button" onclick="app.toggleMentionDropdown()" title="Mencionar Colaborador (@)" class="w-8 h-8 rounded-xl bg-gray-800 hover:bg-gray-700 text-indigo-400 font-black text-xs flex items-center justify-center transition border border-gray-700 active:scale-95">
+                            @
+                        </button>
+                        <input type="text" id="task-chat-input" onkeydown="app.handleChatKeyDown(event)" placeholder="Escreva uma mensagem... (use @ para marcar)" class="flex-1 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition">
+                        <button type="button" onclick="app.sendTaskComment()" class="w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-xs shadow-md transition active:scale-95">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Rodapé Fixo com Safe Area e Botões Protegidos contra Truncamento -->
-                <div class="p-4 sm:p-5 border-t border-gray-800 bg-gray-950/95 flex items-center justify-end gap-3 shrink-0 pb-safe">
-                    <button type="button" onclick="app.closeModal()" class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300 transition active:scale-95 whitespace-nowrap min-w-[90px]">Cancelar</button>
-                    <button type="submit" class="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition active:scale-95 whitespace-nowrap min-w-[130px]">Salvar Tarefa</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -2836,23 +2953,59 @@
                     m.style.display = 'flex';
                     m.style.zIndex = '99999';
                 }
+
+                this.populateInconsistencySectors();
+
                 if(task) {
                     document.getElementById('modal-title').innerText = 'Editar Tarefa';
                     document.getElementById('task-id').value = task.id;
-                    document.getElementById('task-title').value = task.title;
+                    document.getElementById('task-title').value = task.title || '';
                     document.getElementById('task-assignee').value = task.assignee || '';
                     document.getElementById('task-date').value = task.date || '';
                     document.getElementById('task-priority').value = task.priority || 'media';
-                    this.tempImage = task.image || null;
+
+                    // Fotos múltiplas com suporte a legado (task.images ou task.image)
+                    if (task.images && Array.isArray(task.images)) {
+                        this.currentTaskPhotos = [...task.images];
+                    } else if (task.image) {
+                        this.currentTaskPhotos = [task.image];
+                    } else {
+                        this.currentTaskPhotos = [];
+                    }
+
+                    // Inconsistência Operacional
+                    const incToggle = document.getElementById('task-inconsistency-toggle');
+                    if (task.inconsistency && task.inconsistency.hasInconsistency) {
+                        if (incToggle) incToggle.checked = true;
+                        this.toggleInconsistencyFields(true);
+                        const rSelect = document.getElementById('task-inconsistency-reason');
+                        const sSelect = document.getElementById('task-inconsistency-sector');
+                        const nText = document.getElementById('task-inconsistency-notes');
+                        if (rSelect) rSelect.value = task.inconsistency.reason || '';
+                        if (sSelect) sSelect.value = task.inconsistency.sector || '';
+                        if (nText) nText.value = task.inconsistency.notes || '';
+                    } else {
+                        if (incToggle) incToggle.checked = false;
+                        this.toggleInconsistencyFields(false);
+                    }
+
+                    this.currentChatTaskId = task.id;
                 } else {
                     document.getElementById('modal-title').innerText = 'Nova Tarefa';
                     document.getElementById('task-form').reset();
                     document.getElementById('task-id').value = '';
                     document.getElementById('task-date').value = getLocalTodayString();
                     document.getElementById('task-assignee').value = auth.currentUser ? auth.currentUser.displayName : '';
-                    this.tempImage = null;
+                    this.currentTaskPhotos = [];
+                    this.currentChatTaskId = null;
+
+                    const incToggle = document.getElementById('task-inconsistency-toggle');
+                    if (incToggle) incToggle.checked = false;
+                    this.toggleInconsistencyFields(false);
                 }
-                this.updateImagePreview();
+
+                this.renderTaskPhotosPreview();
+                this.renderTaskChat();
             }
 
             closeModal() {
@@ -2860,6 +3013,80 @@
                 if (m) {
                     m.classList.add('hidden');
                     m.style.display = 'none';
+                }
+                const drop = document.getElementById('task-mention-dropdown');
+                if (drop) drop.classList.add('hidden');
+            }
+
+            toggleInconsistencyFields(checked) {
+                const fields = document.getElementById('task-inconsistency-fields');
+                if (fields) {
+                    if (checked) fields.classList.remove('hidden');
+                    else fields.classList.add('hidden');
+                }
+            }
+
+            populateInconsistencySectors() {
+                const select = document.getElementById('task-inconsistency-sector');
+                if (!select) return;
+
+                const sectors = [
+                    'Mercearia / Alimentos', 'Bebidas / Adega', 'Frente de Caixa', 
+                    'Açougue / Carnes', 'Padaria / Confeitaria', 'Frios & Laticínios', 
+                    'FLV / Hortifrúti', 'Depósito & Estoque', 'Prevenção de Perdas / Fiscal', 'Geral / Loja'
+                ];
+
+                // Acrescenta departamentos cadastrados pela administração
+                const customDepts = JSON.parse(localStorage.getItem('taskflow_custom_departments') || '[]');
+                customDepts.forEach(d => {
+                    const name = typeof d === 'string' ? d : d.name;
+                    if (name && !sectors.includes(name)) sectors.push(name);
+                });
+
+                select.innerHTML = sectors.map(s => `<option value="${s}">${s}</option>`).join('');
+            }
+
+            saveInconsistency(inc) {
+                let list = JSON.parse(localStorage.getItem('taskflow_inconsistencies') || '[]');
+                // Se já existir para esta mesma tarefa/posto, substitui
+                list = list.filter(item => item.id !== inc.id);
+                list.unshift(inc);
+                localStorage.setItem('taskflow_inconsistencies', JSON.stringify(list));
+
+                if (window.syncManager) {
+                    window.syncManager.publish({
+                        type: 'INCONSISTENCY_ADD',
+                        inconsistency: inc
+                    });
+                }
+            }
+
+            renderTaskPhotosPreview() {
+                const gallery = document.getElementById('task-photos-gallery');
+                const countBadge = document.getElementById('task-photos-count');
+
+                if (countBadge) countBadge.innerText = this.currentTaskPhotos ? this.currentTaskPhotos.length : 0;
+                if (!gallery) return;
+
+                if (!this.currentTaskPhotos || this.currentTaskPhotos.length === 0) {
+                    gallery.innerHTML = '<span class="text-[11px] text-gray-500 italic py-1">Nenhuma foto anexada a esta tarefa.</span>';
+                    return;
+                }
+
+                gallery.innerHTML = this.currentTaskPhotos.map((src, idx) => `
+                    <div class="relative w-16 h-16 rounded-xl overflow-hidden border border-gray-700 shrink-0 group shadow-md bg-gray-950">
+                        <img src="${src}" onclick="app.viewFullImage('${src}')" title="Clique para ampliar" class="w-full h-full object-cover cursor-pointer hover:scale-105 transition">
+                        <button type="button" onclick="app.removePhoto(${idx})" title="Remover esta foto" class="absolute top-1 right-1 bg-rose-600/90 hover:bg-rose-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow-lg transition active:scale-90">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            removePhoto(idx) {
+                if (this.currentTaskPhotos && this.currentTaskPhotos[idx]) {
+                    this.currentTaskPhotos.splice(idx, 1);
+                    this.renderTaskPhotosPreview();
                 }
             }
 
@@ -2900,16 +3127,27 @@
             }
 
             async handleImageUpload(e) {
-                const file = e.target.files[0];
-                if(file) {
-                    if (window.syncManager) window.syncManager.showToast("Otimizando foto para sincronização...");
-                    const compressed = await this.compressImage(file, 640, 0.65);
-                    if (compressed) {
-                        this.tempImage = compressed;
-                        this.updateImagePreview();
-                        if (window.syncManager) window.syncManager.showToast("✓ Foto anexada com sucesso!");
+                const files = e.target.files;
+                if (!files || files.length === 0) return;
+
+                if (window.syncManager) window.syncManager.showToast(`Otimizando ${files.length} foto(s)...`);
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    try {
+                        const compressed = await this.compressImage(file, 640, 0.65);
+                        if (compressed) {
+                            if (!this.currentTaskPhotos) this.currentTaskPhotos = [];
+                            this.currentTaskPhotos.push(compressed);
+                        }
+                    } catch(err) {
+                        console.warn("Erro ao comprimir imagem:", err);
                     }
                 }
+
+                this.renderTaskPhotosPreview();
+                if (window.syncManager) window.syncManager.showToast("✓ Foto(s) anexada(s) à tarefa com sucesso!");
+                e.target.value = ''; // Limpa para permitir subir a mesma foto de novo se necessário
             }
 
             async openCamera() {
@@ -2947,7 +3185,7 @@
                 }
             }
 
-            capturePhoto() {
+            async capturePhoto() {
                 const video = document.getElementById('camera-stream');
                 let w = video.videoWidth || 640;
                 let h = video.videoHeight || 480;
@@ -2966,25 +3204,13 @@
                 canvas.height = h;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, w, h);
-                this.tempImage = canvas.toDataURL('image/jpeg', 0.65);
+                const captured = canvas.toDataURL('image/jpeg', 0.65);
                 this.closeCamera();
-                this.updateImagePreview();
-            }
 
-            removeImage() {
-                this.tempImage = null;
-                this.updateImagePreview();
-            }
-
-            updateImagePreview() {
-                const container = document.getElementById('image-preview-container');
-                const preview = document.getElementById('image-preview');
-                if(this.tempImage) {
-                    preview.src = this.tempImage;
-                    container.classList.remove('hidden');
-                } else {
-                    container.classList.add('hidden');
-                }
+                if (!this.currentTaskPhotos) this.currentTaskPhotos = [];
+                this.currentTaskPhotos.push(captured);
+                this.renderTaskPhotosPreview();
+                if (window.syncManager) window.syncManager.showToast("✓ Foto capturada!");
             }
 
             viewFullImage(target) {
@@ -3020,6 +3246,230 @@
                 }
             }
 
+            // ==========================================
+            // CHAT INTERNO DA TAREFA & @ MENÇÕES
+            // ==========================================
+            renderTaskChat() {
+                const container = document.getElementById('task-chat-messages');
+                const badge = document.getElementById('task-chat-badge');
+                if (!container) return;
+
+                if (!this.currentChatTaskId) {
+                    container.innerHTML = `
+                        <div class="text-center py-12 px-4 text-gray-500 space-y-2">
+                            <div class="w-10 h-10 rounded-xl bg-gray-900 text-indigo-400 border border-gray-800 flex items-center justify-center mx-auto text-base">
+                                <i class="fa-solid fa-comments"></i>
+                            </div>
+                            <p class="font-bold text-gray-300 text-xs">Chat Disponível após Salvar</p>
+                            <p class="text-[11px] text-gray-500 max-w-xs mx-auto">Salve esta tarefa primeiro para iniciar o chat em tempo real e marcar colaboradores com @.</p>
+                        </div>
+                    `;
+                    if (badge) badge.innerText = '0 msg';
+                    return;
+                }
+
+                const task = this.tasks.find(t => t.id == this.currentChatTaskId);
+                if (!task) return;
+
+                const comments = task.comments || [];
+                if (badge) badge.innerText = `${comments.length} msg${comments.length !== 1 ? 's' : ''}`;
+
+                if (comments.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-10 px-3 text-gray-500 space-y-1.5">
+                            <i class="fa-regular fa-comment-dots text-2xl text-indigo-500/50 block mb-1"></i>
+                            <p class="font-bold text-gray-300 text-xs">Nenhuma mensagem ainda</p>
+                            <p class="text-[11px] text-gray-500">Escreva uma mensagem abaixo e use <strong class="text-indigo-400">@nome</strong> para notificar um colaborador.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const myEmail = (auth.currentUser ? auth.currentUser.email : '').toLowerCase();
+
+                let html = '';
+                comments.forEach(c => {
+                    const isMe = (c.authorEmail && c.authorEmail.toLowerCase() === myEmail);
+                    const dateFormatted = new Date(c.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                    // Formata texto destacando @Menções
+                    let formattedText = (c.text || '')
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/@([a-zA-Z0-9À-ÿ\s]{2,25})/g, (match) => {
+                            return `<span class="bg-indigo-900/60 text-indigo-300 font-extrabold px-1.5 py-0.2 rounded border border-indigo-700/60">${match}</span>`;
+                        });
+
+                    const bubbleBg = isMe 
+                        ? 'bg-indigo-950/70 border border-indigo-800/80 text-gray-100 ml-auto' 
+                        : 'bg-gray-900/90 border border-gray-800 text-gray-200 mr-auto';
+
+                    html += `
+                        <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[90%] ${isMe ? 'ml-auto' : ''}">
+                            <div class="flex items-center gap-1.5 text-[10px] text-gray-400 mb-1 px-1">
+                                <strong class="${isMe ? 'text-indigo-300' : 'text-gray-300'}">${c.authorName || 'Colaborador'}</strong>
+                                ${c.authorRole ? `<span class="text-[9px] px-1 rounded bg-gray-800 text-gray-400">${c.authorRole}</span>` : ''}
+                                <span>• ${dateFormatted}</span>
+                            </div>
+                            <div class="p-2.5 rounded-2xl ${bubbleBg} text-xs leading-relaxed break-words shadow-sm">
+                                ${formattedText}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+                container.scrollTop = container.scrollHeight;
+            }
+
+            toggleMentionDropdown(forceOpen = null) {
+                const drop = document.getElementById('task-mention-dropdown');
+                if (!drop) return;
+
+                const isHidden = drop.classList.contains('hidden');
+                const shouldOpen = (forceOpen !== null) ? forceOpen : isHidden;
+
+                if (!shouldOpen) {
+                    drop.classList.add('hidden');
+                    return;
+                }
+
+                // Coleta todos os colaboradores conhecidos
+                const collabNames = new Set();
+
+                // 1. Contas cadastradas no App
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                accounts.forEach(a => {
+                    if (a.displayName) collabNames.add(a.displayName);
+                });
+
+                // 2. Colaboradores do Banco de Dados da Escala
+                if (window.scheduleApp && scheduleApp.data && scheduleApp.data.colaboradores) {
+                    scheduleApp.data.colaboradores.forEach(c => {
+                        if (c.nome) collabNames.add(c.nome);
+                    });
+                }
+
+                // 3. Usuários locais
+                const users = JSON.parse(localStorage.getItem('taskflow_users') || '[]');
+                users.forEach(u => {
+                    if (u.name) collabNames.add(u.name);
+                });
+
+                if (collabNames.size === 0) {
+                    collabNames.add("Carlos Gerente");
+                    collabNames.add("Equipe Geral");
+                }
+
+                let html = '<div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider px-2 py-1">Mencionar Colaborador:</div>';
+                Array.from(collabNames).sort().forEach(name => {
+                    const safeName = name.replace(/'/g, "\\'");
+                    html += `
+                        <button type="button" onclick="app.insertMention('${safeName}')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-gray-800 text-xs text-gray-200 flex items-center gap-2 transition">
+                            <span class="w-5 h-5 rounded-md bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 font-bold text-[10px] flex items-center justify-center">@</span>
+                            <span class="font-semibold text-gray-100">${name}</span>
+                        </button>
+                    `;
+                });
+
+                drop.innerHTML = html;
+                drop.classList.remove('hidden');
+            }
+
+            insertMention(name) {
+                const input = document.getElementById('task-chat-input');
+                const drop = document.getElementById('task-mention-dropdown');
+                if (input) {
+                    const currentText = input.value;
+                    // Se o último caractere for '@', remove antes de inserir o nome completo com @
+                    if (currentText.endsWith('@')) {
+                        input.value = currentText.slice(0, -1) + `@${name} `;
+                    } else {
+                        input.value = currentText + (currentText.length > 0 && !currentText.endsWith(' ') ? ' ' : '') + `@${name} `;
+                    }
+                    input.focus();
+                }
+                if (drop) drop.classList.add('hidden');
+            }
+
+            handleChatKeyDown(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendTaskComment();
+                } else if (e.key === '@') {
+                    setTimeout(() => this.toggleMentionDropdown(true), 50);
+                }
+            }
+
+            sendTaskComment() {
+                const input = document.getElementById('task-chat-input');
+                if (!input) return;
+                const text = input.value.trim();
+                if (!text) return;
+
+                if (!this.currentChatTaskId) {
+                    alert("Por favor, clique em 'Salvar Tarefa' primeiro para gerar o identificador do chat.");
+                    return;
+                }
+
+                const task = this.tasks.find(t => t.id == this.currentChatTaskId);
+                if (!task) return;
+
+                // Extrai menções com @
+                const mentionMatches = text.match(/@([a-zA-Z0-9À-ÿ\s]{2,25})/g) || [];
+                const mentionsClean = mentionMatches.map(m => m.replace('@', '').trim());
+
+                const authorName = (auth.currentUser ? auth.currentUser.displayName : 'Colaborador');
+                const authorEmail = (auth.currentUser ? auth.currentUser.email : '');
+                const authorRole = (auth.currentUser ? auth.currentUser.role : 'Colaborador');
+
+                const comment = {
+                    id: 'cmt_' + Date.now(),
+                    authorName: authorName,
+                    authorEmail: authorEmail,
+                    authorRole: authorRole,
+                    text: text,
+                    mentions: mentionsClean,
+                    createdAt: Date.now()
+                };
+
+                if (!task.comments) task.comments = [];
+                task.comments.push(comment);
+                task.updatedAt = Date.now();
+
+                this.saveLocally();
+
+                // Publica em nuvem imediatamente
+                if (window.syncManager) {
+                    window.syncManager.publish({
+                        type: 'TASK_COMMENT_ADD',
+                        taskId: task.id,
+                        taskTitle: task.title,
+                        taskAssignee: task.assignee,
+                        taskAuthorEmail: task.authorEmail,
+                        comment: comment
+                    });
+                }
+
+                // Som de notificação local e feedback
+                try { this.playNotificationSound(); } catch(e) {}
+                if (window.syncManager) syncManager.showToast("✓ Mensagem enviada para o chat da tarefa!");
+
+                // Se houver menções, dispara notificação local
+                if (mentionsClean.length > 0) {
+                    const notifTitle = `TaskFlow - @Menção em Tarefa`;
+                    const notifBody = `${authorName} mencionou ${mentionsClean.join(', ')} na tarefa: "${task.title}"`;
+                    try { this.dispatchNotification(notifTitle, notifBody); } catch(e) {}
+                }
+
+                input.value = '';
+                const drop = document.getElementById('task-mention-dropdown');
+                if (drop) drop.classList.add('hidden');
+
+                this.renderTaskChat();
+            }
+
             async saveTask(e) {
                 if (e) e.preventDefault();
                 try {
@@ -3036,13 +3486,41 @@
                     const authorName = auth.currentUser ? auth.currentUser.displayName : 'Equipe';
                     const authorRole = auth.currentUser ? auth.currentUser.role : 'Colaborador';
 
-                    let finalImage = this.tempImage;
-                    if (finalImage && finalImage.length > 50000) {
-                        try {
-                            finalImage = await this.compressImage(finalImage, 640, 0.65);
-                        } catch(imgErr) {
-                            console.warn("Falha ao comprimir imagem da tarefa:", imgErr);
-                        }
+                    // Fotos múltiplas
+                    let finalImages = this.currentTaskPhotos || [];
+                    let firstImage = finalImages.length > 0 ? finalImages[0] : null;
+
+                    // Seção de Inconsistência Operacional
+                    const incToggle = document.getElementById('task-inconsistency-toggle');
+                    let inconsistencyData = null;
+                    if (incToggle && incToggle.checked) {
+                        const reason = document.getElementById('task-inconsistency-reason') ? document.getElementById('task-inconsistency-reason').value : 'Ruptura Operacional';
+                        const sector = document.getElementById('task-inconsistency-sector') ? document.getElementById('task-inconsistency-sector').value : 'Geral';
+                        const notes = document.getElementById('task-inconsistency-notes') ? document.getElementById('task-inconsistency-notes').value.trim() : '';
+
+                        inconsistencyData = {
+                            hasInconsistency: true,
+                            reason: reason,
+                            sector: sector,
+                            notes: notes,
+                            createdAt: Date.now()
+                        };
+
+                        // Registra no banco global de inconsistências para o Relatório do Administrador
+                        const incRecord = {
+                            id: 'inc_task_' + (id || ('task_' + Date.now())),
+                            source: 'tarefa',
+                            type: 'Inconsistência em Tarefa / Ruptura',
+                            taskId: (id || ('task_' + Date.now())),
+                            taskTitle: title,
+                            departamento: sector,
+                            reason: reason,
+                            notes: notes || title,
+                            date: date,
+                            author: authorName,
+                            createdAt: Date.now()
+                        };
+                        this.saveInconsistency(incRecord);
                     }
 
                     let taskToBroadcast = null;
@@ -3054,18 +3532,24 @@
                             task.assignee = assignee;
                             task.date = date;
                             task.priority = priority;
-                            task.image = finalImage;
+                            task.image = firstImage;
+                            task.images = finalImages;
+                            task.inconsistency = inconsistencyData;
                             task.updatedAt = Date.now();
                             taskToBroadcast = task;
                         }
                     } else {
+                        const newTaskId = 'task_' + Date.now();
                         taskToBroadcast = {
-                            id: 'task_' + Date.now(),
+                            id: newTaskId,
                             title,
                             assignee,
                             date,
                             priority,
-                            image: finalImage,
+                            image: firstImage,
+                            images: finalImages,
+                            inconsistency: inconsistencyData,
+                            comments: [],
                             authorName,
                             authorEmail: (auth.currentUser ? auth.currentUser.email : ''),
                             authorRole,
@@ -3342,6 +3826,9 @@
 
                     const safeTaskJson = JSON.stringify(t).replace(/"/g, '&quot;');
 
+                    const commentsCount = (t.comments && Array.isArray(t.comments)) ? t.comments.length : 0;
+                    const photos = (t.images && Array.isArray(t.images) && t.images.length > 0) ? t.images : (t.image ? [t.image] : []);
+
                     return `
                     <div class="flex items-center justify-between p-3.5 bg-gray-900/70 border border-gray-800/80 rounded-2xl hover:border-gray-700 transition gap-3">
                         <div class="flex items-start sm:items-center gap-3 flex-1 min-w-0">
@@ -3352,15 +3839,39 @@
                                     ${t.assignee ? `<span class="bg-gray-800 text-indigo-300 px-2 py-0.5 rounded-md text-[10px] font-medium inline-flex items-center gap-1"><i class="fa-solid fa-user text-[9px]"></i><span>${t.assignee}</span></span>` : ''}
                                     ${t.date ? `<span class="bg-gray-800/60 text-gray-300 px-2 py-0.5 rounded-md text-[10px] inline-flex items-center gap-1"><i class="fa-regular fa-calendar text-[9px]"></i><span>${t.date}</span></span>` : ''}
                                     <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase ${priorityBadge}">${t.priority || 'média'}</span>
+                                    ${t.inconsistency && t.inconsistency.hasInconsistency ? `
+                                        <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-950/70 text-amber-300 border border-amber-800/80 inline-flex items-center gap-1">
+                                            <i class="fa-solid fa-triangle-exclamation text-[9px] text-amber-400"></i>
+                                            <span>${t.inconsistency.reason || 'Ruptura'}</span>
+                                        </span>
+                                    ` : ''}
+                                    ${commentsCount > 0 ? `
+                                        <button type="button" onclick='app.openModal(${safeTaskJson})' title="Ver conversa da tarefa" class="bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-800/80 text-indigo-300 px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 transition">
+                                            <i class="fa-solid fa-comments text-[9px]"></i>
+                                            <span>${commentsCount}</span>
+                                        </button>
+                                    ` : ''}
                                     ${t.authorName ? `<span class="text-[10px] text-gray-500">por ${t.authorName}</span>` : ''}
                                     ${isCompleted && t.completedBy ? `<span class="text-[10px] text-emerald-400 font-semibold bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-900/50">✓ Feito por ${t.completedBy}</span>` : ''}
                                 </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0 self-center">
-                            ${t.image ? `<img src="${t.image}" onclick="app.viewFullImage(this.src)" title="Clique para ampliar a foto" class="w-9 h-9 object-cover rounded-xl border border-gray-700 shrink-0 cursor-pointer hover:border-indigo-400 hover:scale-105 active:scale-95 transition shadow-sm">` : ''}
-                            <button onclick='app.openModal(${safeTaskJson})' title="Editar Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition active:scale-95"><i class="fa-solid fa-pen text-xs"></i></button>
-                            <button onclick="app.deleteTask('${t.id}')" title="Excluir Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-gray-800 transition active:scale-95"><i class="fa-solid fa-trash text-xs"></i></button>
+                        <div class="flex items-center gap-2 shrink-0 self-center">
+                            ${photos.length > 0 ? `
+                                <div class="relative inline-block cursor-pointer" onclick="app.viewFullImage('${photos[0].replace(/'/g, "\\'")}')" title="Clique para ver foto">
+                                    <img src="${photos[0]}" class="w-9 h-9 object-cover rounded-xl border border-gray-700 shrink-0 hover:border-indigo-400 hover:scale-105 active:scale-95 transition shadow-sm">
+                                    ${photos.length > 1 ? `<span class="absolute -bottom-1 -right-1 bg-indigo-600 text-white text-[9px] font-black px-1 rounded-full shadow border border-indigo-400 leading-tight">+${photos.length - 1}</span>` : ''}
+                                </div>
+                            ` : ''}
+                            <button onclick='app.openModal(${safeTaskJson})' title="Abrir Chat & Detalhes da Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-300 hover:bg-gray-800 transition active:scale-95">
+                                <i class="fa-solid fa-comments text-xs"></i>
+                            </button>
+                            <button onclick='app.openModal(${safeTaskJson})' title="Editar Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition active:scale-95">
+                                <i class="fa-solid fa-pen text-xs"></i>
+                            </button>
+                            <button onclick="app.deleteTask('${t.id}')" title="Excluir Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-gray-800 transition active:scale-95">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
                         </div>
                     </div>
                 `}).join('');
@@ -7247,6 +7758,58 @@
                     ? window.createSvgPieChart(fbPieData, { donut: true, centerLabel: 'Feedbacks' })
                     : '';
 
+                // INCONSISTÊNCIAS OPERACIONAIS & DESFALQUES DE ESCALA
+                const allInconsistencies = JSON.parse(localStorage.getItem('taskflow_inconsistencies') || '[]');
+                // Garante que inconsistências de tarefas ativas também entrem se não estiverem no array global
+                allTasks.forEach(t => {
+                    if (t.inconsistency && t.inconsistency.hasInconsistency) {
+                        const exists = allInconsistencies.some(inc => inc.taskId === t.id || inc.id === 'inc_task_' + t.id);
+                        if (!exists) {
+                            allInconsistencies.push({
+                                id: 'inc_task_' + t.id,
+                                source: 'tarefa',
+                                type: 'Inconsistência em Tarefa / Ruptura',
+                                taskId: t.id,
+                                taskTitle: t.title,
+                                departamento: t.inconsistency.sector || 'Geral',
+                                reason: t.inconsistency.reason || 'Ruptura Operacional',
+                                notes: t.inconsistency.notes || t.title,
+                                date: t.date || getLocalTodayString(),
+                                author: t.authorName || 'Colaborador',
+                                createdAt: t.createdAt || Date.now()
+                            });
+                        }
+                    }
+                });
+
+                let filteredInconsistencies = allInconsistencies.filter(inc => {
+                    if (monthFilter === 'all') return true;
+                    const date = inc.createdAt ? new Date(inc.createdAt) : (inc.date ? new Date(inc.date) : new Date());
+                    const itemMonthYear = `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+                    return itemMonthYear === monthFilter;
+                });
+
+                if (sectorFilter !== 'all') {
+                    filteredInconsistencies = filteredInconsistencies.filter(inc => (inc.departamento || '').toUpperCase().includes(sectorFilter.toUpperCase()));
+                }
+
+                // Agrupamento de inconsistências por motivo
+                const incReasonsCount = {};
+                filteredInconsistencies.forEach(inc => {
+                    const r = inc.reason || 'Outra Inconsistência';
+                    incReasonsCount[r] = (incReasonsCount[r] || 0) + 1;
+                });
+
+                const incColors = ['#ef4444', '#f59e0b', '#ec4899', '#8b5cf6', '#10b981', '#3b82f6', '#06b6d4'];
+                const incPieData = Object.keys(incReasonsCount).map((r, i) => ({
+                    label: r,
+                    value: incReasonsCount[r],
+                    color: incColors[i % incColors.length]
+                }));
+                const incPieChartHtml = (typeof window.createSvgPieChart === 'function' && incPieData.length > 0)
+                    ? window.createSvgPieChart(incPieData, { donut: true, centerLabel: 'Rupturas' })
+                    : '<div class="p-6 text-center text-xs text-gray-500 italic">Nenhuma inconsistência operacional registrada no período.</div>';
+
                 container.innerHTML = `
                     <!-- CABEÇALHO OFICIAL DO RELATÓRIO EXECUTIVO -->
                     <div class="border-b-2 border-indigo-500/80 pb-4 page-break-avoid">
@@ -7274,45 +7837,55 @@
                     <!-- QUADRO EXECUTIVO: DIAGNÓSTICO DOS GARGALOS (KPIs) -->
                     <div class="page-break-avoid">
                         <span class="text-[11px] uppercase font-bold tracking-wider text-gray-400 block mb-2">Quadro Sintético de Indicadores & Gargalos:</span>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                             <!-- Card Gargalo Crítico -->
-                            <div class="bg-gray-900/90 border border-amber-500/50 p-4 rounded-2xl shadow-lg space-y-1">
+                            <div class="bg-gray-900/90 border border-amber-500/50 p-3.5 rounded-2xl shadow-lg space-y-1">
                                 <div class="flex items-center justify-between text-amber-400">
-                                    <span class="text-[10px] font-extrabold uppercase tracking-wider">Maior Gargalo Operacional</span>
+                                    <span class="text-[10px] font-extrabold uppercase tracking-wider">Maior Gargalo</span>
                                     <i class="fa-solid fa-triangle-exclamation"></i>
                                 </div>
-                                <h3 class="text-base font-black text-amber-300 truncate">${topGargaloSector}</h3>
-                                <p class="text-[11px] text-gray-400">${topGargaloCount > 0 ? `${topGargaloCount} ocorrências registradas` : 'Nenhum gargalo identificado'}</p>
+                                <h3 class="text-sm font-black text-amber-300 truncate">${topGargaloSector}</h3>
+                                <p class="text-[10px] text-gray-400">${topGargaloCount > 0 ? `${topGargaloCount} ocorrências` : 'Sem gargalos'}</p>
                             </div>
 
                             <!-- Card Total de Ocorrências -->
-                            <div class="bg-gray-900/90 border border-gray-800 p-4 rounded-2xl shadow-lg space-y-1">
+                            <div class="bg-gray-900/90 border border-gray-800 p-3.5 rounded-2xl shadow-lg space-y-1">
                                 <div class="flex items-center justify-between text-indigo-400">
-                                    <span class="text-[10px] font-extrabold uppercase tracking-wider">Total de Ocorrências</span>
+                                    <span class="text-[10px] font-extrabold uppercase tracking-wider">Ocorrências</span>
                                     <i class="fa-solid fa-clipboard-user"></i>
                                 </div>
-                                <h3 class="text-2xl font-black text-gray-100">${filteredOccs.length}</h3>
-                                <p class="text-[11px] text-gray-400">Casos relatados pela liderança</p>
+                                <h3 class="text-xl font-black text-gray-100">${filteredOccs.length}</h3>
+                                <p class="text-[10px] text-gray-400">Casos relatados</p>
+                            </div>
+
+                            <!-- Card Inconsistências & Rupturas -->
+                            <div class="bg-gray-900/90 border border-rose-600/50 p-3.5 rounded-2xl shadow-lg space-y-1">
+                                <div class="flex items-center justify-between text-rose-400">
+                                    <span class="text-[10px] font-extrabold uppercase tracking-wider">Inconsistências</span>
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                </div>
+                                <h3 class="text-xl font-black text-rose-400">${filteredInconsistencies.length}</h3>
+                                <p class="text-[10px] text-gray-400">Rupturas & Vagas Escala</p>
                             </div>
 
                             <!-- Card Taxa de Resolução -->
-                            <div class="bg-gray-900/90 border border-gray-800 p-4 rounded-2xl shadow-lg space-y-1">
+                            <div class="bg-gray-900/90 border border-gray-800 p-3.5 rounded-2xl shadow-lg space-y-1">
                                 <div class="flex items-center justify-between text-emerald-400">
-                                    <span class="text-[10px] font-extrabold uppercase tracking-wider">Índice de Resolução ADM</span>
+                                    <span class="text-[10px] font-extrabold uppercase tracking-wider">Resolução ADM</span>
                                     <i class="fa-solid fa-check-double"></i>
                                 </div>
-                                <h3 class="text-2xl font-black text-emerald-400">${resolutionRate}%</h3>
-                                <p class="text-[11px] text-gray-400">${resolvedCount} casos com diretriz ou finalizados</p>
+                                <h3 class="text-xl font-black text-emerald-400">${resolutionRate}%</h3>
+                                <p class="text-[10px] text-gray-400">${resolvedCount} casos concluídos</p>
                             </div>
 
                             <!-- Card Tarefas Operacionais -->
-                            <div class="bg-gray-900/90 border border-gray-800 p-4 rounded-2xl shadow-lg space-y-1">
+                            <div class="bg-gray-900/90 border border-gray-800 p-3.5 rounded-2xl shadow-lg space-y-1">
                                 <div class="flex items-center justify-between text-purple-400">
-                                    <span class="text-[10px] font-extrabold uppercase tracking-wider">Tarefas do Período</span>
+                                    <span class="text-[10px] font-extrabold uppercase tracking-wider">Tarefas Mês</span>
                                     <i class="fa-solid fa-list-check"></i>
                                 </div>
-                                <h3 class="text-2xl font-black text-purple-300">${completedTasksCount} / ${filteredTasks.length}</h3>
-                                <p class="text-[11px] text-gray-400">${taskRate}% de conclusão no mês</p>
+                                <h3 class="text-xl font-black text-purple-300">${completedTasksCount} / ${filteredTasks.length}</h3>
+                                <p class="text-[10px] text-gray-400">${taskRate}% de conclusão</p>
                             </div>
                         </div>
                     </div>
@@ -7326,7 +7899,7 @@
                             <i class="fa-solid fa-chart-pie text-indigo-400"></i>
                             <span>Diagnóstico Visual em Gráficos de Pizza</span>
                         </div>
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                             <!-- Gráfico 1: Ocorrências e Gargalos por Setor -->
                             <div class="bg-gray-900/90 border border-gray-800 rounded-2xl p-4 space-y-2">
                                 <h5 class="text-xs font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2">
@@ -7336,14 +7909,25 @@
                                 ${occPieChartHtml}
                             </div>
 
-                            <!-- Gráfico 2: Produtividade de Tarefas Operacionais -->
+                            <!-- Gráfico 2: Inconsistências Operacionais & Rupturas -->
+                            <div class="bg-gray-900/90 border border-gray-800 rounded-2xl p-4 space-y-2">
+                                <h5 class="text-xs font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                    <span>Inconsistências & Rupturas</span>
+                                </h5>
+                                ${incPieChartHtml}
+                            </div>
+
+                            <!-- Gráfico 3: Produtividade de Tarefas Operacionais -->
                             <div class="bg-gray-900/90 border border-gray-800 rounded-2xl p-4 space-y-2">
                                 <h5 class="text-xs font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2">
                                     <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
-                                    <span>Produtividade de Tarefas (Concluídas vs Pendentes)</span>
+                                    <span>Produtividade de Tarefas</span>
                                 </h5>
                                 ${taskPieChartHtml}
                             </div>
+                        </div>
+                    </div>
 
                             <!-- Gráfico 3: Taxa de Resolução de Ocorrências -->
                             <div class="bg-gray-900/90 border border-gray-800 rounded-2xl p-4 space-y-2">
@@ -7492,14 +8076,67 @@
                         `}
                     </div>
 
+                    <!-- RISCO SEPARADOR SÓLIDO -->
+                    <div class="report-divider-solid"></div>
+
+                    <!-- SEÇÃO 3: AUDITORIA DE INCONSISTÊNCIAS OPERACIONAIS, RUPTURAS & DESFALQUES DE ESCALA -->
+                    <div class="space-y-3 page-break-avoid">
+                        <div class="report-section-title">
+                            <i class="fa-solid fa-triangle-exclamation text-rose-500"></i>
+                            <span>3. Auditoria de Inconsistências, Rupturas & Desfalques de Escala (${filteredInconsistencies.length} registros)</span>
+                        </div>
+
+                        ${filteredInconsistencies.length === 0 ? `
+                            <p class="text-xs text-gray-500 italic p-3 bg-gray-900/40 rounded-xl">Nenhuma inconsistência de escala ou ruptura de produto registrada no período selecionado.</p>
+                        ` : `
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left text-xs border border-gray-800 rounded-2xl overflow-hidden">
+                                    <thead class="bg-gray-900 text-gray-300 uppercase text-[10px] border-b border-gray-800">
+                                        <tr>
+                                            <th class="p-2.5">Data / Ref</th>
+                                            <th class="p-2.5">Origem</th>
+                                            <th class="p-2.5">Setor / Posto</th>
+                                            <th class="p-2.5">Classificação / Motivo</th>
+                                            <th class="p-2.5">Justificativa & Detalhes</th>
+                                            <th class="p-2.5">Registrado Por</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-800/80 bg-gray-950/60">
+                                        ${filteredInconsistencies.map(inc => `
+                                            <tr>
+                                                <td class="p-2.5 font-mono text-[11px] text-gray-400 whitespace-nowrap">${inc.date || (inc.createdAt ? new Date(inc.createdAt).toLocaleDateString('pt-BR') : 'S/D')}</td>
+                                                <td class="p-2.5 whitespace-nowrap">
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${inc.source === 'escala' ? 'bg-teal-950/70 border border-teal-800 text-teal-300' : 'bg-indigo-950/70 border border-indigo-800 text-indigo-300'}">
+                                                        ${inc.source === 'escala' ? 'Escala Diária' : 'Tarefa Operac.'}
+                                                    </span>
+                                                </td>
+                                                <td class="p-2.5 font-bold text-gray-200 whitespace-nowrap">${inc.departamento || inc.posto || 'Geral'}</td>
+                                                <td class="p-2.5">
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/70 border border-rose-800 text-rose-300">
+                                                        ${inc.reason || 'Desfalque'}
+                                                    </span>
+                                                </td>
+                                                <td class="p-2.5 text-gray-300 leading-snug">
+                                                    <p class="font-medium">${inc.notes || inc.taskTitle || 'Sem justificativa informada'}</p>
+                                                    ${inc.colaboradorAusente ? `<span class="text-[10px] text-gray-500">Colaborador/Posto: ${inc.colaboradorAusente}</span>` : ''}
+                                                </td>
+                                                <td class="p-2.5 text-indigo-300 whitespace-nowrap">${inc.author || 'Líder'}</td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `}
+                    </div>
+
                     <!-- RISCO SEPARADOR DUPLO -->
                     <div class="report-divider-heavy"></div>
 
-                    <!-- SEÇÃO 3: DIAGNÓSTICO FINAL, PARECER DA GERÊNCIA & ASSINATURAS -->
+                    <!-- SEÇÃO 4: DIAGNÓSTICO FINAL, PARECER DA GERÊNCIA & ASSINATURAS -->
                     <div class="page-break-avoid space-y-4">
                         <div class="report-section-title">
                             <i class="fa-solid fa-signature text-emerald-400"></i>
-                            <span>3. Diagnóstico dos Gargalos & Assinaturas da Liderança</span>
+                            <span>4. Diagnóstico dos Gargalos & Assinaturas da Liderança</span>
                         </div>
 
                         <div class="bg-gray-900/70 p-4 rounded-2xl border border-gray-800 text-xs space-y-2">
@@ -9271,6 +9908,56 @@
                     }
                 }
 
+                if (payload.type === 'INCONSISTENCY_ADD' && payload.inconsistency) {
+                    let list = JSON.parse(localStorage.getItem('taskflow_inconsistencies') || '[]');
+                    list = list.filter(item => item.id !== payload.inconsistency.id);
+                    list.unshift(payload.inconsistency);
+                    localStorage.setItem('taskflow_inconsistencies', JSON.stringify(list));
+                    if (notify && auth.currentUser && auth.currentUser.isAdmin) {
+                        this.showToast(`⚠️ Inconsistência registrada: ${payload.inconsistency.reason}`);
+                    }
+                    if (window.admin && admin.currentTab === 'reports') {
+                        admin.generateMonthlyReport();
+                    }
+                }
+
+                if (payload.type === 'TASK_COMMENT_ADD' && payload.taskId && payload.comment) {
+                    if (window.app) {
+                        const task = app.tasks.find(t => t.id == payload.taskId);
+                        if (task) {
+                            if (!task.comments) task.comments = [];
+                            const exists = task.comments.some(c => c.id === payload.comment.id);
+                            if (!exists) {
+                                task.comments.push(payload.comment);
+                                task.updatedAt = Date.now();
+                                app.saveLocally();
+                            }
+                        }
+
+                        // Se o modal estiver aberto nesta tarefa, atualiza o chat ao vivo
+                        if (app.currentChatTaskId == payload.taskId) {
+                            app.renderTaskChat();
+                        }
+
+                        // Notifica se o usuário atual foi mencionado ou se é o criador da tarefa
+                        if (notify && auth.currentUser) {
+                            const myName = (auth.currentUser.displayName || '').toLowerCase().trim();
+                            const myEmail = (auth.currentUser.email || '').toLowerCase().trim();
+                            const isMentioned = (payload.comment.mentions || []).some(m => String(m).toLowerCase().trim() === myName);
+                            const isCreator = (payload.taskAuthorEmail && payload.taskAuthorEmail.toLowerCase() === myEmail);
+                            const isAssignee = (payload.taskAssignee && payload.taskAssignee.toLowerCase().includes(myName));
+
+                            if (isMentioned || isCreator || isAssignee) {
+                                app.playNotificationSound();
+                                const notifTitle = isMentioned ? `TaskFlow - @Menção de ${payload.comment.authorName}` : `TaskFlow - Comentário na Tarefa`;
+                                const notifBody = `${payload.comment.authorName}: "${payload.comment.text}" (${payload.taskTitle || 'Tarefa'})`;
+                                app.dispatchNotification(notifTitle, notifBody);
+                                this.showToast(`💬 ${payload.comment.authorName}: "${payload.comment.text}"`);
+                            }
+                        }
+                    }
+                }
+
                 if (payload.type === 'FEEDBACK_UPSERT' && payload.feedback) {
                     if (window.feedbackApp) {
                         feedbackApp.handleIncomingFeedback(payload.feedback);
@@ -9687,6 +10374,7 @@
                 }
                 this.currentDay = this.getTodayDayName();
                 this.currentFilter = 'all';
+                this.currentDeptFilter = 'all';
                 this.searchQuery = '';
                 this.isSyncing = false;
                 this.data = this.loadInitialData();
@@ -9799,6 +10487,85 @@
             switchDay(dayName) {
                 this.currentDay = dayName;
                 this.render();
+            }
+
+            getCollabDepartment(collabName) {
+                if (!collabName) return '';
+                const nameUp = String(collabName).trim().toUpperCase();
+                if (this.data && this.data.colaboradores) {
+                    const found = this.data.colaboradores.find(c => String(c.nome || '').trim().toUpperCase() === nameUp);
+                    if (found && found.departamento) return found.departamento;
+                }
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                const acc = accounts.find(a => (a.displayName && a.displayName.toUpperCase() === nameUp) || (a.name && a.name.toUpperCase() === nameUp));
+                if (acc && acc.department) return acc.department;
+                return '';
+            }
+
+            setDeptFilter(val) {
+                this.currentDeptFilter = val;
+                this.renderSlots();
+            }
+
+            populateDeptFilter() {
+                const select = document.getElementById('sched-filter-dept');
+                if (!select) return;
+
+                const currentVal = this.currentDeptFilter || 'all';
+                const deptsSet = new Set();
+
+                // 1. Departamentos dos colaboradores da planilha
+                if (this.data && this.data.colaboradores) {
+                    this.data.colaboradores.forEach(c => {
+                        if (c.departamento && c.departamento.trim() !== '') {
+                            deptsSet.add(c.departamento.trim());
+                        }
+                    });
+                }
+
+                // 2. Setores do domingo (corredores/postos)
+                if (this.data && this.data.dias && this.data.dias.Domingo && this.data.dias.Domingo.slots) {
+                    this.data.dias.Domingo.slots.forEach(s => {
+                        if (s.horario && s.horario.trim() !== '' && !s.horario.includes('Linha')) {
+                            deptsSet.add(s.horario.trim());
+                        }
+                    });
+                }
+
+                // 3. Departamentos padrão da loja
+                const defaultDepts = ['MERCEARIA', 'FRENTE DE CAIXA', 'AÇOUGUE', 'PADARIA', 'FLV / HORTIFRÚTI', 'DEPÓSITO / ESTOQUE', 'PREVENÇÃO / FISCAL'];
+                defaultDepts.forEach(d => deptsSet.add(d));
+
+                let optionsHtml = `
+                    <option value="all" ${currentVal === 'all' ? 'selected' : ''}>🏢 Todos os Departamentos</option>
+                    <option value="uncovered" ${currentVal === 'uncovered' ? 'selected' : ''}>⚠️ Departamentos Sem Ninguém</option>
+                `;
+
+                Array.from(deptsSet).sort().forEach(dept => {
+                    optionsHtml += `<option value="${dept}" ${currentVal === dept ? 'selected' : ''}>${dept}</option>`;
+                });
+
+                select.innerHTML = optionsHtml;
+            }
+
+            toggleInconsistencyFields(checked) {
+                const box = document.getElementById('modal-sched-inconsistency-fields');
+                if (box) {
+                    if (checked) box.classList.remove('hidden');
+                    else box.classList.add('hidden');
+                }
+            }
+
+            saveInconsistency(inc) {
+                let list = JSON.parse(localStorage.getItem('taskflow_inconsistencies') || '[]');
+                list.unshift(inc);
+                localStorage.setItem('taskflow_inconsistencies', JSON.stringify(list));
+                if (window.syncManager) {
+                    window.syncManager.publish({
+                        type: 'INCONSISTENCY_ADD',
+                        inconsistency: inc
+                    });
+                }
             }
 
             setFilter(filter) {
@@ -9961,6 +10728,22 @@
                 document.getElementById('modal-sched-collab-name').value = isVago ? '' : nome;
                 this.populateCollabSelect(isVago ? '' : nome);
 
+                // Configura campos de Inconsistência e Justificativa
+                const incCheck = document.getElementById('modal-sched-inconsistency-check');
+                const incNotes = document.getElementById('modal-sched-inconsistency-notes');
+                const incReason = document.getElementById('modal-sched-inconsistency-reason');
+
+                if (incCheck) {
+                    incCheck.checked = !!isVago;
+                    this.toggleInconsistencyFields(!!isVago);
+                }
+                if (incReason) {
+                    incReason.value = "Sem colaborador disponível no setor";
+                }
+                if (incNotes) {
+                    incNotes.value = isVago ? `Sem colaborador disponível no ${dia} para o posto/horário: ${horario}` : '';
+                }
+
                 if (modal) {
                     modal.style.display = 'flex';
                     modal.classList.remove('hidden');
@@ -9989,7 +10772,8 @@
                     colabsSheet.forEach(c => {
                         const opt = document.createElement('option');
                         opt.value = c.nome;
-                        opt.textContent = c.nome + (c.escala ? ' (' + c.escala + ')' : '') + (c.folga ? ' - Folga ' + c.folga : '');
+                        const deptoLabel = c.departamento ? ` [${c.departamento}]` : '';
+                        opt.textContent = c.nome + deptoLabel + (c.escala ? ' (' + c.escala + ')' : '') + (c.folga ? ' - Folga ' + c.folga : '');
                         if (c.nome.toUpperCase() === String(selectedName).toUpperCase()) opt.selected = true;
                         optGroupSheet.appendChild(opt);
                     });
@@ -10024,6 +10808,13 @@
                 const select = document.getElementById('modal-sched-collab-select');
                 if (nameInput) nameInput.value = '';
                 if (select) select.value = '';
+
+                // Habilita automaticamente justificativa de vaga aberta
+                const incCheck = document.getElementById('modal-sched-inconsistency-check');
+                if (incCheck) {
+                    incCheck.checked = true;
+                    this.toggleInconsistencyFields(true);
+                }
                 this.handleSaveSlot();
             }
 
@@ -10034,6 +10825,37 @@
                 const linha = parseInt(document.getElementById('modal-sched-linha').value, 10);
                 const colLetra = document.getElementById('modal-sched-coluna').value;
                 const nomeInput = document.getElementById('modal-sched-collab-name').value.trim();
+                const horarioLabel = document.getElementById('modal-sched-horario-label') ? document.getElementById('modal-sched-horario-label').innerText : '';
+
+                const isVacant = (!nomeInput || nomeInput.toUpperCase() === 'X');
+
+                // Checa se o usuário marcou justificativa / inconsistência operacional
+                const incCheck = document.getElementById('modal-sched-inconsistency-check');
+                if (incCheck && incCheck.checked) {
+                    const reason = document.getElementById('modal-sched-inconsistency-reason') ? document.getElementById('modal-sched-inconsistency-reason').value : 'Sem colaborador disponível no setor';
+                    const notes = document.getElementById('modal-sched-inconsistency-notes') ? document.getElementById('modal-sched-inconsistency-notes').value.trim() : '';
+
+                    const isSunday = (dia === 'Domingo');
+                    const dept = isSunday ? horarioLabel : (this.getCollabDepartment(nomeInput) || 'Setor Operacional');
+
+                    const inconsistencyRecord = {
+                        id: 'inc_sched_' + Date.now(),
+                        source: 'escala',
+                        type: 'Desfalque de Escala / Vaga Aberta',
+                        dia: dia,
+                        linha: linha,
+                        posto: horarioLabel,
+                        departamento: dept,
+                        colaboradorAusente: isVacant ? 'Posto Descoberto' : nomeInput,
+                        reason: reason,
+                        notes: notes || `Sem colaborador disponível no dia ${dia} para o posto ${horarioLabel}`,
+                        date: (this.data && this.data.dias && this.data.dias[dia] ? this.data.dias[dia].data : getLocalTodayString()),
+                        author: (window.auth && auth.currentUser) ? auth.currentUser.displayName : 'Líder / Admin',
+                        createdAt: Date.now()
+                    };
+
+                    this.saveInconsistency(inconsistencyRecord);
+                }
 
                 const btn = document.getElementById('btn-save-sched-slot');
                 if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Salvando...</span>';
@@ -10042,7 +10864,7 @@
                     await this.updateSlot(dia, linha, colLetra, nomeInput);
                     this.closeEditSlotModal();
                     if (window.notifications) {
-                        notifications.showToast('Escala salva e enviada para a Planilha Google!', 'success');
+                        notifications.showToast('Escala salva e sincronizada com sucesso!', 'success');
                     }
                 } catch (err) {
                     alert('Erro ao salvar: ' + err.message);
@@ -10098,6 +10920,7 @@
             render() {
                 this.renderDaysSelector();
                 this.renderStatsAndAbsences();
+                this.populateDeptFilter();
                 this.renderSlots();
             }
 
@@ -10136,7 +10959,6 @@
                 container.innerHTML = html;
             }
 
-            
             getCleanSlots(diaName) {
                 const diaInfo = (this.data && this.data.dias && this.data.dias[diaName]) ? this.data.dias[diaName] : null;
                 if (!diaInfo || !diaInfo.slots) return [];
@@ -10178,6 +11000,19 @@
                 if (statPres) statPres.innerText = presentes;
                 if (statVagos) statVagos.innerText = vagos;
                 if (statAus) statAus.innerText = ausencias.length;
+
+                // Alerta de setores sem ninguém / postos descobertos
+                const uncovAlert = document.getElementById('schedule-uncovered-alert');
+                const uncovTitle = document.getElementById('schedule-uncovered-alert-title');
+                const uncovDesc = document.getElementById('schedule-uncovered-alert-desc');
+
+                if (vagos > 0) {
+                    if (uncovAlert) uncovAlert.classList.remove('hidden');
+                    if (uncovTitle) uncovTitle.innerText = `Atenção Líder: ${vagos} posto(s) / setor(es) sem cobertura hoje`;
+                    if (uncovDesc) uncovDesc.innerText = `Há postos vagos na escala que necessitam de alocação ou justificativa para auditoria.`;
+                } else {
+                    if (uncovAlert) uncovAlert.classList.add('hidden');
+                }
 
                 // Atualiza badge de vagas abertas no sidebar se houver
                 const schedBadge = document.getElementById('schedule-badge');
@@ -10225,26 +11060,53 @@
 
                 let slots = this.getCleanSlots(this.currentDay);
 
-                // Filtros
+                // Filtros de Status (Todos / Vagas Abertas / Alocados)
                 if (this.currentFilter === 'vacant') {
                     slots = slots.filter(s => s.isVago);
                 } else if (this.currentFilter === 'assigned') {
                     slots = slots.filter(s => !s.isVago);
                 }
 
-                // Busca
+                // Filtro de Departamento
+                if (this.currentDeptFilter === 'uncovered') {
+                    slots = slots.filter(s => s.isVago);
+                } else if (this.currentDeptFilter && this.currentDeptFilter !== 'all') {
+                    const targetDept = this.currentDeptFilter.toUpperCase().trim();
+                    const isSunday = (this.currentDay === 'Domingo');
+
+                    slots = slots.filter(s => {
+                        if (isSunday) {
+                            return String(s.horario || '').toUpperCase().includes(targetDept);
+                        } else {
+                            const collabDept = this.getCollabDepartment(s.nome);
+                            return String(collabDept || '').toUpperCase().includes(targetDept);
+                        }
+                    });
+                }
+
+                // Busca por texto
                 if (this.searchQuery) {
-                    slots = slots.filter(s => 
-                        String(s.nome || '').toLowerCase().includes(this.searchQuery) ||
-                        String(s.horario || '').toLowerCase().includes(this.searchQuery) ||
-                        String(s.linha || '').includes(this.searchQuery)
-                    );
+                    const q = this.searchQuery;
+                    slots = slots.filter(s => {
+                        const depto = this.getCollabDepartment(s.nome);
+                        return String(s.nome || '').toLowerCase().includes(q) ||
+                            String(s.horario || '').toLowerCase().includes(q) ||
+                            String(depto || '').toLowerCase().includes(q) ||
+                            String(s.linha || '').includes(q);
+                    });
                 }
 
                 if (slots.length === 0) {
-                    container.innerHTML = '<div class="col-span-full p-8 text-center text-gray-500 text-xs">Nenhum posto encontrado com o filtro atual.</div>';
+                    container.innerHTML = `
+                        <div class="col-span-full p-8 text-center bg-gray-900/40 rounded-2xl border border-gray-800 space-y-2">
+                            <i class="fa-solid fa-users-slash text-2xl text-gray-600 block"></i>
+                            <p class="text-xs font-bold text-gray-300">Nenhum posto encontrado com o filtro atual</p>
+                            <p class="text-[11px] text-gray-500">Tente alternar o filtro de departamento ou limpar a busca.</p>
+                        </div>`;
                     return;
                 }
+
+                const isSunday = (this.currentDay === 'Domingo');
 
                 let html = '';
                 slots.forEach(s => {
@@ -10253,6 +11115,9 @@
                     const avatarBg = isVacant ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-teal-500/20 text-teal-400 border border-teal-500/30';
                     const initials = isVacant ? '!' : (s.nome ? s.nome.substring(0, 2).toUpperCase() : '??');
 
+                    // Departamento do colaborador ou do posto (domingo)
+                    const collabDept = isSunday ? s.horario : (this.getCollabDepartment(s.nome) || 'Geral');
+
                     html += `
                         <div class="p-3 sm:p-3.5 rounded-2xl border ${cardBorder} flex flex-col justify-between gap-3 shadow-md hover:border-gray-700 transition">
                             <div class="flex items-start justify-between gap-2">
@@ -10260,14 +11125,21 @@
                                     <div class="w-10 h-10 rounded-xl ${avatarBg} flex items-center justify-center font-bold text-xs shrink-0">
                                         ${initials}
                                     </div>
-                                    <div class="min-w-0">
+                                    <div class="min-w-0 space-y-0.5">
                                         ${isVacant 
                                             ? '<h5 class="text-xs sm:text-sm font-extrabold text-rose-400 flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-rose-500 text-xs animate-pulse"></i> VAGA ABERTA / FALTA</h5>'
                                             : `<h5 class="text-xs sm:text-sm font-bold text-gray-100 truncate">${s.nome}</h5>`
                                         }
-                                        <div class="flex items-center gap-1.5 text-[11px] text-gray-400 mt-0.5">
+                                        <div class="flex items-center gap-1.5 text-[11px] text-gray-400">
                                             <i class="fa-solid fa-clock text-[10px] text-teal-400"></i>
                                             <span class="truncate font-medium">${s.horario || 'Turno Padrão'}</span>
+                                        </div>
+                                        <!-- BADGE DE DEPARTAMENTO / SETOR DO COLABORADOR -->
+                                        <div class="pt-0.5">
+                                            ${isVacant 
+                                                ? `<span class="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-rose-950/80 border border-rose-800/80 text-rose-300 font-bold"><i class="fa-solid fa-triangle-exclamation text-[9px] text-rose-400"></i> ${isSunday ? s.horario : 'Setor Sem Cobertura'}</span>`
+                                                : `<span class="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-indigo-950/70 border border-indigo-800/70 text-indigo-300 font-bold"><i class="fa-solid fa-layer-group text-[9px] text-indigo-400"></i> ${collabDept}</span>`
+                                            }
                                         </div>
                                     </div>
                                 </div>
@@ -10644,6 +11516,36 @@
                     <button type="button" onclick="scheduleApp.markAsVacant()" class="px-3 py-1.5 bg-rose-600/30 hover:bg-rose-600 text-rose-200 text-xs font-bold rounded-xl transition border border-rose-500/40">
                         Marcar Vago
                     </button>
+                </div>
+
+                <!-- Justificativa de Vaga Aberta & Inconsistência de Escala para Relatórios -->
+                <div class="p-3.5 rounded-2xl bg-amber-950/20 border border-amber-900/40 space-y-2.5">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="modal-sched-inconsistency-check" onchange="scheduleApp.toggleInconsistencyFields(this.checked)" class="accent-amber-500 rounded w-4 h-4">
+                        <div>
+                            <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Registrar Justificativa & Inconsistência de Escala
+                            </span>
+                            <p class="text-[10px] text-gray-400">Gera no Relatório Mensal a ausência e desfalque do setor.</p>
+                        </div>
+                    </label>
+                    <div id="modal-sched-inconsistency-fields" class="hidden space-y-2 pt-2 border-t border-amber-900/30">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Motivo do Desfalque / Falta *</label>
+                            <select id="modal-sched-inconsistency-reason" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-amber-200 font-semibold focus:outline-none focus:border-amber-500 transition">
+                                <option value="Sem colaborador disponível no setor">Sem colaborador disponível no setor</option>
+                                <option value="Falta não justificada">Falta não justificada</option>
+                                <option value="Atestado médico / Licença">Atestado médico / Licença</option>
+                                <option value="Folga da escala sem substituto">Folga da escala sem substituto</option>
+                                <option value="Quadro reduzido / Férias">Quadro reduzido / Férias</option>
+                                <option value="Outro desfalque operacional">Outro desfalque operacional</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Justificativa Detalhada / Ação do Líder</label>
+                            <textarea id="modal-sched-inconsistency-notes" rows="2" placeholder="Ex: Sem colaborador disponível para cobrir o posto no dia de hoje..." class="w-full bg-gray-950 border border-gray-800 rounded-xl p-2.5 text-xs text-gray-200 focus:outline-none focus:border-amber-500 transition"></textarea>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex gap-2 pt-2">
