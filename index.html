@@ -461,7 +461,7 @@
     <!-- ========================================== -->
     <!-- SIDEBAR DESKTOP                            -->
     <!-- ========================================== -->
-    <aside id="sidebar-desktop" class="flex-col w-64 bg-gray-900 border-r border-gray-800 p-4 justify-between shrink-0">
+    <aside id="sidebar-desktop" class="flex flex-col w-72 bg-gray-900 border-r border-gray-800 p-4 justify-between shrink-0 select-none overflow-hidden">
         <div>
             <!-- Header Logo -->
             <div class="flex items-center gap-3 px-2 py-3 mb-4">
@@ -506,43 +506,54 @@
                 </div>
             </div>
 
-            <!-- Alternador Principal de Módulos (Tarefas vs Ocorrências & Processos) -->
-            <div class="mb-3.5 p-1 bg-gray-950/80 rounded-2xl border border-gray-800 flex gap-1 shadow-inner">
-                <button type="button" id="main-switch-tasks" onclick="window.switchMainView('tasks')" class="flex-1 py-2 px-1 text-xs font-bold rounded-xl bg-indigo-600 text-white transition flex items-center justify-center gap-1 shadow-md shadow-indigo-600/30" title="Quadro de Tarefas da Equipe">
-                    <i class="fa-solid fa-list-check text-[11px]"></i>
-                    <span class="truncate">Tarefas</span>
+            <!-- Alternador Principal de Módulos (Sidebar Vertical Elegante) -->
+            <div class="space-y-1.5 mb-4">
+                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-2 mb-1">Módulos</p>
+                <button type="button" id="main-switch-tasks" onclick="window.switchMainView('tasks')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-md shadow-indigo-600/30" title="Quadro de Tarefas da Equipe">
+                    <span class="flex items-center gap-2.5 min-w-0">
+                        <i class="fa-solid fa-list-check w-4 text-xs text-indigo-200"></i>
+                        <span class="truncate">Tarefas da Equipe</span>
+                    </span>
+                    <span id="sidebar-tasks-count" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 font-extrabold shrink-0">0</span>
                 </button>
-                <button type="button" id="main-switch-occurrences" onclick="window.switchMainView('occurrences')" class="flex-1 py-2 px-1 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-1 relative" title="Acompanhamento de Processos & Ocorrências">
-                    <i class="fa-solid fa-clipboard-user text-amber-400 text-[11px]"></i>
-                    <span class="truncate">Processos</span>
-                    <span id="occurrences-badge" class="hidden text-[10px] px-1 py-0.2 rounded-full bg-amber-500 text-black font-extrabold animate-pulse">0</span>
+                <button type="button" id="main-switch-occurrences" onclick="window.switchMainView('occurrences')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition" title="Acompanhamento de Processos & Ocorrências">
+                    <span class="flex items-center gap-2.5 min-w-0">
+                        <i class="fa-solid fa-clipboard-user w-4 text-xs text-amber-400"></i>
+                        <span class="truncate">Processos & Ocorrências</span>
+                    </span>
+                    <span id="occurrences-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-black font-extrabold animate-pulse shrink-0">0</span>
                 </button>
-                <button type="button" id="main-switch-feedback" onclick="window.switchMainView('feedback')" class="flex-1 py-2 px-1 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-1 relative" title="Avaliação 1-on-1 & Feedback de Colaboradores">
-                    <i class="fa-solid fa-comments text-purple-400 text-[11px]"></i>
-                    <span class="truncate">Feedback</span>
-                    <span id="feedback-badge" class="hidden text-[10px] px-1 py-0.2 rounded-full bg-purple-500 text-white font-extrabold animate-pulse">0</span>
+                <button type="button" id="main-switch-feedback" onclick="window.switchMainView('feedback')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition" title="Avaliação 1-on-1 & Feedback de Colaboradores">
+                    <span class="flex items-center gap-2.5 min-w-0">
+                        <i class="fa-solid fa-comments w-4 text-xs text-purple-400"></i>
+                        <span class="truncate">Feedback 1-on-1</span>
+                    </span>
+                    <span id="feedback-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-purple-500 text-white font-extrabold animate-pulse shrink-0">0</span>
                 </button>
             </div>
 
             <!-- Navegação e Filtros de Tarefas -->
-            <nav class="space-y-1">
-                <button onclick="app.setFilter('all')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition text-indigo-400 bg-indigo-950/50 border border-indigo-900/50" id="nav-all">
-                    <span class="flex items-center gap-3"><i class="fa-solid fa-inbox w-5"></i> Todas as Tarefas</span>
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-900/50 text-indigo-300" id="count-all">0</span>
-                </button>
-                <button onclick="app.setFilter('mine')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-400 hover:bg-gray-800/60 hover:text-gray-200" id="nav-mine">
-                    <span class="flex items-center gap-3"><i class="fa-solid fa-user-check w-5"></i> Minhas Tarefas</span>
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-400" id="count-mine">0</span>
-                </button>
-                <button onclick="app.setFilter('today')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-400 hover:bg-gray-800/60 hover:text-gray-200" id="nav-today">
-                    <span class="flex items-center gap-3"><i class="fa-solid fa-calendar-day w-5"></i> Hoje</span>
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-400" id="count-today">0</span>
-                </button>
-                <button onclick="app.setFilter('upcoming')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition text-gray-400 hover:bg-gray-800/60 hover:text-gray-200" id="nav-upcoming">
-                    <span class="flex items-center gap-3"><i class="fa-solid fa-calendar-week w-5"></i> Próximas</span>
-                    <span class="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-400" id="count-upcoming">0</span>
-                </button>
-            </nav>
+            <div id="sidebar-task-filters" class="space-y-1 mb-2">
+                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-2 mb-1">Filtros de Tarefas</p>
+                <nav class="space-y-1">
+                    <button onclick="app.setFilter('all')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition text-indigo-400 bg-indigo-950/50 border border-indigo-900/50" id="nav-all">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-inbox w-4 text-xs"></i> Todas as Tarefas</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-900/50 text-indigo-300 font-bold" id="count-all">0</span>
+                    </button>
+                    <button onclick="app.setFilter('mine')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition text-gray-400 hover:bg-gray-800/60 hover:text-gray-200" id="nav-mine">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-user-check w-4 text-xs"></i> Minhas Tarefas</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 font-bold" id="count-mine">0</span>
+                    </button>
+                    <button onclick="app.setFilter('today')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition text-gray-400 hover:bg-gray-800/60 hover:text-gray-200" id="nav-today">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-calendar-day w-4 text-xs"></i> Hoje</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 font-bold" id="count-today">0</span>
+                    </button>
+                    <button onclick="app.setFilter('upcoming')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition text-gray-400 hover:bg-gray-800/60 hover:text-gray-200" id="nav-upcoming">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-calendar-week w-4 text-xs"></i> Próximas</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 font-bold" id="count-upcoming">0</span>
+                    </button>
+                </nav>
+            </div>
         </div>
 
         <!-- Indicador de Nuvem & Ações Rápidas no Rodapé da Sidebar -->
@@ -689,7 +700,7 @@
                             <i class="fa-solid fa-clipboard-user text-sm"></i>
                         </div>
                         <div class="min-w-0">
-                            <h3 class="font-bold text-sm text-gray-100 truncate">Acompanhamento de Colaboradores & Decisões</h3>
+                            <h3 class="font-bold text-sm text-gray-100">Processos & Ocorrências</h3>
                             <p class="text-[11px] text-gray-400 truncate hidden sm:block">Registrado por Líderes Setoriais com parecer e orientação da Administração</p>
                         </div>
                     </div>
@@ -726,7 +737,7 @@
                             <i class="fa-solid fa-comments text-base"></i>
                         </div>
                         <div class="min-w-0">
-                            <h3 class="font-bold text-sm text-gray-100 truncate">Feedback de Colaboradores & 1-on-1</h3>
+                            <h3 class="font-bold text-sm text-gray-100">Feedback de Colaboradores</h3>
                             <p class="text-[11px] text-gray-400 truncate hidden sm:block">Diretrizes da Administração aplicadas por Líderes de Equipe com plano de ação</p>
                         </div>
                     </div>
@@ -739,19 +750,19 @@
                 </div>
 
                 <!-- Abas Internas: 1. Histórico | 2. Aplicar Feedback | 3. Diretrizes ADM -->
-                <div class="flex bg-gray-950 p-1.5 rounded-2xl border border-gray-800 gap-1.5 shrink-0">
-                    <button type="button" onclick="feedbackApp.switchTab('history')" id="fb-tab-history-btn" class="flex-1 min-w-0 py-2 px-2 text-xs font-bold rounded-xl bg-purple-600 text-white transition flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/30 truncate">
+                <div class="flex overflow-x-auto custom-scrollbar scrollbar-none bg-gray-950 p-1.5 rounded-2xl border border-gray-800 gap-2 shrink-0">
+                    <button type="button" onclick="feedbackApp.switchTab('history')" id="fb-tab-history-btn" class="shrink-0 whitespace-nowrap py-2 px-3.5 text-xs font-bold rounded-xl bg-purple-600 text-white transition flex items-center justify-center gap-2 shadow-md shadow-purple-600/30">
                         <i class="fa-solid fa-chart-pie text-xs shrink-0"></i>
-                        <span class="truncate">Histórico</span>
+                        <span>Histórico & Relatórios</span>
                         <span id="fb-history-badge" class="px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-extrabold shrink-0">0</span>
                     </button>
-                    <button type="button" onclick="feedbackApp.switchTab('apply')" id="fb-tab-apply-btn" class="flex-1 min-w-0 py-2 px-2 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-1.5 truncate">
+                    <button type="button" onclick="feedbackApp.switchTab('apply')" id="fb-tab-apply-btn" class="shrink-0 whitespace-nowrap py-2 px-3.5 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 transition flex items-center justify-center gap-2">
                         <i class="fa-solid fa-pen-fancy text-xs shrink-0"></i>
-                        <span class="truncate">Nova Avaliação</span>
+                        <span>Nova Avaliação (1-on-1)</span>
                     </button>
-                    <button type="button" onclick="feedbackApp.switchTab('guidelines')" id="fb-tab-guidelines-btn" class="flex-1 min-w-0 py-2 px-2 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-1.5 truncate">
+                    <button type="button" onclick="feedbackApp.switchTab('guidelines')" id="fb-tab-guidelines-btn" class="shrink-0 whitespace-nowrap py-2 px-3.5 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 transition flex items-center justify-center gap-2">
                         <i class="fa-solid fa-sliders text-xs text-amber-400 shrink-0"></i>
-                        <span class="truncate">Diretrizes ADM</span>
+                        <span>Diretrizes ADM</span>
                     </button>
                 </div>
 
@@ -1033,7 +1044,7 @@
                         <div class="flex flex-wrap items-center gap-1.5 text-xs">
                             <span class="text-[10px] text-gray-500 font-bold uppercase mr-1">Classificação:</span>
                             <button type="button" onclick="feedbackApp.setRatingFilter('all')" id="fb-filter-all" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-purple-600 text-white transition shadow-sm">Todos</button>
-                            <button type="button" onclick="feedbackApp.setRatingFilter('pending')" id="fb-filter-pending" class="px-2.5 py-1 rounded-xl text-xs font-semibold bg-gray-900 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5"><i class="fa-solid fa-clock text-amber-400 text-[10px]"></i> <span>⏳ Pendentes para Líderes</span></button>
+                            <button type="button" onclick="feedbackApp.setRatingFilter('pending')" id="fb-filter-pending" class="px-2.5 py-1 rounded-xl text-xs font-semibold bg-gray-900 border border-amber-500/40 text-amber-300 hover:text-amber-200 transition flex items-center gap-1.5"><i class="fa-solid fa-clock text-amber-400 text-[10px]"></i> <span>Pendentes</span></button>
                             <button type="button" onclick="feedbackApp.setRatingFilter('Excelente')" id="fb-filter-excelente" class="px-2.5 py-1 rounded-xl text-xs font-semibold bg-gray-900 border border-gray-800 text-emerald-400 hover:text-emerald-300 transition">🟢 Excelente</button>
                             <button type="button" onclick="feedbackApp.setRatingFilter('Bom')" id="fb-filter-bom" class="px-2.5 py-1 rounded-xl text-xs font-semibold bg-gray-900 border border-gray-800 text-indigo-400 hover:text-indigo-300 transition">🔵 Bom</button>
                             <button type="button" onclick="feedbackApp.setRatingFilter('Regular')" id="fb-filter-regular" class="px-2.5 py-1 rounded-xl text-xs font-semibold bg-gray-900 border border-gray-800 text-amber-400 hover:text-amber-300 transition">🟡 Regular</button>
@@ -2614,6 +2625,9 @@
 
             setFilter(filter) {
                 this.currentFilter = filter;
+                if (window.currentMainView !== 'tasks' && typeof window.switchMainView === 'function') {
+                    window.switchMainView('tasks');
+                }
                 
                 ['all', 'mine', 'today', 'upcoming'].forEach(f => {
                     const btn = document.getElementById(`nav-${f}`);
@@ -3127,6 +3141,8 @@
                 if (countMineEl) countMineEl.innerText = countMine;
                 if (countTodayEl) countTodayEl.innerText = visibleTasks.filter(t => t.date === todayStr).length;
                 if (countUpcomingEl) countUpcomingEl.innerText = visibleTasks.filter(t => t.date > todayStr).length;
+                const sidebarCount = document.getElementById('sidebar-tasks-count');
+                if (sidebarCount) sidebarCount.innerText = visibleTasks.length;
 
                 if(filtered.length === 0) {
                     container.innerHTML = `
@@ -3447,10 +3463,10 @@
                     : "hidden";
             }
 
-            // Estilos padrão inativos
-            if (switchTasks) switchTasks.className = "flex-1 py-2 px-1 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-1";
-            if (switchOcc) switchOcc.className = "flex-1 py-2 px-1 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-1 relative";
-            if (switchFb) switchFb.className = "flex-1 py-2 px-1 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-1 relative";
+            // Estilos padrão inativos (Sidebar Vertical e Topbar)
+            if (switchTasks) switchTasks.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition";
+            if (switchOcc) switchOcc.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition";
+            if (switchFb) switchFb.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition";
 
             if (topbarTasks) topbarTasks.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1";
             if (topbarOcc) topbarOcc.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative";
@@ -3469,7 +3485,7 @@
                     mobFab.className = "md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 active:scale-90 text-white rounded-2xl shadow-2xl shadow-indigo-600/50 flex items-center justify-center text-xl transition border border-indigo-400/40";
                 }
 
-                if (switchTasks) switchTasks.className = "flex-1 py-2 px-1 text-xs font-bold rounded-xl bg-indigo-600 text-white transition flex items-center justify-center gap-1 shadow-md shadow-indigo-600/30";
+                if (switchTasks) switchTasks.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-md shadow-indigo-600/30";
                 if (topbarTasks) topbarTasks.className = "px-2.5 py-1 text-xs font-bold rounded-lg bg-indigo-600 text-white transition flex items-center gap-1";
                 if (mobTasks) mobTasks.className = "flex flex-col items-center gap-1 text-indigo-400 py-1 px-2.5 transition active:scale-90";
 
@@ -3482,7 +3498,7 @@
                 if (occSec) occSec.classList.remove('hidden');
                 if (viewTitle) viewTitle.innerText = "Ocorrências & Processos";
 
-                if (switchOcc) switchOcc.className = "flex-1 py-2 px-1 text-xs font-bold rounded-xl bg-amber-600 text-black transition flex items-center justify-center gap-1 relative shadow-md shadow-amber-600/30";
+                if (switchOcc) switchOcc.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition bg-amber-600 text-black shadow-md shadow-amber-600/30";
                 if (topbarOcc) topbarOcc.className = "px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-600 text-black transition flex items-center gap-1 relative shadow-sm";
                 if (mobOcc) mobOcc.className = "flex flex-col items-center gap-1 text-amber-400 py-1 px-2.5 transition active:scale-90 relative";
 
@@ -3495,7 +3511,7 @@
                 if (fbSec) fbSec.classList.remove('hidden');
                 if (viewTitle) viewTitle.innerText = "Feedback de Colaboradores";
 
-                if (switchFb) switchFb.className = "flex-1 py-2 px-1 text-xs font-bold rounded-xl bg-purple-600 text-white transition flex items-center justify-center gap-1 relative shadow-md shadow-purple-600/30";
+                if (switchFb) switchFb.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition bg-purple-600 text-white shadow-md shadow-purple-600/30";
                 if (topbarFb) topbarFb.className = "px-2.5 py-1 text-xs font-bold rounded-lg bg-purple-600 text-white transition flex items-center gap-1 relative shadow-sm";
                 if (mobFb) mobFb.className = "flex flex-col items-center gap-1 text-purple-400 py-1 px-2 transition active:scale-90 relative";
 
@@ -3533,6 +3549,9 @@
 
             setFilter(filter) {
                 this.currentFilter = filter;
+                if (window.currentMainView !== 'tasks' && typeof window.switchMainView === 'function') {
+                    window.switchMainView('tasks');
+                }
                 ['all', 'pending', 'answered', 'resolved'].forEach(f => {
                     const btn = document.getElementById(`occ-filter-${f}`);
                     if (btn) {
@@ -4177,8 +4196,8 @@
                 if (vHistory) vHistory.classList.add('hidden');
                 if (vGuidelines) vGuidelines.classList.add('hidden');
 
-                const defaultBtnClass = "flex-1 min-w-0 py-2 px-2 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 transition flex items-center justify-center gap-1.5 truncate";
-                const activeBtnClass = "flex-1 min-w-0 py-2 px-2 text-xs font-bold rounded-xl bg-purple-600 text-white transition flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/30 truncate";
+                const defaultBtnClass = "shrink-0 whitespace-nowrap py-2 px-3.5 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 transition flex items-center justify-center gap-2";
+                const activeBtnClass = "shrink-0 whitespace-nowrap py-2 px-3.5 text-xs font-bold rounded-xl bg-purple-600 text-white transition flex items-center justify-center gap-2 shadow-md shadow-purple-600/30";
 
                 if (btnApply) btnApply.className = defaultBtnClass;
                 if (btnHistory) btnHistory.className = defaultBtnClass;
