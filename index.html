@@ -12,6 +12,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#030712">
+    <meta name="color-scheme" content="dark">
 
     <!-- Tailwind CSS CDN (v3 Play CDN - 100% estável e compatível com iOS WebKit e Android WebView) -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -65,12 +66,12 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Dark Styling for Browser Select Option Popups */
-        select option {
-            background-color: #111827 !important;
-            color: #f9fafb !important;
-            font-size: 13px !important;
-            padding: 8px 12px !important;
+        /* Dark Styling & Color Scheme for Browser Controls */
+        :root, html, body {
+            color-scheme: dark !important;
+        }
+        select, option, optgroup {
+            color-scheme: dark !important;
         }
 
         /* Mobile layout fixes & prevent overflow */
@@ -1432,11 +1433,26 @@
                         <button type="button" onclick="scheduleApp.setFilter('assigned')" id="sched-filter-assigned" class="px-3.5 py-2 md:px-4 md:py-2.5 rounded-xl text-xs md:text-sm font-bold transition bg-gray-900 text-gray-300 hover:text-white border border-gray-700 cursor-pointer">
                             <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i> Alocados
                         </button>
-                        <!-- Filtro de Departamento / Setor (Estritamente da Planilha) -->
-                        <div class="relative shrink-0">
-                            <select id="sched-filter-dept" onchange="scheduleApp.setDeptFilter(this.value)" class="bg-gray-900 border border-gray-700 hover:border-teal-400 rounded-xl px-3 py-2 md:px-4 md:py-2.5 text-xs md:text-sm text-teal-300 font-bold focus:outline-none focus:border-teal-400 transition cursor-pointer shadow-md">
-                                <option value="all" class="bg-gray-900 text-white font-bold">🏢 Todos os Departamentos</option>
-                                <option value="uncovered" class="bg-gray-900 text-rose-300 font-bold">⚠️ Apenas Setores Descobertos</option>
+                        <!-- Filtro de Departamento / Setor Customizado (100% Dark & Legível em Qualquer Sistema) -->
+                        <div class="relative shrink-0" id="sched-dept-dropdown-wrapper">
+                            <button type="button" 
+                                    id="sched-dept-dropdown-btn" 
+                                    onclick="scheduleApp.toggleDeptDropdown(event)" 
+                                    class="flex items-center justify-between gap-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-teal-400 rounded-xl px-3.5 py-2 md:px-4 md:py-2.5 text-xs md:text-sm text-teal-300 font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/30 transition cursor-pointer shadow-md min-w-[210px] md:min-w-[250px]">
+                                <span id="sched-dept-dropdown-label" class="truncate flex items-center gap-1.5">🏢 Todos os Departamentos</span>
+                                <i class="fa-solid fa-chevron-down text-gray-400 text-xs transition-transform duration-200" id="sched-dept-dropdown-arrow"></i>
+                            </button>
+                            
+                            <!-- Menu Dropdown Customizado 100% Escuro & Legível (Sem Caixa Branca do Windows) -->
+                            <div id="sched-dept-dropdown-menu" 
+                                 class="hidden absolute left-0 top-full mt-2 w-72 md:w-80 max-h-80 overflow-y-auto bg-gray-900/98 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl p-2 z-[9999] focus:outline-none space-y-1">
+                                <!-- Preenchido dinamicamente por scheduleApp.populateDeptFilter() -->
+                            </div>
+
+                            <!-- Select nativo mantido oculto para total compatibilidade -->
+                            <select id="sched-filter-dept" onchange="scheduleApp.setDeptFilter(this.value)" class="hidden">
+                                <option value="all">🏢 Todos os Departamentos</option>
+                                <option value="uncovered">⚠️ Apenas Setores Descobertos</option>
                             </select>
                         </div>
                     </div>
@@ -11813,14 +11829,74 @@
                 }
             }
 
+            toggleDeptDropdown(e) {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                const menu = document.getElementById('sched-dept-dropdown-menu');
+                const arrow = document.getElementById('sched-dept-dropdown-arrow');
+                if (!menu) return;
+                const isClosed = menu.classList.contains('hidden');
+                if (isClosed) {
+                    menu.classList.remove('hidden');
+                    if (arrow) arrow.classList.add('rotate-180');
+                } else {
+                    menu.classList.add('hidden');
+                    if (arrow) arrow.classList.remove('rotate-180');
+                }
+            }
+
+            closeDeptDropdown() {
+                const menu = document.getElementById('sched-dept-dropdown-menu');
+                const arrow = document.getElementById('sched-dept-dropdown-arrow');
+                if (menu) menu.classList.add('hidden');
+                if (arrow) arrow.classList.remove('rotate-180');
+            }
+
             setDeptFilter(val) {
                 this.currentDeptFilter = val;
+                this.closeDeptDropdown();
+
+                // 1. Atualiza o select oculto (mantém compatibilidade)
+                const select = document.getElementById('sched-filter-dept');
+                if (select) select.value = val;
+
+                // 2. Atualiza o botão do dropdown
+                const labelEl = document.getElementById('sched-dept-dropdown-label');
+                if (labelEl) {
+                    if (val === 'all') {
+                        labelEl.innerHTML = '🏢 Todos os Departamentos';
+                    } else if (val === 'uncovered') {
+                        labelEl.innerHTML = '<span class="text-rose-400 font-extrabold flex items-center gap-1.5"><span>⚠️</span> Setores Descobertos</span>';
+                    } else {
+                        labelEl.innerHTML = `<span class="text-teal-300 font-extrabold flex items-center gap-1.5 truncate"><span>📦</span> <span class="truncate">${val}</span></span>`;
+                    }
+                }
+
+                // 3. Atualiza os estados visuais dos itens no menu customizado
+                const items = document.querySelectorAll('.sched-dept-option-item');
+                items.forEach(el => {
+                    const itemVal = el.getAttribute('data-value');
+                    const check = el.querySelector('.sched-dept-check');
+                    if (itemVal === val) {
+                        el.classList.add('bg-teal-500/20', 'text-teal-200');
+                        el.classList.remove('text-gray-300');
+                        if (check) check.classList.remove('hidden');
+                    } else {
+                        el.classList.remove('bg-teal-500/20', 'text-teal-200');
+                        if (itemVal !== 'uncovered') el.classList.add('text-gray-300');
+                        if (check) check.classList.add('hidden');
+                    }
+                });
+
                 this.renderSlots();
             }
 
             populateDeptFilter() {
                 const select = document.getElementById('sched-filter-dept');
-                if (!select) return;
+                const menu = document.getElementById('sched-dept-dropdown-menu');
+                const labelEl = document.getElementById('sched-dept-dropdown-label');
 
                 const currentVal = this.currentDeptFilter || 'all';
                 const deptsSet = new Set();
@@ -11847,18 +11923,66 @@
                     });
                 }
 
-                // REMOVIDO QUALQUER DEPARTAMENTO FICTÍCIO! Somente setores que realmente existem na planilha Google.
+                const sortedDepts = Array.from(deptsSet).sort();
 
-                let optionsHtml = `
-                    <option value="all" class="bg-gray-900 text-white font-bold" ${currentVal === 'all' ? 'selected' : ''}>🏢 Todos os Departamentos</option>
-                    <option value="uncovered" class="bg-gray-900 text-rose-300 font-bold" ${currentVal === 'uncovered' ? 'selected' : ''}>⚠️ Apenas Setores Descobertos</option>
-                `;
+                // Atualiza o select oculto para manter compatibilidade com testes e scripts
+                if (select) {
+                    let optionsHtml = `
+                        <option value="all" ${currentVal === 'all' ? 'selected' : ''}>🏢 Todos os Departamentos</option>
+                        <option value="uncovered" ${currentVal === 'uncovered' ? 'selected' : ''}>⚠️ Apenas Setores Descobertos</option>
+                    `;
+                    sortedDepts.forEach(dept => {
+                        optionsHtml += `<option value="${dept}" ${currentVal === dept ? 'selected' : ''}>${dept}</option>`;
+                    });
+                    select.innerHTML = optionsHtml;
+                    select.value = currentVal;
+                }
 
-                Array.from(deptsSet).sort().forEach(dept => {
-                    optionsHtml += `<option value="${dept}" class="bg-gray-900 text-white font-semibold" ${currentVal === dept ? 'selected' : ''}>${dept}</option>`;
-                });
+                // Atualiza o texto do botão
+                if (labelEl) {
+                    if (currentVal === 'all') {
+                        labelEl.innerHTML = '🏢 Todos os Departamentos';
+                    } else if (currentVal === 'uncovered') {
+                        labelEl.innerHTML = '<span class="text-rose-400 font-extrabold flex items-center gap-1.5"><span>⚠️</span> Setores Descobertos</span>';
+                    } else {
+                        labelEl.innerHTML = `<span class="text-teal-300 font-extrabold flex items-center gap-1.5 truncate"><span>📦</span> <span class="truncate">${currentVal}</span></span>`;
+                    }
+                }
 
-                select.innerHTML = optionsHtml;
+                // Constrói o Menu Dropdown 100% Dark
+                if (menu) {
+                    let menuHtml = `
+                        <div class="px-3 py-1.5 text-[10px] uppercase tracking-wider font-extrabold text-gray-400">
+                            Filtros Gerais
+                        </div>
+                        <div onclick="scheduleApp.setDeptFilter('all')" data-value="all" 
+                             class="sched-dept-option-item flex items-center justify-between px-3.5 py-2.5 rounded-xl cursor-pointer text-xs md:text-sm font-bold transition hover:bg-gray-800 ${currentVal === 'all' ? 'bg-teal-500/20 text-teal-200' : 'text-gray-200'}">
+                            <span class="flex items-center gap-2.5"><span>🏢</span> <span>Todos os Departamentos</span></span>
+                            <i class="fa-solid fa-check text-teal-400 text-xs sched-dept-check ${currentVal === 'all' ? '' : 'hidden'}"></i>
+                        </div>
+                        <div onclick="scheduleApp.setDeptFilter('uncovered')" data-value="uncovered" 
+                             class="sched-dept-option-item flex items-center justify-between px-3.5 py-2.5 rounded-xl cursor-pointer text-xs md:text-sm font-bold transition hover:bg-rose-950/40 text-rose-400 ${currentVal === 'uncovered' ? 'bg-rose-950/50 text-rose-300' : ''}">
+                            <span class="flex items-center gap-2.5"><span>⚠️</span> <span>Apenas Setores Descobertos</span></span>
+                            <i class="fa-solid fa-check text-rose-400 text-xs sched-dept-check ${currentVal === 'uncovered' ? '' : 'hidden'}"></i>
+                        </div>
+                        <div class="px-3 py-1.5 mt-1 border-t border-gray-800 text-[10px] uppercase tracking-wider font-extrabold text-gray-400">
+                            Departamentos da Planilha
+                        </div>
+                    `;
+
+                    sortedDepts.forEach(dept => {
+                        const isSel = currentVal === dept;
+                        menuHtml += `
+                            <div onclick="scheduleApp.setDeptFilter('${dept}')" data-value="${dept}" 
+                                 class="sched-dept-option-item flex items-center justify-between px-3.5 py-2 rounded-xl cursor-pointer text-xs md:text-sm font-semibold transition hover:bg-teal-500/15 hover:text-white ${isSel ? 'bg-teal-500/20 text-teal-200 font-bold' : 'text-gray-300'}">
+                                <span class="flex items-center gap-2.5 truncate"><span>📦</span> <span class="truncate">${dept}</span></span>
+                                <i class="fa-solid fa-check text-teal-400 text-xs sched-dept-check ${isSel ? '' : 'hidden'}"></i>
+                            </div>
+                        `;
+                    });
+
+                    menu.innerHTML = menuHtml;
+                }
             }
 
             toggleInconsistencyFields(checked) {
@@ -12574,6 +12698,19 @@
         window.scheduleApp = new ScheduleApp();
         document.addEventListener('DOMContentLoaded', () => {
             if (window.scheduleApp) window.scheduleApp.init();
+        });
+
+        // Fechar menu suspenso de departamento da escala ao clicar fora ou pressionar ESC
+        document.addEventListener('click', (e) => {
+            const wrapper = document.getElementById('sched-dept-dropdown-wrapper');
+            if (wrapper && !wrapper.contains(e.target) && window.scheduleApp) {
+                window.scheduleApp.closeDeptDropdown();
+            }
+        });
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && window.scheduleApp) {
+                window.scheduleApp.closeDeptDropdown();
+            }
         });
     </script>
 
