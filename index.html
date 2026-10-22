@@ -51,7 +51,9 @@
 
         html, body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #030712 !important;
+            background-color: #0d0e12 !important;
+            background-image: radial-gradient(130% 130% at 50% 0%, #1b1d24 0%, #101115 50%, #08090b 100%) !important;
+            background-attachment: fixed !important;
             color: #f3f4f6 !important;
             margin: 0;
             padding: 0;
@@ -97,28 +99,176 @@
         /* Regra hidden tem prioridade absoluta */
         .hidden, [hidden] { display: none !important; }
 
-        /* Cores Dark Theme Essenciais */
-        .bg-gray-950 { background-color: #030712 !important; }
-        .bg-gray-900 { background-color: #111827 !important; }
-        .bg-gray-800 { background-color: #1f2937 !important; }
-        .bg-indigo-600 { background-color: #4f46e5 !important; }
-        .bg-indigo-950 { background-color: #1e1b4b !important; }
-        .bg-emerald-600 { background-color: #059669 !important; }
-        .bg-amber-600 { background-color: #d97706 !important; }
-        .bg-red-600 { background-color: #dc2626 !important; }
-        .border-gray-800 { border-color: #1f2937 !important; }
-        .border-indigo-500 { border-color: #6366f1 !important; }
+        /* ========================================================================== */
+        /* VECTEEZY 1225413 - DARK SKEUOMORPHIC & SOFT NEUMORPHIC DESIGN SYSTEM        */
+        /* ========================================================================== */
+        .bg-gray-950 { 
+            background-color: #0b0c10 !important; 
+        }
+        .bg-gray-900 { 
+            background: linear-gradient(160deg, #1d1f27 0%, #121317 100%) !important; 
+            border-color: rgba(255, 255, 255, 0.075) !important;
+        }
+        .bg-gray-800 { 
+            background: linear-gradient(160deg, #242732 0%, #16181f 100%) !important; 
+            border-color: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        /* Inset Recessed Inputs, Textareas, Selects */
+        input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+        select,
+        textarea {
+            background-color: #0a0b0e !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+            box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.92), inset -1px -1px 2px rgba(255, 255, 255, 0.03) !important;
+            color: #f3f4f6 !important;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+        select:focus,
+        textarea:focus {
+            border-color: #00d2ff !important;
+            box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.95), 0 0 14px rgba(0, 210, 255, 0.45) !important;
+            outline: none !important;
+        }
+
+        /* Tactile Elevated Buttons & Glow Effects */
+        .bg-indigo-600 { 
+            background: linear-gradient(135deg, #00d2ff 0%, #0077b6 100%) !important; 
+            box-shadow: 0 4px 18px rgba(0, 210, 255, 0.42), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+            color: #ffffff !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
+            transition: all 0.18s ease !important;
+        }
+        .bg-indigo-600:hover { 
+            background: linear-gradient(135deg, #1ad8ff 0%, #0088cc 100%) !important; 
+            box-shadow: 0 6px 24px rgba(0, 210, 255, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.5) !important;
+        }
+        .bg-indigo-600:active {
+            transform: scale(0.97) !important;
+            box-shadow: inset 2px 2px 6px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        .bg-indigo-950 { 
+            background-color: #0d1e2b !important; 
+            border-color: rgba(0, 210, 255, 0.25) !important; 
+        }
+        .bg-emerald-600 { 
+            background: linear-gradient(135deg, #00e676 0%, #00a854 100%) !important; 
+            box-shadow: 0 4px 16px rgba(0, 230, 118, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+        }
+        .bg-amber-600 { 
+            background: linear-gradient(135deg, #ff9f0a 0%, #d46b08 100%) !important; 
+            box-shadow: 0 4px 16px rgba(255, 159, 10, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+        }
+        .bg-red-600 { 
+            background: linear-gradient(135deg, #ff3b30 0%, #c61a09 100%) !important; 
+            box-shadow: 0 4px 16px rgba(255, 59, 48, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+        }
+
+        .border-gray-800 { border-color: rgba(255, 255, 255, 0.08) !important; }
+        .border-indigo-500 { border-color: #00d2ff !important; }
         .text-white { color: #ffffff !important; }
         .text-gray-100 { color: #f3f4f6 !important; }
         .text-gray-200 { color: #e5e7eb !important; }
         .text-gray-300 { color: #d1d5db !important; }
         .text-gray-400 { color: #9ca3af !important; }
         .text-gray-500 { color: #6b7280 !important; }
-        .text-indigo-400 { color: #818cf8 !important; }
-        .text-indigo-300 { color: #a5b4fc !important; }
-        .text-amber-400 { color: #fbbf24 !important; }
-        .text-emerald-400 { color: #34d399 !important; }
-        .text-red-400 { color: #f87171 !important; }
+        .text-indigo-400 { color: #00d2ff !important; }
+        .text-indigo-300 { color: #70e4ff !important; }
+        .text-amber-400 { color: #ffb300 !important; }
+        .text-emerald-400 { color: #00e676 !important; }
+        .text-red-400 { color: #ff4d4d !important; }
+
+        /* Tactile Modals with 3D Depth & Rim Highlight */
+        .modal-content-box,
+        #auth-screen > div,
+        #modal-task > div > div,
+        #modal-view-task > div > div,
+        #modal-occurrence > div > div,
+        #modal-admin-edit-occ > div > div,
+        #modal-feedback-detail > div > div,
+        #admin-panel-modal > div > div,
+        #modal-schedule-duty > div > div,
+        #modal-sync-channel > div > div,
+        #account-settings-modal > div > div,
+        #email-verification-modal > div {
+            background: linear-gradient(165deg, #1c1e26 0%, #101115 100%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.09) !important;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 1px 1px rgba(255, 255, 255, 0.08) !important;
+        }
+
+        /* Task Cards Neumorphic Surface */
+        #tasks-container > div {
+            background: linear-gradient(150deg, #1b1d24 0%, #121317 100%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.075) !important;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.65), -1px -1px 4px rgba(255, 255, 255, 0.02) !important;
+            transition: all 0.2s ease !important;
+        }
+        #tasks-container > div:hover {
+            border-color: rgba(0, 210, 255, 0.35) !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 14px rgba(0, 210, 255, 0.12) !important;
+            transform: translateY(-1px);
+        }
+
+        /* Checkboxes with Neon Cyan Accent */
+        input[type="checkbox"] {
+            accent-color: #00d2ff !important;
+            cursor: pointer;
+        }
+
+        /* Mobile Bottom Nav & Header Blur */
+        header {
+            background: rgba(16, 17, 22, 0.88) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+        }
+
+        nav.md\:hidden {
+            background: rgba(14, 15, 20, 0.94) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        /* Desktop Sidebar */
+        #sidebar-desktop {
+            background: linear-gradient(180deg, #14151b 0%, #0c0d11 100%) !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
+        }
+
+        /* Glowing LED Utilities */
+        .led-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 9999px;
+            display: inline-block;
+        }
+        .led-dot-cyan {
+            background: #00d2ff;
+            box-shadow: 0 0 8px #00d2ff, 0 0 14px rgba(0, 210, 255, 0.7);
+        }
+        .led-dot-emerald {
+            background: #00e676;
+            box-shadow: 0 0 8px #00e676, 0 0 14px rgba(0, 230, 118, 0.7);
+        }
+        .led-dot-amber {
+            background: #ffb300;
+            box-shadow: 0 0 8px #ffb300, 0 0 14px rgba(255, 179, 0, 0.7);
+        }
+        .led-dot-coral {
+            background: #ff3b30;
+            box-shadow: 0 0 8px #ff3b30, 0 0 14px rgba(255, 59, 48, 0.7);
+        }
+
+        /* Sliders / Range Tracks */
+        input[type="range"] {
+            accent-color: #00d2ff !important;
+        }
 
         /* Modais Fixos & Responsividade */
         .fixed { position: fixed !important; }
