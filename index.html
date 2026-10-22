@@ -868,7 +868,7 @@
         </div>
 
         <!-- Main Content Area: Tarefas vs Ocorrências vs Escala -->
-        <div id="app-main-content-scroll" class="flex-1 overflow-y-auto custom-scrollbar p-3.5 sm:p-5 md:p-6 lg:p-8 max-w-4xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-[1720px] w-full mx-auto transition-all">
+        <div id="app-main-content-scroll" class="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-4 md:p-6 max-w-6xl w-full mx-auto transition-all">
             <!-- MÓDULO 1: TAREFAS DA EQUIPE -->
             <div id="view-tasks-container" class="space-y-2.5 pb-20 md:pb-6">
                 <div id="tasks-container" class="space-y-2.5">
@@ -1341,41 +1341,41 @@
                 </div>
 
                 <!-- Resumo Estatístico do Dia Selecionado -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4.5">
-                    <div class="bg-gray-950/90 p-3.5 md:p-4.5 rounded-2xl border border-gray-800 shadow-md flex items-center gap-3.5 md:gap-4">
-                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 text-base md:text-xl">
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                    <div class="bg-gray-950/90 p-3 sm:p-3.5 rounded-xl border border-gray-800 shadow-md flex items-center gap-3">
+                        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 text-sm sm:text-base">
                             <i class="fa-solid fa-users"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[11px] md:text-xs text-gray-300 uppercase font-black tracking-wider">Total Postos</p>
-                            <p id="stat-schedule-total" class="text-lg md:text-2xl font-black text-white">0</p>
+                            <p class="text-[10px] sm:text-[11px] text-gray-400 uppercase font-black tracking-wider">Total Postos</p>
+                            <p id="stat-schedule-total" class="text-base sm:text-xl font-black text-white">0</p>
                         </div>
                     </div>
-                    <div class="bg-gray-950/90 p-3.5 md:p-4.5 rounded-2xl border border-gray-800 shadow-md flex items-center gap-3.5 md:gap-4">
-                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-base md:text-xl">
+                    <div class="bg-gray-950/90 p-3 sm:p-3.5 rounded-xl border border-gray-800 shadow-md flex items-center gap-3">
+                        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-sm sm:text-base">
                             <i class="fa-solid fa-user-check"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[11px] md:text-xs text-gray-300 uppercase font-black tracking-wider">Alocados</p>
-                            <p id="stat-schedule-presentes" class="text-lg md:text-2xl font-black text-emerald-400">0</p>
+                            <p class="text-[10px] sm:text-[11px] text-gray-400 uppercase font-black tracking-wider">Alocados</p>
+                            <p id="stat-schedule-presentes" class="text-base sm:text-xl font-black text-emerald-400">0</p>
                         </div>
                     </div>
-                    <div class="bg-gray-950/90 p-3.5 md:p-4.5 rounded-2xl border border-gray-800 shadow-md flex items-center gap-3.5 md:gap-4">
-                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 text-base md:text-xl">
+                    <div class="bg-gray-950/90 p-3 sm:p-3.5 rounded-xl border border-gray-800 shadow-md flex items-center gap-3">
+                        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 text-sm sm:text-base">
                             <i class="fa-solid fa-triangle-exclamation"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[11px] md:text-xs text-gray-300 uppercase font-black tracking-wider">Vagas Abertas</p>
-                            <p id="stat-schedule-vagos" class="text-lg md:text-2xl font-black text-rose-400">0</p>
+                            <p class="text-[10px] sm:text-[11px] text-gray-400 uppercase font-black tracking-wider">Vagas Abertas</p>
+                            <p id="stat-schedule-vagos" class="text-base sm:text-xl font-black text-rose-400">0</p>
                         </div>
                     </div>
-                    <div class="bg-gray-950/90 p-3.5 md:p-4.5 rounded-2xl border border-gray-800 shadow-md flex items-center gap-3.5 md:gap-4">
-                        <div class="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 text-base md:text-xl">
+                    <div class="bg-gray-950/90 p-3 sm:p-3.5 rounded-xl border border-gray-800 shadow-md flex items-center gap-3">
+                        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 text-sm sm:text-base">
                             <i class="fa-solid fa-umbrella-beach"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[11px] md:text-xs text-gray-300 uppercase font-black tracking-wider">Ausências / Folga</p>
-                            <p id="stat-schedule-ausencias" class="text-lg md:text-2xl font-black text-amber-400">0</p>
+                            <p class="text-[10px] sm:text-[11px] text-gray-400 uppercase font-black tracking-wider">Ausências / Folga</p>
+                            <p id="stat-schedule-ausencias" class="text-base sm:text-xl font-black text-amber-400">0</p>
                         </div>
                     </div>
                 </div>
@@ -1396,56 +1396,56 @@
                 </div>
 
                 <!-- Painel Interativo de Setores Descobertos & Desfalques Críticos -->
-                <div id="schedule-uncovered-alert" class="hidden p-4 md:p-6 rounded-3xl bg-gradient-to-br from-rose-950/90 via-gray-900 to-gray-950 border-2 border-rose-600/70 shadow-2xl space-y-3.5">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div class="flex items-center gap-3.5">
-                            <div class="w-10 h-10 md:w-13 md:h-13 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-rose-600/50 text-base md:text-xl">
+                <div id="schedule-uncovered-alert" class="hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-rose-950/90 via-gray-900 to-gray-950 border border-rose-600/70 shadow-xl space-y-3">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-600/50 text-sm sm:text-base">
                                 <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
                             </div>
                             <div>
-                                <h4 class="font-black text-rose-200 text-sm sm:text-base md:text-lg uppercase tracking-wide" id="schedule-uncovered-alert-title">
+                                <h4 class="font-black text-rose-200 text-xs sm:text-sm md:text-base uppercase tracking-wide" id="schedule-uncovered-alert-title">
                                     Atenção Líder: Setores Descobertos Hoje
                                 </h4>
-                                <p class="text-xs sm:text-sm md:text-sm text-gray-200 mt-0.5" id="schedule-uncovered-alert-desc">
+                                <p class="text-[11px] sm:text-xs text-gray-300 mt-0.5" id="schedule-uncovered-alert-desc">
                                     Os seguintes setores estão com desfalque ou sem substituto. Clique no setor para alocar imediatamente:
                                 </p>
                             </div>
                         </div>
                         <div class="flex items-center gap-2 self-end sm:self-auto">
-                            <button type="button" id="btn-toggle-uncovered-filter" onclick="scheduleApp.toggleUncoveredFilter()" class="px-3.5 py-2 md:px-4.5 md:py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs md:text-sm transition shrink-0 active:scale-95 shadow-md shadow-rose-600/40 flex items-center gap-2 whitespace-nowrap cursor-pointer">
+                            <button type="button" id="btn-toggle-uncovered-filter" onclick="scheduleApp.toggleUncoveredFilter()" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs transition shrink-0 active:scale-95 shadow-md shadow-rose-600/40 flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
                                 <i class="fa-solid fa-filter text-xs"></i> <span id="label-toggle-uncovered-filter">Ver Apenas Descobertos</span>
                             </button>
                         </div>
                     </div>
                     <!-- Lista de Chips Interativos dos Setores Descobertos -->
-                    <div id="schedule-uncovered-chips-container" class="flex flex-wrap gap-2.5 md:gap-3 pt-2.5 border-t border-rose-900/60">
+                    <div id="schedule-uncovered-chips-container" class="flex flex-wrap gap-2 pt-2 border-t border-rose-900/60">
                         <!-- Injetado dinamicamente via scheduleApp.renderStatsAndAbsences() -->
                     </div>
                 </div>
 
                 <!-- Barra de Filtros e Busca de Postos -->
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 custom-scrollbar flex-wrap">
-                        <button type="button" onclick="scheduleApp.setFilter('all')" id="sched-filter-all" class="px-3.5 py-2 md:px-4 md:py-2.5 rounded-xl text-xs md:text-sm font-bold transition bg-teal-600 text-white shadow-sm cursor-pointer">Todos</button>
-                        <button type="button" onclick="scheduleApp.setFilter('vacant')" id="sched-filter-vacant" class="px-3.5 py-2 md:px-4 md:py-2.5 rounded-xl text-xs md:text-sm font-bold transition bg-gray-900 text-gray-300 hover:text-white border border-gray-700 cursor-pointer">
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button type="button" onclick="scheduleApp.setFilter('all')" id="sched-filter-all" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-teal-600 text-white shadow-sm cursor-pointer">Todos</button>
+                        <button type="button" onclick="scheduleApp.setFilter('vacant')" id="sched-filter-vacant" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-gray-900 text-gray-300 hover:text-white border border-gray-700 cursor-pointer">
                             <i class="fa-solid fa-circle-exclamation text-rose-400 text-xs"></i> Vagas Abertas
                         </button>
-                        <button type="button" onclick="scheduleApp.setFilter('assigned')" id="sched-filter-assigned" class="px-3.5 py-2 md:px-4 md:py-2.5 rounded-xl text-xs md:text-sm font-bold transition bg-gray-900 text-gray-300 hover:text-white border border-gray-700 cursor-pointer">
+                        <button type="button" onclick="scheduleApp.setFilter('assigned')" id="sched-filter-assigned" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-gray-900 text-gray-300 hover:text-white border border-gray-700 cursor-pointer">
                             <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i> Alocados
                         </button>
                         <!-- Filtro de Departamento / Setor Customizado (100% Dark & Legível em Qualquer Sistema) -->
-                        <div class="relative shrink-0" id="sched-dept-dropdown-wrapper">
+                        <div class="relative shrink-0 z-30" id="sched-dept-dropdown-wrapper">
                             <button type="button" 
                                     id="sched-dept-dropdown-btn" 
                                     onclick="scheduleApp.toggleDeptDropdown(event)" 
-                                    class="flex items-center justify-between gap-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-teal-400 rounded-xl px-3.5 py-2 md:px-4 md:py-2.5 text-xs md:text-sm text-teal-300 font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/30 transition cursor-pointer shadow-md min-w-[210px] md:min-w-[250px]">
+                                    class="flex items-center justify-between gap-2 bg-gray-900 hover:bg-gray-850 border border-gray-700 hover:border-teal-400 rounded-xl px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm text-teal-300 font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/30 transition cursor-pointer shadow-md min-w-[190px] sm:min-w-[220px]">
                                 <span id="sched-dept-dropdown-label" class="truncate flex items-center gap-1.5">🏢 Todos os Departamentos</span>
                                 <i class="fa-solid fa-chevron-down text-gray-400 text-xs transition-transform duration-200" id="sched-dept-dropdown-arrow"></i>
                             </button>
                             
                             <!-- Menu Dropdown Customizado 100% Escuro & Legível (Sem Caixa Branca do Windows) -->
                             <div id="sched-dept-dropdown-menu" 
-                                 class="hidden absolute left-0 top-full mt-2 w-72 md:w-80 max-h-80 overflow-y-auto bg-gray-900/98 backdrop-blur-xl border border-gray-700 rounded-2xl shadow-2xl p-2 z-[9999] focus:outline-none space-y-1">
+                                 class="hidden absolute left-0 top-full mt-1.5 w-72 max-h-72 overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-1.5 z-50 focus:outline-none space-y-0.5 custom-scrollbar">
                                 <!-- Preenchido dinamicamente por scheduleApp.populateDeptFilter() -->
                             </div>
 
@@ -5965,7 +5965,8 @@
                 const select = document.getElementById(targetSelectId);
                 if (!select) return;
 
-                const depts = window.admin ? admin.getDepartments() : ['Geral', 'Loja', 'Caixa', 'Reposição', 'Açougue', 'Padaria', 'Hortifrúti', 'Depósito', 'Limpeza'];
+                const defaultDepts = ['ARROZ/OLEO', 'BAZAR', 'BEBIDA', 'CAFE/SALG', 'FARINACEO', 'LEITE', 'LEITE COND', 'LIMP', 'MAC/MOL', 'MATINAIS/BISC', 'PERFUMARIA', 'RAÇÃO/PAPEL/VIN', 'SUPORTE', 'Liderança', 'Geral'];
+                const depts = window.admin ? admin.getDepartments() : defaultDepts;
                 const currentVal = select.value;
                 select.innerHTML = depts.map(d => `<option value="${d}">${d}</option>`).join('');
                 if (currentVal) select.value = currentVal;
@@ -5989,7 +5990,8 @@
                 const select = document.getElementById('fb-history-filter-dept');
                 if (!select) return;
 
-                const depts = window.admin ? admin.getDepartments() : ['Geral', 'Loja', 'Caixa', 'Reposição', 'Açougue', 'Padaria', 'Hortifrúti', 'Depósito'];
+                const defaultDepts = ['ARROZ/OLEO', 'BAZAR', 'BEBIDA', 'CAFE/SALG', 'FARINACEO', 'LEITE', 'LEITE COND', 'LIMP', 'MAC/MOL', 'MATINAIS/BISC', 'PERFUMARIA', 'RAÇÃO/PAPEL/VIN', 'SUPORTE', 'Liderança', 'Geral'];
+                const depts = window.admin ? admin.getDepartments() : defaultDepts;
                 select.innerHTML = '<option value="">Todos os Setores</option>' + 
                     depts.map(d => `<option value="${d}">${d}</option>`).join('');
             }
@@ -9792,22 +9794,34 @@
             }
 
             getDepartments() {
+                const sheetDepts = [
+                    "ARROZ/OLEO",
+                    "BAZAR",
+                    "BEBIDA",
+                    "CAFE/SALG",
+                    "FARINACEO",
+                    "LEITE",
+                    "LEITE COND",
+                    "LIMP",
+                    "MAC/MOL",
+                    "MATINAIS/BISC",
+                    "PERFUMARIA",
+                    "RAÇÃO/PAPEL/VIN",
+                    "SUPORTE",
+                    "Liderança",
+                    "Geral"
+                ];
                 const custom = localStorage.getItem('taskflow_custom_departments');
                 if (custom) {
-                    try { return JSON.parse(custom); } catch(e) {}
+                    try {
+                        const parsed = JSON.parse(custom);
+                        // Se for a lista antiga de exemplo (com Açougue ou Frente de Caixa), migra para os setores reais da planilha
+                        if (Array.isArray(parsed) && parsed.length > 0 && !parsed.includes("Açougue") && !parsed.includes("Frente de Caixa")) {
+                            return parsed;
+                        }
+                    } catch(e) {}
                 }
-                return [
-                    "Geral",
-                    "Frente de Caixa",
-                    "Reposição / Mercearia",
-                    "Açougue",
-                    "Padaria",
-                    "Hortifrúti (FLV)",
-                    "Depósito / Estoque",
-                    "Prevenção de Perdas",
-                    "Administração / RH",
-                    "Limpeza & Manutenção"
-                ];
+                return sheetDepts;
             }
 
             saveDepartments(depts) {
@@ -11951,32 +11965,60 @@
 
                 // Constrói o Menu Dropdown 100% Dark
                 if (menu) {
+                    const daySlots = (this.data && this.data.dias && this.data.dias[this.currentDay]) 
+                        ? this.data.dias[this.currentDay].slots || [] 
+                        : [];
+                    const vacantCount = daySlots.filter(s => s.isVago).length;
+
+                    // Contagem por departamento no dia ativo
+                    const deptCounts = {};
+                    sortedDepts.forEach(dept => {
+                        const targetDept = dept.toUpperCase().trim();
+                        deptCounts[dept] = daySlots.filter(s => {
+                            const deptInfo = this.getSlotDepartmentInfo(s, this.currentDay);
+                            return String(deptInfo.sector || '').toUpperCase().includes(targetDept) ||
+                                   String(s.horario || '').toUpperCase().includes(targetDept);
+                        }).length;
+                    });
+
                     let menuHtml = `
-                        <div class="px-3 py-1.5 text-[10px] uppercase tracking-wider font-extrabold text-gray-400">
+                        <div class="px-2.5 py-1 text-[10px] uppercase tracking-wider font-extrabold text-gray-400">
                             Filtros Gerais
                         </div>
                         <div onclick="scheduleApp.setDeptFilter('all')" data-value="all" 
-                             class="sched-dept-option-item flex items-center justify-between px-3.5 py-2.5 rounded-xl cursor-pointer text-xs md:text-sm font-bold transition hover:bg-gray-800 ${currentVal === 'all' ? 'bg-teal-500/20 text-teal-200' : 'text-gray-200'}">
-                            <span class="flex items-center gap-2.5"><span>🏢</span> <span>Todos os Departamentos</span></span>
-                            <i class="fa-solid fa-check text-teal-400 text-xs sched-dept-check ${currentVal === 'all' ? '' : 'hidden'}"></i>
+                             class="sched-dept-option-item flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-xs font-bold transition hover:bg-gray-800 ${currentVal === 'all' ? 'bg-teal-500/20 text-teal-200' : 'text-gray-200'}">
+                            <span class="flex items-center gap-2"><span>🏢</span> <span>Todos os Departamentos</span></span>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-teal-950 text-teal-300 font-extrabold border border-teal-800">${daySlots.length}</span>
+                                <i class="fa-solid fa-check text-teal-400 text-xs sched-dept-check ${currentVal === 'all' ? '' : 'hidden'}"></i>
+                            </div>
                         </div>
                         <div onclick="scheduleApp.setDeptFilter('uncovered')" data-value="uncovered" 
-                             class="sched-dept-option-item flex items-center justify-between px-3.5 py-2.5 rounded-xl cursor-pointer text-xs md:text-sm font-bold transition hover:bg-rose-950/40 text-rose-400 ${currentVal === 'uncovered' ? 'bg-rose-950/50 text-rose-300' : ''}">
-                            <span class="flex items-center gap-2.5"><span>⚠️</span> <span>Apenas Setores Descobertos</span></span>
-                            <i class="fa-solid fa-check text-rose-400 text-xs sched-dept-check ${currentVal === 'uncovered' ? '' : 'hidden'}"></i>
+                             class="sched-dept-option-item flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer text-xs font-bold transition hover:bg-rose-950/40 text-rose-400 ${currentVal === 'uncovered' ? 'bg-rose-950/50 text-rose-300' : ''}">
+                            <span class="flex items-center gap-2"><span>⚠️</span> <span>Apenas Setores Descobertos</span></span>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-rose-950 text-rose-300 font-extrabold border border-rose-800">${vacantCount}</span>
+                                <i class="fa-solid fa-check text-rose-400 text-xs sched-dept-check ${currentVal === 'uncovered' ? '' : 'hidden'}"></i>
+                            </div>
                         </div>
-                        <div class="px-3 py-1.5 mt-1 border-t border-gray-800 text-[10px] uppercase tracking-wider font-extrabold text-gray-400">
-                            Departamentos da Planilha
+                        <div class="px-2.5 py-1 mt-1 border-t border-gray-800 text-[10px] uppercase tracking-wider font-extrabold text-gray-400">
+                            Departamentos da Planilha (${this.currentDay})
                         </div>
                     `;
 
                     sortedDepts.forEach(dept => {
                         const isSel = currentVal === dept;
+                        const count = deptCounts[dept] || 0;
                         menuHtml += `
                             <div onclick="scheduleApp.setDeptFilter('${dept}')" data-value="${dept}" 
-                                 class="sched-dept-option-item flex items-center justify-between px-3.5 py-2 rounded-xl cursor-pointer text-xs md:text-sm font-semibold transition hover:bg-teal-500/15 hover:text-white ${isSel ? 'bg-teal-500/20 text-teal-200 font-bold' : 'text-gray-300'}">
-                                <span class="flex items-center gap-2.5 truncate"><span>📦</span> <span class="truncate">${dept}</span></span>
-                                <i class="fa-solid fa-check text-teal-400 text-xs sched-dept-check ${isSel ? '' : 'hidden'}"></i>
+                                 class="sched-dept-option-item flex items-center justify-between px-3 py-1.5 rounded-xl cursor-pointer text-xs font-semibold transition hover:bg-teal-500/15 hover:text-white ${isSel ? 'bg-teal-500/20 text-teal-200 font-bold' : 'text-gray-300'}">
+                                <span class="flex items-center gap-2 truncate"><span>📦</span> <span class="truncate">${dept}</span></span>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <span class="text-[10px] px-1.5 py-0.2 rounded-full ${count > 0 ? 'bg-gray-800 text-teal-300 border border-teal-800/40 font-bold' : 'bg-gray-850 text-gray-500'}">
+                                        ${count}
+                                    </span>
+                                    <i class="fa-solid fa-check text-teal-400 text-xs sched-dept-check ${isSel ? '' : 'hidden'}"></i>
+                                </div>
                             </div>
                         `;
                     });
@@ -12581,10 +12623,14 @@
 
                 if (slots.length === 0) {
                     container.innerHTML = `
-                        <div class="col-span-full p-8 text-center bg-gray-900/60 rounded-3xl border border-gray-800 space-y-2.5">
+                        <div class="col-span-full p-8 text-center bg-gray-900/60 rounded-2xl border border-gray-800 space-y-3">
                             <i class="fa-solid fa-users-slash text-3xl text-gray-500 block"></i>
-                            <p class="text-sm font-bold text-gray-200">Nenhum posto encontrado com o filtro atual</p>
-                            <p class="text-xs text-gray-400">Tente alternar o filtro de departamento ou limpar a busca.</p>
+                            <p class="text-sm font-bold text-gray-200">Nenhum posto encontrado para este filtro</p>
+                            <p class="text-xs text-gray-400">Não há colaboradores escalados neste departamento para ${this.currentDay}.</p>
+                            <button type="button" onclick="scheduleApp.setDeptFilter('all')" class="mt-2 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition shadow-lg shadow-teal-900/40 cursor-pointer">
+                                <i class="fa-solid fa-rotate-left"></i>
+                                <span>Ver Todos os Departamentos</span>
+                            </button>
                         </div>`;
                     return;
                 }
@@ -12602,19 +12648,19 @@
                     const deptInfo = this.getSlotDepartmentInfo(s, this.currentDay);
 
                     html += `
-                        <div id="schedule-slot-card-${s.linha}" class="p-4 sm:p-4.5 md:p-5 rounded-2xl sm:rounded-3xl border ${cardBorder} flex flex-col justify-between gap-3.5 shadow-lg transition relative">
+                        <div id="schedule-slot-card-${s.linha}" class="p-3.5 sm:p-4 rounded-2xl border ${cardBorder} flex flex-col justify-between gap-3 shadow-md transition relative">
                             <div class="flex items-start justify-between gap-2.5">
                                 <div class="flex items-center gap-3 min-w-0">
-                                    <div class="w-11 h-11 sm:w-12 sm:h-12 md:w-13 md:h-13 rounded-2xl ${avatarBg} flex items-center justify-center font-black text-xs sm:text-sm shrink-0 shadow-md">
+                                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${avatarBg} flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
                                         ${initials}
                                     </div>
                                     <div class="min-w-0 space-y-1">
                                         ${isVacant 
-                                            ? '<h5 class="text-xs sm:text-sm md:text-base font-black text-rose-300 flex items-center gap-2 tracking-wide"><i class="fa-solid fa-triangle-exclamation text-rose-400 text-xs sm:text-sm animate-pulse"></i> VAGA ABERTA / FALTA</h5>'
-                                            : `<h5 class="text-xs sm:text-sm md:text-base font-black text-white truncate tracking-wide">${s.nome}</h5>`
+                                            ? '<h5 class="text-xs sm:text-sm font-black text-rose-300 flex items-center gap-1.5 tracking-wide"><i class="fa-solid fa-triangle-exclamation text-rose-400 text-xs animate-pulse"></i> VAGA ABERTA / FALTA</h5>'
+                                            : `<h5 class="text-xs sm:text-sm font-black text-white truncate tracking-wide">${s.nome}</h5>`
                                         }
-                                        <div class="flex items-center gap-2 text-xs sm:text-sm text-gray-200">
-                                            <i class="fa-solid fa-clock text-teal-400 text-xs"></i>
+                                        <div class="flex items-center gap-2 text-xs text-gray-300">
+                                            <i class="fa-solid fa-clock text-teal-400 text-[11px]"></i>
                                             <span class="truncate font-bold">${s.horario || 'Turno Padrão'}</span>
                                         </div>
 
@@ -12624,25 +12670,25 @@
                                                 ? `
                                                     <div class="flex items-center gap-1.5 flex-wrap">
                                                         ${deptInfo.hasRealSector ? `
-                                                            <span class="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-1.5 rounded-xl bg-rose-950 border border-rose-500 text-rose-100 font-black shadow-md">
-                                                                <i class="fa-solid fa-triangle-exclamation text-rose-400 text-xs animate-pulse"></i>
+                                                            <span class="inline-flex items-center gap-1.5 text-[11px] sm:text-xs px-2.5 py-1 rounded-lg bg-rose-950 border border-rose-500 text-rose-100 font-black shadow-sm">
+                                                                <i class="fa-solid fa-triangle-exclamation text-rose-400 text-[10px] animate-pulse"></i>
                                                                 <span>SETOR: <strong class="text-white uppercase tracking-wider">${deptInfo.sector}</strong></span>
                                                             </span>
                                                         ` : `
-                                                            <span class="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-1.5 rounded-xl bg-gray-900 border border-rose-500/70 text-rose-200 font-black shadow-md">
-                                                                <i class="fa-solid fa-triangle-exclamation text-rose-400 text-xs animate-pulse"></i>
+                                                            <span class="inline-flex items-center gap-1.5 text-[11px] sm:text-xs px-2.5 py-1 rounded-lg bg-gray-900 border border-rose-500/70 text-rose-200 font-black shadow-sm">
+                                                                <i class="fa-solid fa-triangle-exclamation text-rose-400 text-[10px] animate-pulse"></i>
                                                                 <span>POSTO L${s.linha}: <strong class="text-white uppercase tracking-wider">${deptInfo.titular || 'ABERTO'}</strong></span>
                                                             </span>
-                                                            <span class="text-[11px] sm:text-xs px-2.5 py-1 rounded-lg bg-gray-800 text-gray-300 border border-gray-700 font-semibold">
+                                                            <span class="text-[10px] px-2 py-0.5 rounded bg-gray-800 text-gray-300 border border-gray-700 font-semibold">
                                                                 Sem setor na planilha
                                                             </span>
                                                         `}
-                                                        <span class="text-[11px] sm:text-xs px-2.5 py-1 rounded-lg bg-rose-900/70 text-rose-200 border border-rose-700 font-black uppercase">
+                                                        <span class="text-[10px] sm:text-[11px] px-2 py-0.5 rounded bg-rose-900/70 text-rose-200 border border-rose-700 font-black uppercase">
                                                             ${deptInfo.reason}
                                                         </span>
                                                     </div>
                                                     ${(deptInfo.hasRealSector && deptInfo.titular) ? `
-                                                        <p class="text-xs sm:text-sm text-gray-300 flex items-center gap-2 mt-1">
+                                                        <p class="text-xs text-gray-300 flex items-center gap-1.5 mt-0.5">
                                                             <i class="fa-solid fa-user-xmark text-rose-400 text-xs"></i>
                                                             <span>Posto habitual: <strong class="text-white font-bold">${deptInfo.titular}</strong></span>
                                                         </p>
@@ -12650,13 +12696,13 @@
                                                 `
                                                 : `
                                                     ${deptInfo.hasRealSector ? `
-                                                        <span class="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-1 rounded-xl bg-cyan-950 border border-cyan-500/70 text-cyan-200 font-bold">
-                                                            <i class="fa-solid fa-layer-group text-cyan-400 text-xs"></i>
+                                                        <span class="inline-flex items-center gap-1.5 text-[11px] sm:text-xs px-2.5 py-0.5 rounded-lg bg-cyan-950 border border-cyan-500/70 text-cyan-200 font-bold">
+                                                            <i class="fa-solid fa-layer-group text-cyan-400 text-[11px]"></i>
                                                             <span>${deptInfo.sector}</span>
                                                         </span>
                                                     ` : `
-                                                        <span class="inline-flex items-center gap-2 text-xs sm:text-sm px-3 py-1 rounded-xl bg-gray-900 border border-gray-800 text-gray-300 font-semibold">
-                                                            <i class="fa-solid fa-user-check text-xs text-gray-400"></i>
+                                                        <span class="inline-flex items-center gap-1.5 text-[11px] sm:text-xs px-2.5 py-0.5 rounded-lg bg-gray-900 border border-gray-800 text-gray-300 font-semibold">
+                                                            <i class="fa-solid fa-user-check text-[11px] text-gray-400"></i>
                                                             <span>Confirmado</span>
                                                         </span>
                                                     `}
@@ -12665,24 +12711,24 @@
                                         </div>
                                     </div>
                                 </div>
-                                <span class="text-xs sm:text-sm px-2.5 py-1 rounded-xl bg-gray-900 border border-gray-700 text-gray-200 font-mono font-black shrink-0" title="Linha na Planilha Google">
+                                <span class="text-xs px-2 py-0.5 rounded-lg bg-gray-900 border border-gray-700 text-gray-200 font-mono font-black shrink-0" title="Linha na Planilha Google">
                                     L${s.linha}
                                 </span>
                             </div>
 
                             <div class="flex items-center justify-between pt-2.5 border-t border-gray-800/80">
-                                <span class="text-xs sm:text-sm font-bold ${isVacant ? 'text-rose-400' : 'text-emerald-400'} flex items-center gap-1.5">
+                                <span class="text-xs font-bold ${isVacant ? 'text-rose-400' : 'text-emerald-400'} flex items-center gap-1.5">
                                     <span class="w-2 h-2 rounded-full ${isVacant ? 'bg-rose-500 animate-ping' : 'bg-emerald-400'}"></span>
                                     <span>${isVacant ? 'Requer Substituto' : 'Confirmado na Escala'}</span>
                                 </span>
                                 ${this.canUserEdit() ? `
-                                <button type="button" onclick="scheduleApp.openEditSlotModal('${this.currentDay}', ${s.linha}, '${s.colunaLetra}', '${(s.nome || '').replace(/'/g, "\\'")}', '${(s.horario || '').replace(/'/g, "\\'")}', ${isVacant})" class="px-3.5 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm font-bold rounded-xl transition active:scale-95 flex items-center gap-2 cursor-pointer ${isVacant ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/40' : 'bg-gray-800 hover:bg-gray-750 text-teal-300 border border-teal-500/40'}">
+                                <button type="button" onclick="scheduleApp.openEditSlotModal('${this.currentDay}', ${s.linha}, '${s.colunaLetra}', '${(s.nome || '').replace(/'/g, "\\'")}', '${(s.horario || '').replace(/'/g, "\\'")}', ${isVacant})" class="px-3 py-1.5 sm:px-3.5 sm:py-1.5 text-xs font-bold rounded-xl transition active:scale-95 flex items-center gap-1.5 cursor-pointer ${isVacant ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/40' : 'bg-gray-800 hover:bg-gray-750 text-teal-300 border border-teal-500/40'}">
                                     <i class="fa-solid ${isVacant ? 'fa-plus' : 'fa-pen-to-square'} text-xs"></i>
                                     <span>${isVacant ? 'Alocar' : 'Substituir'}</span>
                                 </button>
                                 ` : `
-                                <span class="px-2.5 py-1.5 text-xs font-semibold text-gray-400 flex items-center gap-1.5 bg-gray-900/80 rounded-xl border border-gray-800">
-                                    <i class="fa-solid fa-lock text-xs"></i> Somente Leitura
+                                <span class="px-2 py-1 text-[11px] font-semibold text-gray-400 flex items-center gap-1.5 bg-gray-900/80 rounded-lg border border-gray-800">
+                                    <i class="fa-solid fa-lock text-[10px]"></i> Somente Leitura
                                 </span>
                                 `}
                             </div>
