@@ -2479,10 +2479,10 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Colaborador Envolvido</label>
-                        <select id="admin-edit-occ-collab-select" onchange="admin.onSelectOccCollabChange(this.value)" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-amber-300 font-semibold focus:outline-none focus:border-amber-500 transition mb-1.5">
+                        <select id="admin-edit-occ-collab-select" onchange="admin.onSelectOccCollabChange(this.value)" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-amber-300 font-semibold focus:outline-none focus:border-amber-500 transition">
                             <!-- Preenchido dinamicamente com os colaboradores da planilha -->
                         </select>
-                        <input type="text" id="admin-edit-occ-collab" list="team-collaborators-datalist" required placeholder="Nome do colaborador envolvido..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-amber-500 transition">
+                        <input type="text" id="admin-edit-occ-collab" placeholder="Nome do colaborador (caso não esteja na lista)..." class="hidden w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-amber-500 transition mt-1.5">
                     </div>
                 </div>
 
@@ -2591,10 +2591,10 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Colaborador Envolvido</label>
-                        <select id="occ-collab-select" onchange="occApp.onCollabSelectChange(this.value)" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-amber-300 font-semibold focus:outline-none focus:border-amber-500 transition mb-1.5">
+                        <select id="occ-collab-select" onchange="occApp.onCollabSelectChange(this.value)" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-amber-300 font-semibold focus:outline-none focus:border-amber-500 transition">
                             <!-- Preenchido dinamicamente com colaboradores da planilha -->
                         </select>
-                        <input type="text" id="occ-collaborator" list="team-collaborators-datalist" required placeholder="Nome do colaborador envolvido..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-amber-500 transition">
+                        <input type="text" id="occ-collaborator" placeholder="Nome do colaborador (caso não esteja na lista)..." class="hidden w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-amber-500 transition mt-1.5">
                         <datalist id="team-collaborators-datalist"></datalist>
                     </div>
                 </div>
@@ -4833,7 +4833,7 @@
                 }
             }
 
-            getSpreadsheetCollaborators() {
+            getSpreadsheetCollaborators(filterLeaders = false) {
                 const list = [];
                 const seen = new Set();
 
@@ -4852,11 +4852,29 @@
 
                 sheetColabs.forEach(c => {
                     const nome = (c.nome || '').trim();
-                    if (nome && !seen.has(nome.toUpperCase())) {
+                    if (!nome || nome.toUpperCase() === 'X' || /^\(?em\s*branco\)?$/i.test(nome)) return;
+
+                    let rawDept = (c.departamento || '').trim();
+                    const isLideranca = /lideran[çc]a|em\s*branco\s*ou\s*lideran[çc]a/i.test(rawDept) ||
+                                        /^(Emerson Diniz|João Guilherme|Bruno Mattara|Bruno)$/i.test(nome);
+
+                    // Se solicitado, remove da lista os colaboradores que forem liderança / "em branco ou liderança"
+                    if (filterLeaders && isLideranca) {
+                        return;
+                    }
+
+                    // Limpa qualquer texto remanescente de 'em branco ou liderança' ou 'liderança'
+                    let deptLimpo = rawDept
+                        .replace(/\(?em\s*branco(\s*ou\s*lideran[çc]a)?\)?/gi, '')
+                        .replace(/\(?lideran[çc]a\)?/gi, '')
+                        .trim();
+
+                    if (!seen.has(nome.toUpperCase())) {
                         seen.add(nome.toUpperCase());
                         list.push({
                             nome: nome,
-                            departamento: (c.departamento || '').trim(),
+                            departamento: deptLimpo,
+                            rawDepartamento: rawDept,
                             escala: c.escala || '',
                             folga: c.folga || ''
                         });
@@ -4867,11 +4885,28 @@
                 const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
                 accounts.forEach(a => {
                     const nome = (a.displayName || a.name || '').trim();
-                    if (nome && !seen.has(nome.toUpperCase())) {
+                    if (!nome || /^\(?em\s*branco\)?$/i.test(nome)) return;
+
+                    const role = (a.role || '').toLowerCase();
+                    const isAdmOrLeader = (role === 'admin' || role === 'lider' || role === 'gerente') ||
+                                          /^(Emerson Diniz|João Guilherme|Bruno Mattara|Bruno)$/i.test(nome);
+
+                    if (filterLeaders && isAdmOrLeader) {
+                        return;
+                    }
+
+                    let rawDept = (a.dept || a.department || '').trim();
+                    let deptLimpo = rawDept
+                        .replace(/\(?em\s*branco(\s*ou\s*lideran[çc]a)?\)?/gi, '')
+                        .replace(/\(?lideran[çc]a\)?/gi, '')
+                        .trim();
+
+                    if (!seen.has(nome.toUpperCase())) {
                         seen.add(nome.toUpperCase());
                         list.push({
                             nome: nome,
-                            departamento: (a.dept || a.department || '').trim(),
+                            departamento: deptLimpo,
+                            rawDepartamento: rawDept,
                             escala: '',
                             folga: ''
                         });
@@ -4890,6 +4925,11 @@
                     modal.classList.remove('hidden');
                     modal.style.display = 'flex';
                 }
+                const input = document.getElementById('occ-collaborator');
+                if (input) {
+                    input.value = '';
+                    input.classList.add('hidden');
+                }
                 // Preenche os colaboradores da planilha e os líderes responsáveis
                 this.populateCollaboratorsDatalist();
                 this.populateLeaderSelect();
@@ -4904,9 +4944,9 @@
             }
 
             populateCollaboratorsDatalist() {
-                const colabs = this.getSpreadsheetCollaborators();
+                const colabs = this.getSpreadsheetCollaborators(true);
 
-                // 1. Dropdown rápido de seleção da planilha
+                // 1. Dropdown rápido de seleção da planilha (único campo visível)
                 const select = document.getElementById('occ-collab-select');
                 if (select) {
                     let html = '<option value="">-- Escolher Colaborador da Planilha --</option>';
@@ -4914,10 +4954,12 @@
                         const depto = c.departamento ? ` [${c.departamento}]` : '';
                         html += `<option value="${c.nome}" data-dept="${c.departamento || ''}">${c.nome}${depto}</option>`;
                     });
+                    html += '<option value="__OUTRO__">+ Outro Colaborador (Digitar Manualmente)...</option>';
                     select.innerHTML = html;
+                    select.value = '';
                 }
 
-                // 2. Datalist para autocomplete
+                // 2. Datalist para autocomplete se necessário
                 const datalist = document.getElementById('team-collaborators-datalist');
                 if (datalist) {
                     datalist.innerHTML = colabs.map(c => `<option value="${c.nome}">${c.nome} ${c.departamento ? '(' + c.departamento + ')' : ''}</option>`).join('');
@@ -4957,13 +4999,23 @@
 
             onCollabSelectChange(val) {
                 const input = document.getElementById('occ-collaborator');
-                if (input && val) {
-                    input.value = val;
+                if (val === '__OUTRO__') {
+                    if (input) {
+                        input.classList.remove('hidden');
+                        input.value = '';
+                        input.focus();
+                    }
+                    return;
+                }
+
+                if (input) {
+                    input.classList.add('hidden');
+                    input.value = val || '';
                 }
                 if (!val) return;
 
                 // Tenta auto-selecionar o departamento do colaborador
-                const colabs = this.getSpreadsheetCollaborators();
+                const colabs = this.getSpreadsheetCollaborators(false);
                 const found = colabs.find(c => c.nome.toUpperCase() === val.toUpperCase());
                 if (found && found.departamento) {
                     const deptSelect = document.getElementById('occ-dept');
@@ -4985,7 +5037,10 @@
                 e.preventDefault();
                 const title = document.getElementById('occ-title').value.trim();
                 const dept = document.getElementById('occ-dept').value;
-                const collaborator = document.getElementById('occ-collaborator').value.trim();
+                const selectVal = document.getElementById('occ-collab-select') ? document.getElementById('occ-collab-select').value : '';
+                const inputVal = document.getElementById('occ-collaborator') ? document.getElementById('occ-collaborator').value.trim() : '';
+                const collaborator = (selectVal && selectVal !== '__OUTRO__') ? selectVal : inputVal;
+
                 const what = document.getElementById('occ-what').value.trim();
                 const resolution = document.getElementById('occ-resolution').value.trim();
                 const actionTaken = document.getElementById('occ-action-taken').value;
@@ -4995,7 +5050,7 @@
                 const selectedLeader = leaderSelect ? leaderSelect.value : (auth.currentUser ? auth.currentUser.displayName : 'Emerson Diniz');
 
                 if (!title || !collaborator || !what || !resolution) {
-                    alert("Preencha todos os campos obrigatórios da ocorrência.");
+                    alert("Preencha todos os campos obrigatórios da ocorrência (incluindo o colaborador envolvido).");
                     return;
                 }
 
@@ -9854,16 +9909,30 @@
             // MODO EDITOR: EDIÇÃO COMPLETA DE OCORRÊNCIA
             // ==========================================
             populateOccCollabSelect(selectedCollab = '') {
-                const colabs = window.occApp ? occApp.getSpreadsheetCollaborators() : [];
+                const colabs = window.occApp ? occApp.getSpreadsheetCollaborators(true) : [];
                 const select = document.getElementById('admin-edit-occ-collab-select');
+                const input = document.getElementById('admin-edit-occ-collab');
                 if (select) {
                     let html = '<option value="">-- Escolher Colaborador da Planilha --</option>';
+                    let matched = false;
                     colabs.forEach(c => {
                         const depto = c.departamento ? ` [${c.departamento}]` : '';
-                        const isSel = (c.nome.toUpperCase() === String(selectedCollab).toUpperCase());
+                        const isSel = (c.nome.toUpperCase() === String(selectedCollab).trim().toUpperCase());
+                        if (isSel) matched = true;
                         html += `<option value="${c.nome}" data-dept="${c.departamento || ''}" ${isSel ? 'selected' : ''}>${c.nome}${depto}</option>`;
                     });
+                    html += `<option value="__OUTRO__" ${(!matched && selectedCollab) ? 'selected' : ''}>+ Outro Colaborador (Digitar Manualmente)...</option>`;
                     select.innerHTML = html;
+
+                    if (input) {
+                        if (!matched && selectedCollab) {
+                            input.classList.remove('hidden');
+                            input.value = selectedCollab;
+                        } else {
+                            input.classList.add('hidden');
+                            input.value = selectedCollab || '';
+                        }
+                    }
                 }
             }
 
@@ -9893,13 +9962,23 @@
 
             onSelectOccCollabChange(val) {
                 const input = document.getElementById('admin-edit-occ-collab');
-                if (input && val) {
-                    input.value = val;
+                if (val === '__OUTRO__') {
+                    if (input) {
+                        input.classList.remove('hidden');
+                        input.value = '';
+                        input.focus();
+                    }
+                    return;
+                }
+
+                if (input) {
+                    input.classList.add('hidden');
+                    input.value = val || '';
                 }
                 if (!val) return;
 
                 // Tenta auto-selecionar o departamento no modal de edição
-                const colabs = window.occApp ? occApp.getSpreadsheetCollaborators() : [];
+                const colabs = window.occApp ? occApp.getSpreadsheetCollaborators(false) : [];
                 const found = colabs.find(c => c.nome.toUpperCase() === val.toUpperCase());
                 if (found && found.departamento) {
                     const deptSelect = document.getElementById('admin-edit-occ-dept');
@@ -9968,7 +10047,14 @@
 
                 const title = document.getElementById('admin-edit-occ-title').value.trim();
                 const dept = document.getElementById('admin-edit-occ-dept').value;
-                const collab = document.getElementById('admin-edit-occ-collab').value.trim();
+                const selectVal = document.getElementById('admin-edit-occ-collab-select') ? document.getElementById('admin-edit-occ-collab-select').value : '';
+                const inputVal = document.getElementById('admin-edit-occ-collab') ? document.getElementById('admin-edit-occ-collab').value.trim() : '';
+                const collab = (selectVal && selectVal !== '__OUTRO__') ? selectVal : inputVal;
+
+                if (!collab) {
+                    alert("Por favor, selecione ou informe o colaborador envolvido.");
+                    return;
+                }
                 const author = document.getElementById('admin-edit-occ-author').value.trim();
                 const severity = document.getElementById('admin-edit-occ-severity').value;
                 const what = document.getElementById('admin-edit-occ-what').value.trim();
