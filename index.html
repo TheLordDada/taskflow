@@ -11594,12 +11594,25 @@
                 if (!collabName) return '';
                 const nameUp = String(collabName).trim().toUpperCase();
                 if (this.data && this.data.colaboradores) {
-                    const found = this.data.colaboradores.find(c => String(c.nome || '').trim().toUpperCase() === nameUp);
-                    if (found && found.departamento) return found.departamento;
+                    // 1. Busca exata por nome
+                    let found = this.data.colaboradores.find(c => String(c.nome || '').trim().toUpperCase() === nameUp);
+                    // 2. Busca por prefixo/variação (ex: EDUARDO -> EDUARDO LUIS)
+                    if (!found) {
+                        found = this.data.colaboradores.find(c => {
+                            const cUp = String(c.nome || '').trim().toUpperCase();
+                            return cUp.startsWith(nameUp + ' ') || nameUp.startsWith(cUp + ' ');
+                        });
+                    }
+                    if (found && found.departamento) {
+                        let dept = String(found.departamento).trim();
+                        if (dept.includes('Liderança')) return 'Liderança';
+                        return dept;
+                    }
                 }
                 const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
                 const acc = accounts.find(a => (a.displayName && a.displayName.toUpperCase() === nameUp) || (a.name && a.name.toUpperCase() === nameUp));
                 if (acc && acc.department) return acc.department;
+                if (acc && acc.dept) return acc.dept;
                 return '';
             }
 
@@ -11607,7 +11620,13 @@
                 if (!collabName || !this.data || !this.data.dias || !this.data.dias.Domingo) return '';
                 const nameUp = String(collabName).trim().toUpperCase();
                 const domSlots = this.data.dias.Domingo.slots || [];
-                const found = domSlots.find(s => String(s.nome || '').trim().toUpperCase() === nameUp);
+                let found = domSlots.find(s => String(s.nome || '').trim().toUpperCase() === nameUp);
+                if (!found) {
+                    found = domSlots.find(s => {
+                        const cUp = String(s.nome || '').trim().toUpperCase();
+                        return cUp.startsWith(nameUp + ' ') || nameUp.startsWith(cUp + ' ');
+                    });
+                }
                 if (found && found.horario && !found.horario.includes('Linha') && found.horario.trim() !== 'X') {
                     return found.horario.trim();
                 }
@@ -11615,7 +11634,7 @@
             }
 
             getSlotDepartmentInfo(slot, diaName) {
-                if (!slot) return { sector: 'Geral', titular: '', reason: 'Sem dados' };
+                if (!slot) return { sector: '', titular: '', reason: 'Sem dados', hasRealSector: false };
 
                 const isSunday = (diaName === 'Domingo');
                 const isVacant = !!slot.isVago;
@@ -11624,17 +11643,27 @@
                 // 1. Caso o slot NÃO seja vago (já possui colaborador alocado no dia)
                 if (!isVacant && slot.nome) {
                     const depto = isSunday 
-                        ? (slot.horario || 'Geral') 
-                        : (this.getCollabDepartment(slot.nome) || this.getSundayPostDepartment(slot.nome) || 'Geral');
-                    return { sector: depto, titular: slot.nome, reason: 'Alocado' };
+                        ? (slot.horario && !slot.horario.includes('Linha') && slot.horario.trim() !== 'X' ? slot.horario.trim() : '') 
+                        : (this.getCollabDepartment(slot.nome) || this.getSundayPostDepartment(slot.nome) || '');
+                    return { 
+                        sector: depto, 
+                        titular: slot.nome, 
+                        reason: 'Alocado',
+                        hasRealSector: !!depto
+                    };
                 }
 
-                // 2. Se for domingo e o posto tiver especificação no campo horário
+                // 2. Se for domingo e o posto tiver especificação no campo horário da planilha
                 if (isSunday && slot.horario && !slot.horario.includes('Linha') && slot.horario.trim() !== 'X') {
-                    return { sector: slot.horario.trim(), titular: '', reason: 'Posto de Domingo' };
+                    return { 
+                        sector: slot.horario.trim(), 
+                        titular: '', 
+                        reason: 'Posto de Domingo',
+                        hasRealSector: true
+                    };
                 }
 
-                // 3. Caso seja VAGO / DESFALQUE: descobre o titular e o setor habitual desta linha na semana
+                // 3. Caso seja VAGO / DESFALQUE: descobre o titular e o setor habitual desta linha na semana a partir da planilha
                 let titularName = '';
                 let titularDept = '';
                 let reason = 'Vaga Aberta';
@@ -11660,7 +11689,7 @@
                             if (freq[n] > maxF) { maxF = freq[n]; topName = n; }
                         }
                         titularName = topName;
-                        titularDept = this.getCollabDepartment(topName) || this.getSundayPostDepartment(topName);
+                        titularDept = this.getCollabDepartment(topName) || this.getSundayPostDepartment(topName) || '';
                     }
                 }
 
@@ -11672,7 +11701,11 @@
 
                     let isFolgaHoje = false;
                     if (this.data && this.data.colaboradores) {
-                        const colabObj = this.data.colaboradores.find(c => String(c.nome || '').trim().toUpperCase() === titularName.toUpperCase());
+                        const colabObj = this.data.colaboradores.find(c => {
+                            const cName = String(c.nome || '').trim().toUpperCase();
+                            const tName = titularName.toUpperCase();
+                            return cName === tName || cName.startsWith(tName + ' ') || tName.startsWith(cName + ' ');
+                        });
                         if (colabObj && colabObj.folga) {
                             const folgaUpper = colabObj.folga.toUpperCase();
                             const diaUpper = String(diaName).toUpperCase();
@@ -11691,17 +11724,14 @@
                     }
                 }
 
-                // Linhas mapeadas padrão (caso L37 ou postos de apoio)
-                if (!titularDept || titularDept === 'Geral') {
-                    if (linha === 37) titularDept = 'HORTIFRUTI / LOJA';
-                    else if (linha === 22) titularDept = 'ROTISSERIA / LOJA';
-                    else if (linha === 47) titularDept = 'ATENDIMENTO / FRENTE';
-                }
+                // ESTRITAMENTE da planilha: nunca inventar setores fictícios
+                const hasRealSector = !!titularDept && titularDept !== 'Geral';
 
                 return {
-                    sector: titularDept || 'Setor Operacional',
+                    sector: hasRealSector ? titularDept : (titularName ? `Posto de ${titularName}` : `Posto L${linha}`),
                     titular: titularName || '',
-                    reason: reason
+                    reason: reason,
+                    hasRealSector: hasRealSector
                 };
             }
 
@@ -11943,8 +11973,14 @@
                 const deptInfo = this.getSlotDepartmentInfo({ linha, colunaLetra, nome, horario, isVago }, dia);
                 const sectorEl = document.getElementById('modal-sched-sector-name');
                 const titularEl = document.getElementById('modal-sched-titular-name');
-                if (sectorEl) sectorEl.innerText = deptInfo.sector || 'Setor Operacional';
-                if (titularEl) titularEl.innerText = deptInfo.titular ? `${deptInfo.titular} (${deptInfo.reason})` : 'Sem titular habitual';
+                if (sectorEl) {
+                    sectorEl.innerText = deptInfo.hasRealSector 
+                        ? deptInfo.sector 
+                        : (deptInfo.titular ? `Posto de ${deptInfo.titular} (Sem setor na planilha)` : 'Não cadastrado na planilha');
+                }
+                if (titularEl) {
+                    titularEl.innerText = deptInfo.titular ? `${deptInfo.titular} (${deptInfo.reason})` : 'Sem titular habitual';
+                }
 
                 const statusEl = document.getElementById('modal-sched-current-status');
                 if (isVago) {
@@ -12066,7 +12102,8 @@
                     const notes = document.getElementById('modal-sched-inconsistency-notes') ? document.getElementById('modal-sched-inconsistency-notes').value.trim() : '';
 
                     const isSunday = (dia === 'Domingo');
-                    const dept = isSunday ? horarioLabel : (this.getCollabDepartment(nomeInput) || 'Setor Operacional');
+                    const slotDeptInfo = this.getSlotDepartmentInfo({ linha, colunaLetra: colLetra, nome: nomeInput, horario: horarioLabel, isVago: isVacant }, dia);
+                    const dept = isSunday ? horarioLabel : (slotDeptInfo.hasRealSector ? slotDeptInfo.sector : (slotDeptInfo.titular ? 'Posto de ' + slotDeptInfo.titular : 'Geral'));
 
                     const inconsistencyRecord = {
                         id: 'inc_sched_' + Date.now(),
@@ -12252,12 +12289,16 @@
                     if (uncovChips) {
                         uncovChips.innerHTML = vacantSlots.map(s => {
                             const deptInfo = this.getSlotDepartmentInfo(s, this.currentDay);
+                            const topTitle = deptInfo.hasRealSector ? deptInfo.sector : (deptInfo.titular ? `POSTO L${s.linha} • ${deptInfo.titular}` : `POSTO L${s.linha}`);
+                            const subTitle = deptInfo.hasRealSector 
+                                ? `L${s.linha} • ${deptInfo.titular ? deptInfo.titular + ' ' : ''}(${deptInfo.reason})` 
+                                : `(Sem setor na planilha) • ${deptInfo.reason}`;
                             return `
                                 <button type="button" onclick="scheduleApp.focusAndEditSlot('${this.currentDay}', ${s.linha}, '${s.colunaLetra}', '${(s.horario || '').replace(/'/g, "\\'")}')" class="group px-3 py-2 rounded-2xl text-xs font-bold bg-rose-950/90 border border-rose-500/70 hover:border-rose-400 text-rose-100 hover:bg-rose-900 transition flex items-center gap-2.5 shadow-lg shadow-rose-950/50 active:scale-95 text-left">
                                     <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0"></span>
                                     <div class="min-w-0">
-                                        <span class="uppercase tracking-wider font-black text-rose-200 group-hover:text-white block truncate leading-tight">${deptInfo.sector}</span>
-                                        <span class="text-[10px] text-rose-300/80 font-normal block truncate">L${s.linha} • ${deptInfo.titular ? deptInfo.titular : (s.horario || 'Turno')} ${deptInfo.reason ? `(${deptInfo.reason})` : ''}</span>
+                                        <span class="uppercase tracking-wider font-black text-rose-200 group-hover:text-white block truncate leading-tight">${topTitle}</span>
+                                        <span class="text-[10px] text-rose-300/80 font-normal block truncate">${subTitle}</span>
                                     </div>
                                     <span class="bg-rose-600 text-white text-[9px] px-2 py-0.5 rounded-lg font-extrabold group-hover:bg-rose-500 transition shrink-0 ml-1">+ Alocar</span>
                                 </button>
@@ -12398,20 +12439,30 @@
                                             <span class="truncate font-medium">${s.horario || 'Turno Padrão'}</span>
                                         </div>
 
-                                        <!-- BADGE DESTACADO DO SETOR (NUNCA MAIS 'SETOR SEM COBERTURA' GENÉRICO) -->
+                                        <!-- BADGE DESTACADO DO SETOR (DIRETO DA PLANILHA) -->
                                         <div class="pt-0.5 space-y-1">
                                             ${isVacant 
                                                 ? `
                                                     <div class="flex items-center gap-1.5 flex-wrap">
-                                                        <span class="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] px-2.5 py-1 rounded-xl bg-rose-950 border border-rose-500/80 text-rose-100 font-black shadow-md shadow-rose-950/60">
-                                                            <i class="fa-solid fa-triangle-exclamation text-[10px] text-rose-400 animate-pulse"></i>
-                                                            <span>SETOR: <strong class="text-white uppercase tracking-wider">${deptInfo.sector}</strong></span>
-                                                        </span>
+                                                        ${deptInfo.hasRealSector ? `
+                                                            <span class="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] px-2.5 py-1 rounded-xl bg-rose-950 border border-rose-500/80 text-rose-100 font-black shadow-md shadow-rose-950/60">
+                                                                <i class="fa-solid fa-triangle-exclamation text-[10px] text-rose-400 animate-pulse"></i>
+                                                                <span>SETOR: <strong class="text-white uppercase tracking-wider">${deptInfo.sector}</strong></span>
+                                                            </span>
+                                                        ` : `
+                                                            <span class="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] px-2.5 py-1 rounded-xl bg-gray-900 border border-rose-500/50 text-rose-200 font-black shadow-md shadow-rose-950/40">
+                                                                <i class="fa-solid fa-triangle-exclamation text-[10px] text-rose-400 animate-pulse"></i>
+                                                                <span>POSTO L${s.linha}: <strong class="text-white uppercase tracking-wider">${deptInfo.titular || 'ABERTO'}</strong></span>
+                                                            </span>
+                                                            <span class="text-[9px] px-2 py-0.5 rounded-md bg-gray-800/80 text-gray-400 border border-gray-700/60 font-semibold">
+                                                                Sem setor na planilha
+                                                            </span>
+                                                        `}
                                                         <span class="text-[9px] px-2 py-0.5 rounded-md bg-rose-900/50 text-rose-300 border border-rose-800/60 font-bold uppercase">
                                                             ${deptInfo.reason}
                                                         </span>
                                                     </div>
-                                                    ${deptInfo.titular ? `
+                                                    ${(deptInfo.hasRealSector && deptInfo.titular) ? `
                                                         <p class="text-[10px] text-gray-400 flex items-center gap-1.5">
                                                             <i class="fa-solid fa-user-xmark text-rose-400 text-[10px]"></i>
                                                             <span>Posto habitual: <strong class="text-gray-200">${deptInfo.titular}</strong></span>
@@ -12419,10 +12470,17 @@
                                                     ` : ''}
                                                 `
                                                 : `
-                                                    <span class="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-0.5 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-bold">
-                                                        <i class="fa-solid fa-layer-group text-[9px] text-cyan-400"></i>
-                                                        <span>${deptInfo.sector}</span>
-                                                    </span>
+                                                    ${deptInfo.hasRealSector ? `
+                                                        <span class="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-0.5 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-bold">
+                                                            <i class="fa-solid fa-layer-group text-[9px] text-cyan-400"></i>
+                                                            <span>${deptInfo.sector}</span>
+                                                        </span>
+                                                    ` : `
+                                                        <span class="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-0.5 rounded-xl bg-gray-900 border border-gray-800 text-gray-400 font-medium">
+                                                            <i class="fa-solid fa-user-check text-[9px] text-gray-400"></i>
+                                                            <span>Confirmado</span>
+                                                        </span>
+                                                    `}
                                                 `
                                             }
                                         </div>
@@ -12766,11 +12824,11 @@
                 <input type="hidden" id="modal-sched-linha">
                 <input type="hidden" id="modal-sched-coluna">
 
-                <!-- Setor Operacional & Titular do Posto -->
+                <!-- Setor da Planilha & Titular do Posto -->
                 <div class="bg-rose-950/40 p-3.5 rounded-2xl border border-rose-500/50 flex items-center justify-between">
                     <div>
-                        <span class="text-[10px] text-rose-400 uppercase font-extrabold tracking-wider block">Setor Operacional</span>
-                        <p id="modal-sched-sector-name" class="text-sm font-black text-white uppercase tracking-wide">SETOR DESCONHECIDO</p>
+                        <span class="text-[10px] text-rose-400 uppercase font-extrabold tracking-wider block">Setor / Departamento (Planilha)</span>
+                        <p id="modal-sched-sector-name" class="text-sm font-black text-white uppercase tracking-wide">SETOR DA PLANILHA</p>
                     </div>
                     <div class="text-right">
                         <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Posto Habitual / Titular</span>
