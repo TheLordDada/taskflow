@@ -2438,14 +2438,20 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Colaborador Envolvido</label>
-                        <input type="text" id="admin-edit-occ-collab" required class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-amber-500 transition">
+                        <select id="admin-edit-occ-collab-select" onchange="admin.onSelectOccCollabChange(this.value)" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-amber-300 font-semibold focus:outline-none focus:border-amber-500 transition mb-1.5">
+                            <!-- Preenchido dinamicamente com os colaboradores da planilha -->
+                        </select>
+                        <input type="text" id="admin-edit-occ-collab" list="team-collaborators-datalist" required placeholder="Nome do colaborador envolvido..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-amber-500 transition">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Relatado por (Líder / Autor)</label>
-                        <input type="text" id="admin-edit-occ-author" required class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-amber-500 transition">
+                        <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Líder Responsável / Relatado por</label>
+                        <select id="admin-edit-occ-author" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-amber-500 transition font-semibold text-amber-200">
+                            <option value="Emerson Diniz">Emerson Diniz (Administrador)</option>
+                            <option value="João Guilherme">João Guilherme (Administrador)</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Gravidade / Prioridade</label>
@@ -2544,9 +2550,20 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Colaborador Envolvido</label>
-                        <input type="text" id="occ-collaborator" list="team-collaborators-datalist" required placeholder="Ex: JOÃO GUILHERME SITA ROSA" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-amber-500 transition">
+                        <select id="occ-collab-select" onchange="occApp.onCollabSelectChange(this.value)" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-amber-300 font-semibold focus:outline-none focus:border-amber-500 transition mb-1.5">
+                            <!-- Preenchido dinamicamente com colaboradores da planilha -->
+                        </select>
+                        <input type="text" id="occ-collaborator" list="team-collaborators-datalist" required placeholder="Nome do colaborador envolvido..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-amber-500 transition">
                         <datalist id="team-collaborators-datalist"></datalist>
                     </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1">Líder Responsável / Relatado por</label>
+                    <select id="occ-leader" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-amber-500 transition font-semibold text-amber-200">
+                        <option value="Emerson Diniz">Emerson Diniz (Administrador)</option>
+                        <option value="João Guilherme">João Guilherme (Administrador)</option>
+                    </select>
                 </div>
 
                 <div>
@@ -4657,6 +4674,56 @@
                 }
             }
 
+            getSpreadsheetCollaborators() {
+                const list = [];
+                const seen = new Set();
+
+                // 1. Planilha ativa em memória ou cache local
+                let sheetColabs = [];
+                if (window.scheduleApp && scheduleApp.data && Array.isArray(scheduleApp.data.colaboradores)) {
+                    sheetColabs = scheduleApp.data.colaboradores;
+                } else {
+                    try {
+                        const cached = JSON.parse(localStorage.getItem('taskflow_schedule_data') || '{}');
+                        if (cached && Array.isArray(cached.colaboradores)) {
+                            sheetColabs = cached.colaboradores;
+                        }
+                    } catch(e) {}
+                }
+
+                sheetColabs.forEach(c => {
+                    const nome = (c.nome || '').trim();
+                    if (nome && !seen.has(nome.toUpperCase())) {
+                        seen.add(nome.toUpperCase());
+                        list.push({
+                            nome: nome,
+                            departamento: (c.departamento || '').trim(),
+                            escala: c.escala || '',
+                            folga: c.folga || ''
+                        });
+                    }
+                });
+
+                // 2. Contas cadastradas no TaskFlow (se não estiverem na lista)
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                accounts.forEach(a => {
+                    const nome = (a.displayName || a.name || '').trim();
+                    if (nome && !seen.has(nome.toUpperCase())) {
+                        seen.add(nome.toUpperCase());
+                        list.push({
+                            nome: nome,
+                            departamento: (a.dept || a.department || '').trim(),
+                            escala: '',
+                            folga: ''
+                        });
+                    }
+                });
+
+                // Ordena alfabeticamente
+                list.sort((a, b) => a.nome.localeCompare(b.nome));
+                return list;
+            }
+
             openNewModal() {
                 if (window.admin) admin.populateRoleAndDeptSelects();
                 const modal = document.getElementById('modal-occurrence');
@@ -4664,8 +4731,9 @@
                     modal.classList.remove('hidden');
                     modal.style.display = 'flex';
                 }
-                // Preenche o datalist com colaboradores
+                // Preenche os colaboradores da planilha e os líderes responsáveis
                 this.populateCollaboratorsDatalist();
+                this.populateLeaderSelect();
             }
 
             closeNewModal() {
@@ -4677,10 +4745,81 @@
             }
 
             populateCollaboratorsDatalist() {
+                const colabs = this.getSpreadsheetCollaborators();
+
+                // 1. Dropdown rápido de seleção da planilha
+                const select = document.getElementById('occ-collab-select');
+                if (select) {
+                    let html = '<option value="">-- Escolher Colaborador da Planilha --</option>';
+                    colabs.forEach(c => {
+                        const depto = c.departamento ? ` [${c.departamento}]` : '';
+                        html += `<option value="${c.nome}" data-dept="${c.departamento || ''}">${c.nome}${depto}</option>`;
+                    });
+                    select.innerHTML = html;
+                }
+
+                // 2. Datalist para autocomplete
                 const datalist = document.getElementById('team-collaborators-datalist');
-                if (!datalist) return;
-                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
-                datalist.innerHTML = accounts.map(a => `<option value="${a.displayName}">${a.displayName} (${a.role || 'Colaborador'})</option>`).join('');
+                if (datalist) {
+                    datalist.innerHTML = colabs.map(c => `<option value="${c.nome}">${c.nome} ${c.departamento ? '(' + c.departamento + ')' : ''}</option>`).join('');
+                }
+            }
+
+            populateLeaderSelect(selectedLeader = '') {
+                const select = document.getElementById('occ-leader');
+                if (!select) return;
+
+                const primaryLeaders = ["Emerson Diniz", "João Guilherme"];
+                const options = new Set(primaryLeaders);
+
+                if (selectedLeader && selectedLeader.trim()) {
+                    options.add(selectedLeader.trim());
+                }
+
+                if (auth.currentUser && auth.currentUser.displayName) {
+                    options.add(auth.currentUser.displayName.trim());
+                }
+
+                let html = '';
+                options.forEach(lead => {
+                    const isAdm = (lead === "Emerson Diniz" || lead === "João Guilherme");
+                    html += `<option value="${lead}">${lead}${isAdm ? ' (Administrador)' : ''}</option>`;
+                });
+                select.innerHTML = html;
+
+                if (selectedLeader) {
+                    select.value = selectedLeader;
+                } else if (auth.currentUser && auth.currentUser.displayName && Array.from(options).includes(auth.currentUser.displayName)) {
+                    select.value = auth.currentUser.displayName;
+                } else {
+                    select.value = "Emerson Diniz";
+                }
+            }
+
+            onCollabSelectChange(val) {
+                const input = document.getElementById('occ-collaborator');
+                if (input && val) {
+                    input.value = val;
+                }
+                if (!val) return;
+
+                // Tenta auto-selecionar o departamento do colaborador
+                const colabs = this.getSpreadsheetCollaborators();
+                const found = colabs.find(c => c.nome.toUpperCase() === val.toUpperCase());
+                if (found && found.departamento) {
+                    const deptSelect = document.getElementById('occ-dept');
+                    if (deptSelect) {
+                        const deptVal = found.departamento.trim();
+                        for (let i = 0; i < deptSelect.options.length; i++) {
+                            const optText = deptSelect.options[i].text.toLowerCase();
+                            const optVal = deptSelect.options[i].value.toLowerCase();
+                            if (optVal === deptVal.toLowerCase() || optText.includes(deptVal.toLowerCase()) || deptVal.toLowerCase().includes(optVal)) {
+                                deptSelect.selectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
             handleCreateOccurrence(e) {
@@ -4693,12 +4832,15 @@
                 const actionTaken = document.getElementById('occ-action-taken').value;
                 const severity = document.getElementById('occ-severity').value;
 
+                const leaderSelect = document.getElementById('occ-leader');
+                const selectedLeader = leaderSelect ? leaderSelect.value : (auth.currentUser ? auth.currentUser.displayName : 'Emerson Diniz');
+
                 if (!title || !collaborator || !what || !resolution) {
                     alert("Preencha todos os campos obrigatórios da ocorrência.");
                     return;
                 }
 
-                const currentUser = auth.currentUser || { displayName: 'Líder Setorial', email: 'lider@empresa.com', role: 'Líder' };
+                const currentUser = auth.currentUser || { displayName: selectedLeader, email: 'admin@taskflow.app', role: 'Administrador' };
 
                 const newOcc = {
                     id: 'occ_' + Date.now(),
@@ -4709,9 +4851,9 @@
                     currentResolution: resolution,
                     actionTaken,
                     severity,
-                    authorName: currentUser.displayName,
+                    authorName: selectedLeader,
                     authorEmail: currentUser.email,
-                    authorRole: currentUser.role || 'Líder Setorial',
+                    authorRole: 'Líder / Administrador',
                     createdAt: Date.now(),
                     status: 'pending_admin',
                     adminFeedback: null
@@ -9552,6 +9694,70 @@
             // ==========================================
             // MODO EDITOR: EDIÇÃO COMPLETA DE OCORRÊNCIA
             // ==========================================
+            populateOccCollabSelect(selectedCollab = '') {
+                const colabs = window.occApp ? occApp.getSpreadsheetCollaborators() : [];
+                const select = document.getElementById('admin-edit-occ-collab-select');
+                if (select) {
+                    let html = '<option value="">-- Escolher Colaborador da Planilha --</option>';
+                    colabs.forEach(c => {
+                        const depto = c.departamento ? ` [${c.departamento}]` : '';
+                        const isSel = (c.nome.toUpperCase() === String(selectedCollab).toUpperCase());
+                        html += `<option value="${c.nome}" data-dept="${c.departamento || ''}" ${isSel ? 'selected' : ''}>${c.nome}${depto}</option>`;
+                    });
+                    select.innerHTML = html;
+                }
+            }
+
+            populateLeaderSelect(targetSelectId, selectedLeader = '') {
+                const select = document.getElementById(targetSelectId);
+                if (!select) return;
+
+                const primaryLeaders = ["Emerson Diniz", "João Guilherme"];
+                const options = new Set(primaryLeaders);
+
+                if (selectedLeader && selectedLeader.trim()) {
+                    options.add(selectedLeader.trim());
+                }
+
+                let html = '';
+                options.forEach(lead => {
+                    const isAdm = (lead === "Emerson Diniz" || lead === "João Guilherme");
+                    const isSel = (lead.toUpperCase() === String(selectedLeader).toUpperCase());
+                    html += `<option value="${lead}" ${isSel ? 'selected' : ''}>${lead}${isAdm ? ' (Administrador)' : ''}</option>`;
+                });
+                select.innerHTML = html;
+
+                if (selectedLeader) {
+                    select.value = selectedLeader;
+                }
+            }
+
+            onSelectOccCollabChange(val) {
+                const input = document.getElementById('admin-edit-occ-collab');
+                if (input && val) {
+                    input.value = val;
+                }
+                if (!val) return;
+
+                // Tenta auto-selecionar o departamento no modal de edição
+                const colabs = window.occApp ? occApp.getSpreadsheetCollaborators() : [];
+                const found = colabs.find(c => c.nome.toUpperCase() === val.toUpperCase());
+                if (found && found.departamento) {
+                    const deptSelect = document.getElementById('admin-edit-occ-dept');
+                    if (deptSelect) {
+                        const deptVal = found.departamento.trim();
+                        for (let i = 0; i < deptSelect.options.length; i++) {
+                            const optText = deptSelect.options[i].text.toLowerCase();
+                            const optVal = deptSelect.options[i].value.toLowerCase();
+                            if (optVal === deptVal.toLowerCase() || optText.includes(deptVal.toLowerCase()) || deptVal.toLowerCase().includes(optVal)) {
+                                deptSelect.selectedIndex = i;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
             openEditOccurrenceModal(occId) {
                 this.populateRoleAndDeptSelects();
                 if (!window.occApp) return;
@@ -9565,7 +9771,11 @@
                 document.getElementById('admin-edit-occ-title').value = occ.title || '';
                 document.getElementById('admin-edit-occ-dept').value = occ.department || 'Geral';
                 document.getElementById('admin-edit-occ-collab').value = occ.collaborator || '';
-                document.getElementById('admin-edit-occ-author').value = occ.authorName || '';
+                
+                // Popula seleção da planilha e líderes responsáveis
+                this.populateOccCollabSelect(occ.collaborator || '');
+                this.populateLeaderSelect('admin-edit-occ-author', occ.authorName || 'Emerson Diniz');
+
                 document.getElementById('admin-edit-occ-severity').value = occ.severity || 'Normal';
                 document.getElementById('admin-edit-occ-what').value = occ.whatHappened || '';
                 document.getElementById('admin-edit-occ-resolution').value = occ.currentResolution || '';
