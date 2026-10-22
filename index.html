@@ -1386,20 +1386,32 @@
                     </div>
                 </div>
 
-                <!-- Alerta de Setores Sem Cobertura / Vagas Abertas -->
-                <div id="schedule-uncovered-alert" class="hidden p-3.5 rounded-2xl bg-rose-950/40 border border-rose-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-xl bg-rose-600/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shrink-0">
-                            <i class="fa-solid fa-triangle-exclamation text-sm animate-pulse"></i>
+                <!-- Painel Interativo de Setores Descobertos & Desfalques Críticos -->
+                <div id="schedule-uncovered-alert" class="hidden p-4 rounded-3xl bg-gradient-to-br from-rose-950/80 via-gray-900 to-gray-950 border-2 border-rose-600/70 shadow-2xl space-y-3">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-rose-600/50">
+                                <i class="fa-solid fa-triangle-exclamation text-base animate-pulse"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-black text-rose-200 text-xs sm:text-sm uppercase tracking-wide" id="schedule-uncovered-alert-title">
+                                    Atenção Líder: Setores Descobertos Hoje
+                                </h4>
+                                <p class="text-[11px] text-gray-300" id="schedule-uncovered-alert-desc">
+                                    Os seguintes setores estão com desfalque ou sem substituto. Clique no setor para alocar imediatamente:
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="font-bold text-rose-300" id="schedule-uncovered-alert-title">Atenção Líder: Setores Descobertos</p>
-                            <p class="text-[11px] text-gray-300" id="schedule-uncovered-alert-desc">Há postos sem colaboradores alocados para este dia.</p>
+                        <div class="flex items-center gap-2 self-end sm:self-auto">
+                            <button type="button" id="btn-toggle-uncovered-filter" onclick="scheduleApp.toggleUncoveredFilter()" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] transition shrink-0 active:scale-95 shadow-md shadow-rose-600/40 flex items-center gap-1.5 whitespace-nowrap">
+                                <i class="fa-solid fa-filter text-[10px]"></i> <span id="label-toggle-uncovered-filter">Ver Apenas Descobertos</span>
+                            </button>
                         </div>
                     </div>
-                    <button type="button" onclick="scheduleApp.setFilter('vacant')" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] transition shrink-0 active:scale-95 shadow-md shadow-rose-600/30 flex items-center gap-1.5">
-                        <i class="fa-solid fa-filter text-[10px]"></i> Ver Apenas Vagas Abertas
-                    </button>
+                    <!-- Lista de Chips Interativos dos Setores Descobertos -->
+                    <div id="schedule-uncovered-chips-container" class="flex flex-wrap gap-2 pt-2 border-t border-rose-900/50">
+                        <!-- Injetado dinamicamente via scheduleApp.renderStatsAndAbsences() -->
+                    </div>
                 </div>
 
                 <!-- Barra de Filtros e Busca de Postos -->
@@ -11591,6 +11603,128 @@
                 return '';
             }
 
+            getSundayPostDepartment(collabName) {
+                if (!collabName || !this.data || !this.data.dias || !this.data.dias.Domingo) return '';
+                const nameUp = String(collabName).trim().toUpperCase();
+                const domSlots = this.data.dias.Domingo.slots || [];
+                const found = domSlots.find(s => String(s.nome || '').trim().toUpperCase() === nameUp);
+                if (found && found.horario && !found.horario.includes('Linha') && found.horario.trim() !== 'X') {
+                    return found.horario.trim();
+                }
+                return '';
+            }
+
+            getSlotDepartmentInfo(slot, diaName) {
+                if (!slot) return { sector: 'Geral', titular: '', reason: 'Sem dados' };
+
+                const isSunday = (diaName === 'Domingo');
+                const isVacant = !!slot.isVago;
+                const linha = Number(slot.linha);
+
+                // 1. Caso o slot NÃO seja vago (já possui colaborador alocado no dia)
+                if (!isVacant && slot.nome) {
+                    const depto = isSunday 
+                        ? (slot.horario || 'Geral') 
+                        : (this.getCollabDepartment(slot.nome) || this.getSundayPostDepartment(slot.nome) || 'Geral');
+                    return { sector: depto, titular: slot.nome, reason: 'Alocado' };
+                }
+
+                // 2. Se for domingo e o posto tiver especificação no campo horário
+                if (isSunday && slot.horario && !slot.horario.includes('Linha') && slot.horario.trim() !== 'X') {
+                    return { sector: slot.horario.trim(), titular: '', reason: 'Posto de Domingo' };
+                }
+
+                // 3. Caso seja VAGO / DESFALQUE: descobre o titular e o setor habitual desta linha na semana
+                let titularName = '';
+                let titularDept = '';
+                let reason = 'Vaga Aberta';
+
+                if (this.data && this.data.dias) {
+                    const diasSemana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                    const occupants = [];
+                    diasSemana.forEach(d => {
+                        if (this.data.dias[d] && this.data.dias[d].slots) {
+                            const matchSlot = this.data.dias[d].slots.find(s => Number(s.linha) === linha);
+                            if (matchSlot && matchSlot.nome && matchSlot.nome.trim() !== '' && matchSlot.nome.toUpperCase() !== 'NOME' && matchSlot.nome !== 'X') {
+                                occupants.push(matchSlot.nome.trim());
+                            }
+                        }
+                    });
+
+                    if (occupants.length > 0) {
+                        const freq = {};
+                        occupants.forEach(n => freq[n] = (freq[n] || 0) + 1);
+                        let topName = occupants[0];
+                        let maxF = 0;
+                        for (let n in freq) {
+                            if (freq[n] > maxF) { maxF = freq[n]; topName = n; }
+                        }
+                        titularName = topName;
+                        titularDept = this.getCollabDepartment(topName) || this.getSundayPostDepartment(topName);
+                    }
+                }
+
+                // Se o titular habitual tem folga hoje ou está nas ausências
+                if (titularName) {
+                    const diaInfo = (this.data && this.data.dias && this.data.dias[diaName]) ? this.data.dias[diaName] : null;
+                    const ausencias = diaInfo ? (diaInfo.ausencias || []) : [];
+                    const isAusente = ausencias.some(a => a.toUpperCase().includes(titularName.toUpperCase()));
+
+                    let isFolgaHoje = false;
+                    if (this.data && this.data.colaboradores) {
+                        const colabObj = this.data.colaboradores.find(c => String(c.nome || '').trim().toUpperCase() === titularName.toUpperCase());
+                        if (colabObj && colabObj.folga) {
+                            const folgaUpper = colabObj.folga.toUpperCase();
+                            const diaUpper = String(diaName).toUpperCase();
+                            if (folgaUpper.includes(diaUpper.substring(0, 3))) {
+                                isFolgaHoje = true;
+                            }
+                        }
+                    }
+
+                    if (isAusente) {
+                        reason = `Ausência de ${titularName}`;
+                    } else if (isFolgaHoje) {
+                        reason = `Folga de ${titularName}`;
+                    } else {
+                        reason = 'Sem Cobertura';
+                    }
+                }
+
+                // Linhas mapeadas padrão (caso L37 ou postos de apoio)
+                if (!titularDept || titularDept === 'Geral') {
+                    if (linha === 37) titularDept = 'HORTIFRUTI / LOJA';
+                    else if (linha === 22) titularDept = 'ROTISSERIA / LOJA';
+                    else if (linha === 47) titularDept = 'ATENDIMENTO / FRENTE';
+                }
+
+                return {
+                    sector: titularDept || 'Setor Operacional',
+                    titular: titularName || '',
+                    reason: reason
+                };
+            }
+
+            focusAndEditSlot(dia, linha, colunaLetra, horario) {
+                const card = document.getElementById(`schedule-slot-card-${linha}`);
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.add('ring-4', 'ring-rose-500', 'animate-pulse');
+                    setTimeout(() => {
+                        card.classList.remove('ring-4', 'ring-rose-500', 'animate-pulse');
+                    }, 2800);
+                }
+                this.openEditSlotModal(dia, linha, colunaLetra, '', horario, true);
+            }
+
+            toggleUncoveredFilter() {
+                if (this.currentFilter === 'vacant') {
+                    this.setFilter('all');
+                } else {
+                    this.setFilter('vacant');
+                }
+            }
+
             setDeptFilter(val) {
                 this.currentDeptFilter = val;
                 this.renderSlots();
@@ -11804,6 +11938,13 @@
 
                 document.getElementById('modal-sched-slot-desc').innerText = dia + ' • Linha ' + linha + ' (' + colunaLetra + ')';
                 document.getElementById('modal-sched-horario-label').innerText = horario || 'Sem especificação';
+
+                // Preenche o setor e titular do posto no modal
+                const deptInfo = this.getSlotDepartmentInfo({ linha, colunaLetra, nome, horario, isVago }, dia);
+                const sectorEl = document.getElementById('modal-sched-sector-name');
+                const titularEl = document.getElementById('modal-sched-titular-name');
+                if (sectorEl) sectorEl.innerText = deptInfo.sector || 'Setor Operacional';
+                if (titularEl) titularEl.innerText = deptInfo.titular ? `${deptInfo.titular} (${deptInfo.reason})` : 'Sem titular habitual';
 
                 const statusEl = document.getElementById('modal-sched-current-status');
                 if (isVago) {
@@ -12090,18 +12231,51 @@
                 if (statVagos) statVagos.innerText = vagos;
                 if (statAus) statAus.innerText = ausencias.length;
 
-                // Alerta de setores sem ninguém / postos descobertos
+                // Alerta e Painel de setores sem ninguém / postos descobertos
                 const uncovAlert = document.getElementById('schedule-uncovered-alert');
                 const uncovTitle = document.getElementById('schedule-uncovered-alert-title');
                 const uncovDesc = document.getElementById('schedule-uncovered-alert-desc');
+                const uncovChips = document.getElementById('schedule-uncovered-chips-container');
+                const filterToggleLabel = document.getElementById('label-toggle-uncovered-filter');
 
-                if (vagos > 0) {
+                const vacantSlots = slots.filter(s => s.isVago);
+
+                if (vacantSlots.length > 0) {
                     if (uncovAlert) uncovAlert.classList.remove('hidden');
-                    if (uncovTitle) uncovTitle.innerText = `Atenção Líder: ${vagos} posto(s) / setor(es) sem cobertura hoje`;
-                    if (uncovDesc) uncovDesc.innerText = `Há postos vagos na escala que necessitam de alocação ou justificativa para auditoria.`;
+                    if (uncovTitle) uncovTitle.innerText = `🚨 Atenção Líder: ${vacantSlots.length} Setor(es) Sem Cobertura Hoje (${this.currentDay})`;
+                    if (uncovDesc) uncovDesc.innerText = `Os seguintes setores estão com desfalque ou sem substituto alocado. Clique em qualquer setor abaixo para preencher imediatamente:`;
+
+                    if (filterToggleLabel) {
+                        filterToggleLabel.innerText = this.currentFilter === 'vacant' ? 'Ver Todos os Postos' : 'Ver Apenas Descobertos';
+                    }
+
+                    if (uncovChips) {
+                        uncovChips.innerHTML = vacantSlots.map(s => {
+                            const deptInfo = this.getSlotDepartmentInfo(s, this.currentDay);
+                            return `
+                                <button type="button" onclick="scheduleApp.focusAndEditSlot('${this.currentDay}', ${s.linha}, '${s.colunaLetra}', '${(s.horario || '').replace(/'/g, "\\'")}')" class="group px-3 py-2 rounded-2xl text-xs font-bold bg-rose-950/90 border border-rose-500/70 hover:border-rose-400 text-rose-100 hover:bg-rose-900 transition flex items-center gap-2.5 shadow-lg shadow-rose-950/50 active:scale-95 text-left">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0"></span>
+                                    <div class="min-w-0">
+                                        <span class="uppercase tracking-wider font-black text-rose-200 group-hover:text-white block truncate leading-tight">${deptInfo.sector}</span>
+                                        <span class="text-[10px] text-rose-300/80 font-normal block truncate">L${s.linha} • ${deptInfo.titular ? deptInfo.titular : (s.horario || 'Turno')} ${deptInfo.reason ? `(${deptInfo.reason})` : ''}</span>
+                                    </div>
+                                    <span class="bg-rose-600 text-white text-[9px] px-2 py-0.5 rounded-lg font-extrabold group-hover:bg-rose-500 transition shrink-0 ml-1">+ Alocar</span>
+                                </button>
+                            `;
+                        }).join('');
+                    }
                 } else {
                     if (uncovAlert) uncovAlert.classList.add('hidden');
+                    if (uncovChips) uncovChips.innerHTML = '';
                 }
+
+                // Atualiza contadores nos botões de filtro
+                const btnFiltAll = document.getElementById('sched-filter-all');
+                const btnFiltVacant = document.getElementById('sched-filter-vacant');
+                const btnFiltAssigned = document.getElementById('sched-filter-assigned');
+                if (btnFiltAll) btnFiltAll.innerHTML = `Todos (${total})`;
+                if (btnFiltVacant) btnFiltVacant.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400 text-[10px]"></i> Descobertos (${vagos})`;
+                if (btnFiltAssigned) btnFiltAssigned.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 text-[10px]"></i> Confirmados (${presentes})`;
 
                 // Atualiza badge de vagas abertas no sidebar se houver
                 const schedBadge = document.getElementById('schedule-badge');
@@ -12200,34 +12374,56 @@
                 let html = '';
                 slots.forEach(s => {
                     const isVacant = s.isVago;
-                    const cardBorder = isVacant ? 'border-rose-600/60 bg-rose-950/20' : 'border-gray-800 bg-gray-950/80';
-                    const avatarBg = isVacant ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-teal-500/20 text-teal-400 border border-teal-500/30';
+                    const cardBorder = isVacant ? 'border-rose-600/70 bg-rose-950/25 ring-1 ring-rose-500/30' : 'border-gray-800 bg-gray-950/80';
+                    const avatarBg = isVacant ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40' : 'bg-teal-500/20 text-teal-400 border border-teal-500/30';
                     const initials = isVacant ? '!' : (s.nome ? s.nome.substring(0, 2).toUpperCase() : '??');
 
-                    // Departamento do colaborador ou do posto (domingo)
-                    const collabDept = isSunday ? s.horario : (this.getCollabDepartment(s.nome) || 'Geral');
+                    // Descobre informações completas do setor e do titular
+                    const deptInfo = this.getSlotDepartmentInfo(s, this.currentDay);
 
                     html += `
-                        <div class="p-3 sm:p-3.5 rounded-2xl border ${cardBorder} flex flex-col justify-between gap-3 shadow-md hover:border-gray-700 transition">
+                        <div id="schedule-slot-card-${s.linha}" class="p-3.5 rounded-2xl border ${cardBorder} flex flex-col justify-between gap-3 shadow-md hover:border-gray-700 transition relative">
                             <div class="flex items-start justify-between gap-2">
                                 <div class="flex items-center gap-2.5 min-w-0">
                                     <div class="w-10 h-10 rounded-xl ${avatarBg} flex items-center justify-center font-bold text-xs shrink-0">
                                         ${initials}
                                     </div>
-                                    <div class="min-w-0 space-y-0.5">
+                                    <div class="min-w-0 space-y-1">
                                         ${isVacant 
-                                            ? '<h5 class="text-xs sm:text-sm font-extrabold text-rose-400 flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-rose-500 text-xs animate-pulse"></i> VAGA ABERTA / FALTA</h5>'
+                                            ? '<h5 class="text-xs sm:text-sm font-black text-rose-300 flex items-center gap-1.5 tracking-wide"><i class="fa-solid fa-triangle-exclamation text-rose-500 text-xs animate-pulse"></i> VAGA ABERTA / FALTA</h5>'
                                             : `<h5 class="text-xs sm:text-sm font-bold text-gray-100 truncate">${s.nome}</h5>`
                                         }
                                         <div class="flex items-center gap-1.5 text-[11px] text-gray-400">
                                             <i class="fa-solid fa-clock text-[10px] text-teal-400"></i>
                                             <span class="truncate font-medium">${s.horario || 'Turno Padrão'}</span>
                                         </div>
-                                        <!-- BADGE DE DEPARTAMENTO / SETOR DO COLABORADOR -->
-                                        <div class="pt-0.5">
+
+                                        <!-- BADGE DESTACADO DO SETOR (NUNCA MAIS 'SETOR SEM COBERTURA' GENÉRICO) -->
+                                        <div class="pt-0.5 space-y-1">
                                             ${isVacant 
-                                                ? `<span class="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-rose-950/80 border border-rose-800/80 text-rose-300 font-bold"><i class="fa-solid fa-triangle-exclamation text-[9px] text-rose-400"></i> ${isSunday ? s.horario : 'Setor Sem Cobertura'}</span>`
-                                                : `<span class="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-lg bg-indigo-950/70 border border-indigo-800/70 text-indigo-300 font-bold"><i class="fa-solid fa-layer-group text-[9px] text-indigo-400"></i> ${collabDept}</span>`
+                                                ? `
+                                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                                        <span class="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] px-2.5 py-1 rounded-xl bg-rose-950 border border-rose-500/80 text-rose-100 font-black shadow-md shadow-rose-950/60">
+                                                            <i class="fa-solid fa-triangle-exclamation text-[10px] text-rose-400 animate-pulse"></i>
+                                                            <span>SETOR: <strong class="text-white uppercase tracking-wider">${deptInfo.sector}</strong></span>
+                                                        </span>
+                                                        <span class="text-[9px] px-2 py-0.5 rounded-md bg-rose-900/50 text-rose-300 border border-rose-800/60 font-bold uppercase">
+                                                            ${deptInfo.reason}
+                                                        </span>
+                                                    </div>
+                                                    ${deptInfo.titular ? `
+                                                        <p class="text-[10px] text-gray-400 flex items-center gap-1.5">
+                                                            <i class="fa-solid fa-user-xmark text-rose-400 text-[10px]"></i>
+                                                            <span>Posto habitual: <strong class="text-gray-200">${deptInfo.titular}</strong></span>
+                                                        </p>
+                                                    ` : ''}
+                                                `
+                                                : `
+                                                    <span class="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-0.5 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-bold">
+                                                        <i class="fa-solid fa-layer-group text-[9px] text-cyan-400"></i>
+                                                        <span>${deptInfo.sector}</span>
+                                                    </span>
+                                                `
                                             }
                                         </div>
                                     </div>
@@ -12237,13 +12433,13 @@
                                 </span>
                             </div>
 
-                            <div class="flex items-center justify-between pt-2 border-t border-gray-850">
+                            <div class="flex items-center justify-between pt-2 border-t border-gray-800/80">
                                 <span class="text-[10px] font-semibold ${isVacant ? 'text-rose-400' : 'text-emerald-400'} flex items-center gap-1">
                                     <span class="w-1.5 h-1.5 rounded-full ${isVacant ? 'bg-rose-500 animate-ping' : 'bg-emerald-400'}"></span>
                                     <span>${isVacant ? 'Requer Substituto' : 'Confirmado na Escala'}</span>
                                 </span>
                                 ${this.canUserEdit() ? `
-                                <button type="button" onclick="scheduleApp.openEditSlotModal('${this.currentDay}', ${s.linha}, '${s.colunaLetra}', '${(s.nome || '').replace(/'/g, "\\'")}', '${(s.horario || '').replace(/'/g, "\\'")}', ${isVacant})" class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition active:scale-95 flex items-center gap-1.5 ${isVacant ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-sm' : 'bg-gray-800 hover:bg-gray-750 text-teal-300 border border-teal-500/30'}">
+                                <button type="button" onclick="scheduleApp.openEditSlotModal('${this.currentDay}', ${s.linha}, '${s.colunaLetra}', '${(s.nome || '').replace(/'/g, "\\'")}', '${(s.horario || '').replace(/'/g, "\\'")}', ${isVacant})" class="px-2.5 py-1 text-[11px] font-bold rounded-lg transition active:scale-95 flex items-center gap-1.5 ${isVacant ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-md shadow-rose-600/40' : 'bg-gray-800 hover:bg-gray-750 text-teal-300 border border-teal-500/30'}">
                                     <i class="fa-solid ${isVacant ? 'fa-plus' : 'fa-pen-to-square'} text-[10px]"></i>
                                     <span>${isVacant ? 'Alocar' : 'Substituir'}</span>
                                 </button>
@@ -12569,6 +12765,18 @@
                 <input type="hidden" id="modal-sched-dia">
                 <input type="hidden" id="modal-sched-linha">
                 <input type="hidden" id="modal-sched-coluna">
+
+                <!-- Setor Operacional & Titular do Posto -->
+                <div class="bg-rose-950/40 p-3.5 rounded-2xl border border-rose-500/50 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] text-rose-400 uppercase font-extrabold tracking-wider block">Setor Operacional</span>
+                        <p id="modal-sched-sector-name" class="text-sm font-black text-white uppercase tracking-wide">SETOR DESCONHECIDO</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] text-gray-400 uppercase font-bold tracking-wider block">Posto Habitual / Titular</span>
+                        <p id="modal-sched-titular-name" class="text-xs font-bold text-rose-200">Sem titular fixo</p>
+                    </div>
+                </div>
 
                 <!-- Informações do Posto -->
                 <div class="bg-gray-950 p-3 rounded-2xl border border-gray-800 flex items-center justify-between">
