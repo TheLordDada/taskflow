@@ -5007,6 +5007,7 @@
 
                 if (window.scheduleApp) {
                     window.scheduleApp.render();
+                    window.scheduleApp.syncWithGoogleSheets(true);
                 }
             }
         };
@@ -11570,12 +11571,14 @@
 
             constructor() {
                 this.defaultOfficialUrl = 'https://script.google.com/macros/s/AKfycbzlmXyjnVs5uH41a_9bddnNfIn-M2KMU4arwHreAlRkB0DFw3ziMLeR5MOVRarQy_4r/exec';
+                this.defaultSheetId = '1rGd_XLaMLsI6dwpped3eyB5IGidepyQPWw_kwzpWIzY';
                 const savedUrl = localStorage.getItem('taskflow_schedule_webapp_url');
                 this.webAppUrl = (savedUrl && savedUrl.trim() !== '') ? savedUrl.trim() : this.defaultOfficialUrl;
-                // Garante que a URL oficial fique salva no localStorage de qualquer novo aparelho
+                this.sheetId = localStorage.getItem('taskflow_schedule_sheet_id') || this.defaultSheetId;
                 if (!savedUrl || savedUrl.trim() === '') {
                     localStorage.setItem('taskflow_schedule_webapp_url', this.defaultOfficialUrl);
                 }
+                localStorage.setItem('taskflow_schedule_sheet_id', this.sheetId);
                 this.currentDay = this.getTodayDayName();
                 this.currentFilter = 'all';
                 this.currentDeptFilter = 'all';
@@ -11595,9 +11598,23 @@
                 if (cached) {
                     try {
                         const parsed = JSON.parse(cached);
-                        if (parsed && parsed.dias) return parsed;
+                        let hasTimes = false;
+                        if (parsed && parsed.dias) {
+                            for (let d in parsed.dias) {
+                                if (parsed.dias[d].slots && parsed.dias[d].slots.some(s => s.entrada && s.entrada.trim() !== '')) {
+                                    hasTimes = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (hasTimes) return parsed;
                     } catch (e) {}
                 }
+
+                // Dispara sincronização direta da planilha imediatamente
+                setTimeout(() => {
+                    if (window.scheduleApp) scheduleApp.syncWithGoogleSheets(true);
+                }, 100);
 
                 // Modelo inicial completo baseado na estrutura real da planilha
                 const diasNomes = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
@@ -12102,12 +12119,142 @@
                 this.renderSlots();
             }
 
-            async syncWithGoogleSheets(isSilent = false) {
-                if (!this.webAppUrl) {
-                    if (!isSilent) this.openConfigModal();
-                    return;
-                }
+            async fetchGvizSchedule() {
+                const sheetId = this.sheetId || this.defaultSheetId;
+                if (!sheetId) throw new Error('ID da planilha não configurado');
 
+                const gvizUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json&sheet=Diaria&t=' + Date.now();
+                const res = await fetch(gvizUrl);
+                if (!res.ok) throw new Error('HTTP ' + res.status + ' ao acessar Google Sheets');
+                const text = await res.text();
+                const m = text.match(/google\.visualization\.Query\.setResponse\((.*)\);?/s);
+                if (!m) throw new Error('Resposta inválida do Google Sheets');
+                const json = JSON.parse(m[1]);
+                if (!json || !json.table || !json.table.rows) throw new Error('Dados da planilha incompletos');
+
+                const rows = json.table.rows;
+
+                const diasConfig = [
+                    { nome: 'Segunda', colDept: 1,  colNome: 2,  colEsc: 3,  colEnt: 4,  colIni: 5,  colRet: 6,  colSai: 7,  colBnc: 8,  colData: 3,  colLetra: 'C' },
+                    { nome: 'Terça',   colDept: 10, colNome: 11, colEsc: 12, colEnt: 13, colIni: 14, colRet: 15, colSai: 16, colBnc: 17, colData: 12, colLetra: 'L' },
+                    { nome: 'Quarta',  colDept: 19, colNome: 20, colEsc: 21, colEnt: 22, colIni: 23, colRet: 24, colSai: 25, colBnc: 26, colData: 21, colLetra: 'U' },
+                    { nome: 'Quinta',  colDept: 28, colNome: 29, colEsc: 30, colEnt: 31, colIni: 32, colRet: 33, colSai: 34, colBnc: 35, colData: 30, colLetra: 'AD' },
+                    { nome: 'Sexta',   colDept: 37, colNome: 38, colEsc: 39, colEnt: 40, colIni: 41, colRet: 42, colSai: 43, colBnc: 44, colData: 39, colLetra: 'AM' },
+                    { nome: 'Sábado',  colDept: 46, colNome: 47, colEsc: 48, colEnt: 49, colIni: 50, colRet: 51, colSai: 52, colBnc: 53, colData: 48, colLetra: 'AV' },
+                    { nome: 'Domingo', colDept: 55, colNome: 56, colEsc: 57, colEnt: 58, colIni: 59, colRet: 60, colSai: 61, colBnc: 62, colData: 57, colLetra: 'BE' }
+                ];
+
+                const getCell = (rIdx, cIdx) => {
+                    if (!rows[rIdx] || !rows[rIdx].c || !rows[rIdx].c[cIdx]) return '';
+                    const cell = rows[rIdx].c[cIdx];
+                    if (cell.f !== undefined && cell.f !== null) return String(cell.f).trim();
+                    if (cell.v !== undefined && cell.v !== null) return String(cell.v).trim();
+                    return '';
+                };
+
+                const limparHora = (v) => {
+                    const s = String(v || '').trim();
+                    const mm = s.match(/^([+-])?(\d{1,3}):(\d{2})(?::\d{2})?$/);
+                    if (mm) {
+                        const h = mm[2].length < 2 ? '0' + mm[2] : mm[2];
+                        return (mm[1] === '-' ? '-' : '') + h + ':' + mm[3];
+                    }
+                    return s;
+                };
+
+                const result = { success: true, dias: {}, atualizadoEm: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR') };
+
+                diasConfig.forEach(cfg => {
+                    const dataStr = getCell(0, cfg.colData);
+                    const slots = [];
+                    const folgas = [];
+
+                    for (let r = 5; r <= 12; r++) {
+                        const fNome = getCell(r, cfg.colDept);
+                        if (fNome && fNome !== '-' && !fNome.toUpperCase().includes('FOLGA')) {
+                            folgas.push({ linha: r + 1, nome: fNome, motivo: 'Folga da Escala' });
+                        }
+                    }
+
+                    if (cfg.nome === 'Domingo') {
+                        for (let r = 18; r <= 32; r++) {
+                            const linha = r + 1;
+                            const dept = getCell(r, cfg.colDept);
+                            const nome = getCell(r, cfg.colNome);
+                            const esc  = getCell(r, cfg.colEsc);
+                            const isVago = !nome || nome === '-' || nome.toUpperCase() === 'VAGO' || nome.toUpperCase() === 'POSTO VAGO';
+                            slots.push({
+                                linha, grupo: 'reposicao', colunaLetra: cfg.colLetra,
+                                departamento: dept, nome: isVago ? 'VAGO' : nome, escala: esc,
+                                horario: esc, entrada: limparHora(getCell(r, cfg.colEnt)),
+                                inicioAlmoco: limparHora(getCell(r, cfg.colIni)),
+                                retornoAlmoco: limparHora(getCell(r, cfg.colRet)),
+                                saida: limparHora(getCell(r, cfg.colSai)),
+                                banco: limparHora(getCell(r, cfg.colBnc)),
+                                isVago, corFundo: isVago ? '#ea4335' : ''
+                            });
+                        }
+                        const r37 = 36;
+                        const d37 = getCell(r37, cfg.colDept);
+                        const n37 = getCell(r37, cfg.colNome);
+                        if (d37 || n37) {
+                            const isVago = !n37 || n37 === '-' || n37.toUpperCase() === 'VAGO';
+                            slots.push({
+                                linha: 37, grupo: 'reposicao', colunaLetra: cfg.colLetra,
+                                departamento: d37, nome: isVago ? 'VAGO' : n37,
+                                escala: getCell(r37, cfg.colEsc), horario: getCell(r37, cfg.colEsc),
+                                entrada: limparHora(getCell(r37, cfg.colEnt)),
+                                inicioAlmoco: limparHora(getCell(r37, cfg.colIni)),
+                                retornoAlmoco: limparHora(getCell(r37, cfg.colRet)),
+                                saida: limparHora(getCell(r37, cfg.colSai)),
+                                banco: limparHora(getCell(r37, cfg.colBnc)),
+                                isVago, corFundo: isVago ? '#ea4335' : ''
+                            });
+                        }
+                    } else {
+                        for (let r = 19; r <= 50; r++) {
+                            const linha = r + 1;
+                            const dept = getCell(r, cfg.colDept);
+                            const nome = getCell(r, cfg.colNome);
+                            const esc  = getCell(r, cfg.colEsc);
+                            const isVago = !nome || nome === '-' || nome.toUpperCase() === 'VAGO' || nome.toUpperCase() === 'POSTO VAGO';
+                            slots.push({
+                                linha, grupo: 'reposicao', colunaLetra: cfg.colLetra,
+                                departamento: dept, nome: isVago ? 'VAGO' : nome, escala: esc,
+                                horario: esc, entrada: limparHora(getCell(r, cfg.colEnt)),
+                                inicioAlmoco: limparHora(getCell(r, cfg.colIni)),
+                                retornoAlmoco: limparHora(getCell(r, cfg.colRet)),
+                                saida: limparHora(getCell(r, cfg.colSai)),
+                                banco: limparHora(getCell(r, cfg.colBnc)),
+                                isVago, corFundo: isVago ? '#ea4335' : ''
+                            });
+                        }
+                        for (let r = 54; r <= 56; r++) {
+                            const linha = r + 1;
+                            const dept = getCell(r, cfg.colDept);
+                            const nome = getCell(r, cfg.colNome);
+                            const esc  = getCell(r, cfg.colEsc);
+                            const isVago = !nome || nome === '-' || nome.toUpperCase() === 'VAGO' || nome.toUpperCase() === 'POSTO VAGO';
+                            slots.push({
+                                linha, grupo: 'lideranca', colunaLetra: cfg.colLetra,
+                                departamento: dept, nome: isVago ? 'VAGO' : nome, escala: esc,
+                                horario: esc, entrada: limparHora(getCell(r, cfg.colEnt)),
+                                inicioAlmoco: limparHora(getCell(r, cfg.colIni)),
+                                retornoAlmoco: limparHora(getCell(r, cfg.colRet)),
+                                saida: limparHora(getCell(r, cfg.colSai)),
+                                banco: limparHora(getCell(r, cfg.colBnc)),
+                                isVago, corFundo: isVago ? '#ea4335' : ''
+                            });
+                        }
+                    }
+
+                    result.dias[cfg.nome] = { diaSemana: cfg.nome, data: dataStr, slots, folgas, ausencias: folgas.map(f => f.nome) };
+                });
+
+                return result;
+            }
+
+            async syncWithGoogleSheets(isSilent = false) {
                 if (this.isSyncing) return;
                 this.isSyncing = true;
 
@@ -12115,9 +12262,20 @@
                 if (icon) icon.classList.add('fa-spin');
 
                 try {
-                    const fetchUrl = this.webAppUrl + (this.webAppUrl.includes('?') ? '&' : '?') + 'action=get_schedule&t=' + Date.now();
-                    const response = await fetch(fetchUrl, { redirect: 'follow' });
-                    const resJson = await response.json();
+                    let resJson = null;
+                    try {
+                        resJson = await this.fetchGvizSchedule();
+                    } catch (eGviz) {
+                        console.warn('[Schedule] Leitura direta GViz falhou, tentando WebApp...', eGviz);
+                    }
+
+                    if (!resJson || !resJson.success || !resJson.dias) {
+                        if (this.webAppUrl) {
+                            const fetchUrl = this.webAppUrl + (this.webAppUrl.includes('?') ? '&' : '?') + 'action=get_schedule&t=' + Date.now();
+                            const response = await fetch(fetchUrl, { redirect: 'follow' });
+                            resJson = await response.json();
+                        }
+                    }
 
                     if (resJson && resJson.success && resJson.dias) {
                         this.data = resJson;
@@ -12125,15 +12283,15 @@
                         this.updateSyncStatus();
                         this.render();
                         if (!isSilent && window.notifications) {
-                            notifications.showToast('Escalas sincronizadas com o Google Sheets!', 'success');
+                            notifications.showToast('Escala sincronizada diretamente da Planilha Google!', 'success');
                         }
                     } else {
-                        throw new Error(resJson ? resJson.error : 'Resposta inválida do Google Sheets');
+                        throw new Error(resJson ? resJson.error : 'Não foi possível ler os dados da planilha');
                     }
                 } catch (err) {
                     console.error('[Schedule] Erro na sincronização:', err);
                     if (!isSilent && window.notifications) {
-                        notifications.showToast('Não foi possível conectar à planilha: ' + err.message, 'error');
+                        notifications.showToast('Erro ao sincronizar com a planilha: ' + err.message, 'error');
                     }
                 } finally {
                     this.isSyncing = false;
@@ -12164,25 +12322,34 @@
                 const url = input ? input.value.trim() : '';
                 const btn = document.getElementById('btn-test-sched-conn');
 
-                if (!url) {
-                    alert('Insira a URL do Web App antes de testar.');
-                    return;
-                }
-
                 if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Testando...</span>';
 
                 try {
-                    const testUrl = url + (url.includes('?') ? '&' : '?') + 'action=get_schedule&t=' + Date.now();
-                    const res = await fetch(testUrl, { redirect: 'follow' });
-                    const json = await res.json();
+                    let gvizOk = false;
+                    try {
+                        const testData = await this.fetchGvizSchedule();
+                        if (testData && testData.success && testData.dias) {
+                            gvizOk = true;
+                        }
+                    } catch (eG) {}
 
-                    if (json && json.success) {
-                        alert('✓ Conexão bem-sucedida! Planilha respondeu perfeitamente com ' + Object.keys(json.dias || {}).length + ' blocos de dias.');
-                    } else {
-                        alert('Aviso da Planilha: ' + (json ? json.error : 'Erro desconhecido'));
+                    if (gvizOk) {
+                        alert('✓ Conexão direta com o Google Sheets 100% ativa! Horários, ausências e postos lidos em tempo real da planilha oficial.');
+                        return;
                     }
+
+                    if (url) {
+                        const testUrl = url + (url.includes('?') ? '&' : '?') + 'action=get_schedule&t=' + Date.now();
+                        const res = await fetch(testUrl, { redirect: 'follow' });
+                        const json = await res.json();
+                        if (json && json.success) {
+                            alert('✓ Conexão bem-sucedida via Apps Script! Planilha respondeu com ' + Object.keys(json.dias || {}).length + ' blocos de dias.');
+                            return;
+                        }
+                    }
+                    alert('Aviso: Verifique a conexão com a internet ou o link da planilha/Apps Script.');
                 } catch (e) {
-                    alert('Erro ao conectar: ' + e.message + '\n\nCertifique-se de que a implantação do Apps Script foi configurada com acesso: "Qualquer pessoa" (Anyone).');
+                    alert('Erro ao testar: ' + e.message);
                 } finally {
                     if (btn) btn.innerHTML = '<i class="fa-solid fa-vial"></i> <span>Testar Conexão</span>';
                 }
@@ -12193,21 +12360,31 @@
                 const input = document.getElementById('schedule-config-webapp-url');
                 const url = input ? input.value.trim() : '';
 
-                this.webAppUrl = url;
-                localStorage.setItem('taskflow_schedule_webapp_url', url);
+                if (url.includes('docs.google.com/spreadsheets/d/')) {
+                    const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                    if (m) {
+                        this.sheetId = m[1];
+                        localStorage.setItem('taskflow_schedule_sheet_id', this.sheetId);
+                    }
+                } else if (url.includes('script.google.com')) {
+                    this.webAppUrl = url;
+                    localStorage.setItem('taskflow_schedule_webapp_url', url);
+                }
+
                 this.closeConfigModal();
 
                 if (window.syncManager) {
                     window.syncManager.publish({
                         type: 'SCHEDULE_CONFIG_UPDATE',
-                        webAppUrl: url,
+                        webAppUrl: this.webAppUrl,
+                        sheetId: this.sheetId,
                         timestamp: Date.now()
                     });
                 }
                 this.updateSyncStatus();
 
                 if (window.notifications) {
-                    notifications.showToast('Configuração salva! Sincronizando...', 'success');
+                    notifications.showToast('Configuração salva! Sincronizando com o Google Sheets...', 'success');
                 }
                 this.syncWithGoogleSheets(false);
             }
