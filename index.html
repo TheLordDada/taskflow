@@ -1956,52 +1956,7 @@
     </div>
 
 
-    <!-- ========================================== -->
-    <!-- MODAL DEDICADO: CHAT DA TAREFA & @ MENÇÕES -->
-    <!-- ========================================== -->
-    <div id="modal-task-chat" style="display: none; z-index: 100001;" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100001] hidden flex items-center justify-center p-2 sm:p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-lg shadow-2xl flex flex-col h-[90vh] sm:h-[82vh] max-h-[720px] overflow-hidden">
-            <!-- Header do Chat -->
-            <div class="flex items-center justify-between p-3.5 sm:p-4 border-b border-gray-800 shrink-0 bg-gray-950/95">
-                <div class="flex items-center gap-2.5 min-w-0">
-                    <div class="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-sm shadow-md shrink-0">
-                        <i class="fa-solid fa-comments"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-2">
-                            <h3 class="font-bold text-sm sm:text-base text-gray-100 truncate" id="task-chat-modal-title">Chat da Tarefa</h3>
-                            <span id="task-chat-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-950 border border-indigo-800 text-indigo-300 font-bold shrink-0">0 msgs</span>
-                        </div>
-                        <p class="text-[11px] text-gray-400 truncate" id="task-chat-modal-subtitle">Use @ para marcar colaboradores</p>
-                    </div>
-                </div>
-                <button type="button" onclick="app.closeTaskChat()" class="text-gray-400 hover:text-gray-200 w-8 h-8 rounded-xl flex items-center justify-center bg-gray-800/80 active:scale-95 transition shrink-0 ml-2">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
 
-            <!-- Feed de Mensagens do Chat -->
-            <div id="task-chat-messages" class="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3 custom-scrollbar text-xs bg-gray-950/50">
-                <!-- Injetado via app.renderTaskChat() -->
-            </div>
-
-            <!-- Dropdown de Menção @ (Autocomplete Popover) -->
-            <div id="task-mention-dropdown" class="hidden mx-3 mb-2 bg-gray-900 border border-indigo-500/50 rounded-xl p-1.5 shadow-2xl max-h-40 overflow-y-auto custom-scrollbar space-y-0.5 shrink-0">
-                <!-- Injetado dinamicamente -->
-            </div>
-
-            <!-- Rodapé / Barra de Envio de Mensagem com padding seguro para mobile (pb-safe) -->
-            <div class="p-3 sm:p-3.5 border-t border-gray-800 bg-gray-950/95 flex items-center gap-2 shrink-0 pb-safe">
-                <button type="button" onclick="app.toggleMentionDropdown()" title="Mencionar Colaborador (@)" class="w-10 h-10 rounded-xl bg-gray-800 hover:bg-gray-750 text-indigo-400 font-black text-sm flex items-center justify-center transition border border-gray-700 active:scale-95 shrink-0">
-                    @
-                </button>
-                <input type="text" id="task-chat-input" onkeydown="app.handleChatKeyDown(event)" placeholder="Escreva uma mensagem... (@ para marcar)" class="flex-1 bg-gray-900 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition">
-                <button type="button" onclick="app.sendTaskComment()" class="w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-xs sm:text-sm shadow-md shadow-indigo-600/30 transition active:scale-95 shrink-0">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
-            </div>
-        </div>
-    </div>
 
 
     <!-- ========================================== -->
@@ -2064,55 +2019,141 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- MODAL GALERIA DE FOTOS (LIGHTBOX / CAROUSEL) -->
+    <!-- MODAL UNIFICADO: VISUALIZAR TAREFA         -->
+    <!-- (FOTOS / GALERIA + CHAT & DISCUSSÃO EQUIPE)-->
     <!-- ========================================== -->
-    <div id="modal-view-image" style="display: none; z-index: 100002;" class="fixed inset-0 bg-black/95 backdrop-blur-md z-[100002] hidden flex flex-col items-center justify-between p-2 sm:p-4 select-none" onclick="app.closeFullImage()">
-        <!-- Top Bar: Título, Contador e Botão Fechar -->
-        <div class="w-full max-w-4xl flex items-center justify-between px-3 py-2 shrink-0 z-50 bg-gray-950/80 rounded-2xl border border-gray-800/80 backdrop-blur-sm" onclick="event.stopPropagation()">
-            <div class="flex items-center gap-2.5 min-w-0">
-                <div class="w-8 h-8 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-images text-xs"></i>
+    <div id="modal-view-task" style="display: none; z-index: 100001;" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[100001] hidden flex items-center justify-center p-2 sm:p-4 select-none" onclick="app.closeViewTaskModal()">
+        <div id="modal-view-image" class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-5xl shadow-2xl flex flex-col h-[94vh] sm:h-[88vh] max-h-[820px] overflow-hidden" onclick="event.stopPropagation()">
+            
+            <!-- Header Unificado -->
+            <div class="flex items-center justify-between p-3 sm:p-4 border-b border-gray-800 shrink-0 bg-gray-950/95">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-sm shadow-md shrink-0">
+                        <i class="fa-solid fa-eye"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-sm sm:text-base text-gray-100 truncate" id="view-task-title">Visualizar Tarefa</h3>
+                            <span id="view-task-priority-badge" class="text-[10px] px-2 py-0.5 rounded uppercase font-bold shrink-0 bg-blue-500/20 text-blue-300 border border-blue-500/30">MÉDIA</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-[11px] text-gray-400 truncate">
+                            <span id="view-task-assignee">Responsável: Equipe</span>
+                            <span>•</span>
+                            <span id="view-task-date">Hoje</span>
+                            <span id="view-task-inc-badge" class="hidden text-[10px] font-bold text-amber-300 bg-amber-950/70 border border-amber-800/80 px-1.5 py-0.2 rounded">Ruptura</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="min-w-0">
-                    <h4 class="text-xs font-bold text-gray-100 truncate" id="gallery-task-title">Galeria da Tarefa</h4>
-                    <p class="text-[10px] text-gray-400">Fotos anexadas à tarefa</p>
+
+                <!-- Controles: Botão Editar + Botão Fechar -->
+                <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                    <!-- Botão Editar Tarefa -->
+                    <button type="button" onclick="app.editCurrentViewedTask()" title="Editar dados da tarefa" class="w-8 h-8 rounded-xl bg-gray-800/80 hover:bg-gray-700 text-gray-300 flex items-center justify-center transition border border-gray-700 active:scale-95">
+                        <i class="fa-solid fa-pen text-xs"></i>
+                    </button>
+
+                    <!-- Botão Fechar -->
+                    <button type="button" onclick="app.closeViewTaskModal()" class="text-gray-400 hover:text-gray-200 w-8 h-8 rounded-xl flex items-center justify-center bg-gray-800/80 active:scale-95 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
-                <span id="gallery-counter-badge" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-800 shadow">1 de 1</span>
-                <button type="button" onclick="app.closeFullImage()" class="bg-gray-800 hover:bg-gray-700 text-white w-8 h-8 rounded-full flex items-center justify-center text-xs border border-gray-700 shadow transition active:scale-90">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-        </div>
 
-        <!-- Área Central com Botões Prev / Next e Imagem -->
-        <div class="relative max-w-4xl w-full flex-1 flex items-center justify-center min-h-0 py-2" onclick="event.stopPropagation()">
-            <!-- Botão Foto Anterior -->
-            <button type="button" id="gallery-btn-prev" onclick="app.prevGalleryImage()" title="Foto anterior" class="absolute left-1 sm:left-4 z-50 bg-gray-900/80 hover:bg-indigo-600 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm sm:text-base border border-gray-700 shadow-2xl transition active:scale-90">
-                <i class="fa-solid fa-chevron-left"></i>
-            </button>
-
-            <!-- Imagem Central em Destaque -->
-            <div class="w-full h-full flex items-center justify-center p-1 sm:p-2">
-                <img id="view-image-full" src="" alt="Foto da Tarefa" class="max-w-full max-h-[68vh] sm:max-h-[72vh] object-contain rounded-2xl shadow-2xl border border-gray-800 transition-all duration-150">
+            <!-- Segmented Control apenas no Mobile (md:hidden) -->
+            <div class="flex md:hidden bg-gray-950/95 border-b border-gray-800 p-2 shrink-0 justify-center">
+                <div class="flex bg-gray-900 border border-gray-800 p-1 rounded-xl w-full max-w-sm">
+                    <button type="button" id="tab-btn-view-photos" onclick="app.switchViewTaskTab('photos')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-indigo-600 text-white shadow-sm">
+                        <i class="fa-solid fa-images text-xs"></i>
+                        <span id="tab-badge-photos-count">Fotos (0)</span>
+                    </button>
+                    <button type="button" id="tab-btn-view-chat" onclick="app.switchViewTaskTab('chat')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 text-gray-400 hover:text-gray-200">
+                        <i class="fa-solid fa-comments text-xs"></i>
+                        <span id="tab-badge-chat-count">Chat (0)</span>
+                    </button>
+                </div>
             </div>
 
-            <!-- Botão Próxima Foto -->
-            <button type="button" id="gallery-btn-next" onclick="app.nextGalleryImage()" title="Próxima foto" class="absolute right-1 sm:right-4 z-50 bg-gray-900/80 hover:bg-indigo-600 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm sm:text-base border border-gray-700 shadow-2xl transition active:scale-90">
-                <i class="fa-solid fa-chevron-right"></i>
-            </button>
-        </div>
+            <!-- Corpo Dividido: Lado a Lado no Desktop (md:flex-row) e Abas no Mobile -->
+            <div class="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden divide-y md:divide-y-0 md:divide-x divide-gray-800">
+                
+                <!-- COLUNA ESQUERDA: FOTOS & GALERIA DA TAREFA -->
+                <div id="view-task-photos-col" class="flex flex-col flex-1 min-w-0 bg-black/60 relative overflow-hidden">
+                    <!-- Se tiver fotos: visualizador e carrossel -->
+                    <div id="view-task-photos-container" class="flex flex-col flex-1 min-h-0 p-2 sm:p-3 justify-between items-center relative">
+                        <!-- Top Bar de fotos -->
+                        <div class="w-full flex items-center justify-between px-2 shrink-0 z-20">
+                            <span id="gallery-counter-badge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-950/90 text-indigo-300 border border-indigo-800 shadow">1 de 1</span>
+                            <span class="text-[10px] text-gray-400 hidden sm:inline">Use as setas para navegar</span>
+                        </div>
 
-        <!-- Rodapé da Galeria: Miniaturas & Dica de Deslize Touch -->
-        <div class="w-full max-w-4xl flex flex-col items-center gap-1.5 shrink-0 z-50 bg-gray-950/80 p-2 rounded-2xl border border-gray-800/80 backdrop-blur-sm" onclick="event.stopPropagation()">
-            <div id="gallery-thumbnails-strip" class="flex items-center justify-center gap-2 overflow-x-auto max-w-full py-0.5 px-2">
-                <!-- Miniaturas das fotos -->
+                        <!-- Área Central da Foto com Setas de Navegação -->
+                        <div class="relative w-full flex-1 flex items-center justify-center min-h-[220px] sm:min-h-0 my-1 overflow-hidden">
+                            <button type="button" id="gallery-btn-prev" onclick="app.prevGalleryImage()" title="Foto anterior" class="absolute left-1 sm:left-2 z-30 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gray-900/80 hover:bg-indigo-600 text-white flex items-center justify-center border border-gray-700 shadow-xl transition active:scale-90">
+                                <i class="fa-solid fa-chevron-left text-sm"></i>
+                            </button>
+
+                            <img id="view-image-full" src="" alt="Foto da Tarefa" class="max-w-full max-h-[46vh] sm:max-h-[52vh] md:max-h-[60vh] object-contain rounded-2xl shadow-2xl border border-gray-800/80 transition-all duration-150">
+
+                            <button type="button" id="gallery-btn-next" onclick="app.nextGalleryImage()" title="Próxima foto" class="absolute right-1 sm:right-2 z-30 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-gray-900/80 hover:bg-indigo-600 text-white flex items-center justify-center border border-gray-700 shadow-xl transition active:scale-90">
+                                <i class="fa-solid fa-chevron-right text-sm"></i>
+                            </button>
+                        </div>
+
+                        <!-- Miniaturas das fotos -->
+                        <div id="gallery-thumbnails-strip" class="flex items-center justify-center gap-1.5 overflow-x-auto max-w-full py-1 px-2 shrink-0 z-20">
+                            <!-- Miniaturas das fotos -->
+                        </div>
+                    </div>
+
+                    <!-- Se NÃO tiver fotos: Estado sem fotos -->
+                    <div id="view-task-no-photos" class="hidden flex-1 flex flex-col items-center justify-center p-6 text-center space-y-2 text-gray-500">
+                        <div class="w-14 h-14 rounded-2xl bg-gray-950/80 text-indigo-400 border border-gray-800 flex items-center justify-center text-2xl shadow-inner">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                        <p class="font-bold text-gray-300 text-sm">Nenhuma foto anexada</p>
+                        <p class="text-xs text-gray-500 max-w-xs">Esta tarefa não possui fotos registradas no momento.</p>
+                        <button type="button" onclick="app.editCurrentViewedTask()" class="mt-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-indigo-300 border border-gray-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95">
+                            <i class="fa-solid fa-plus text-xs"></i>
+                            <span>Adicionar Fotos</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- COLUNA DIREITA: CHAT DA TAREFA & DISCUSSÃO COM @ -->
+                <div id="view-task-chat-col" class="flex flex-col flex-1 min-w-0 bg-gray-950/80 overflow-hidden">
+                    <div class="flex items-center justify-between p-3 sm:p-3.5 border-b border-gray-800 shrink-0 bg-gray-900/60">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center text-xs border border-indigo-500/30">
+                                <i class="fa-solid fa-comments"></i>
+                            </div>
+                            <h4 class="text-xs font-bold text-gray-200">Chat & Discussão da Equipe</h4>
+                        </div>
+                        <span id="task-chat-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-950 border border-indigo-800 text-indigo-300 font-bold">0 msgs</span>
+                    </div>
+
+                    <!-- Feed de Mensagens -->
+                    <div id="task-chat-messages" class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 custom-scrollbar text-xs">
+                        <!-- Injetado via app.renderTaskChat() -->
+                    </div>
+
+                    <!-- Dropdown de Menção @ (Autocomplete Popover) -->
+                    <div id="task-mention-dropdown" class="hidden mx-3 mb-2 bg-gray-900 border border-indigo-500/50 rounded-xl p-1.5 shadow-2xl max-h-36 overflow-y-auto custom-scrollbar space-y-0.5 shrink-0">
+                        <!-- Injetado dinamicamente -->
+                    </div>
+
+                    <!-- Rodapé de Envio com pb-safe para celulares -->
+                    <div class="p-3 border-t border-gray-800 bg-gray-950 flex items-center gap-2 shrink-0 pb-safe">
+                        <button type="button" onclick="app.toggleMentionDropdown()" title="Mencionar Colaborador (@)" class="w-9 h-9 rounded-xl bg-gray-800 hover:bg-gray-750 text-indigo-400 font-black text-xs flex items-center justify-center transition border border-gray-700 active:scale-95 shrink-0">
+                            @
+                        </button>
+                        <input type="text" id="task-chat-input" onkeydown="app.handleChatKeyDown(event)" placeholder="Escreva uma mensagem... (@ para marcar)" class="flex-1 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition">
+                        <button type="button" onclick="app.sendTaskComment()" class="w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-xs shadow-md shadow-indigo-600/30 transition active:scale-95 shrink-0">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+
             </div>
-            <p class="text-[10px] text-gray-400 text-center pointer-events-none">
-                <span class="sm:hidden">👉 Deslize com o dedo para passar as fotos ou toque nas miniaturas</span>
-                <span class="hidden sm:inline">Use as setas do teclado (← / →) ou clique nos botões para navegar</span>
-            </p>
         </div>
     </div>
 
@@ -3063,11 +3104,18 @@
                 this.render();
             }
 
-            openModal(task = null) {
+            openModal(taskOrId = null) {
                 // Checa se o modo somente leitura para colaboradores está ativo
                 if (window.admin && admin.config && admin.config.adminOnlyCreate && (!auth.currentUser || !auth.currentUser.isAdmin)) {
                     alert("Aviso: Apenas os Administradores podem criar novas tarefas no momento.\nSe você é o Administrador, faça login com sua conta.");
                     return;
+                }
+
+                let task = null;
+                if (taskOrId && typeof taskOrId === 'object') {
+                    task = taskOrId;
+                } else if (taskOrId) {
+                    task = this.tasks.find(t => t.id == taskOrId) || null;
                 }
 
                 this.closeCamera();
@@ -3156,52 +3204,20 @@
             }
 
             // ==========================================
-            // MODAL DEDICADO DE CHAT DA TAREFA
+            // MODAL DEDICADO DE CHAT DA TAREFA (ROTEAMENTO)
             // ==========================================
             openTaskChat(taskId) {
                 if (!taskId) return;
-                const task = this.tasks.find(t => t.id == taskId);
-                if (!task) return;
-
-                this.currentChatTaskId = task.id;
-
-                const modal = document.getElementById('modal-task-chat');
-                if (!modal) return;
-
-                const titleEl = document.getElementById('task-chat-modal-title');
-                const subtitleEl = document.getElementById('task-chat-modal-subtitle');
-
-                if (titleEl) titleEl.innerText = task.title || 'Chat da Tarefa';
-                if (subtitleEl) subtitleEl.innerText = `Responsável: ${task.assignee || 'Equipe'}`;
-
-                this.renderTaskChat();
-
-                // Fecha modal de tarefa se estiver aberto
-                this.closeModal();
-
-                modal.classList.remove('hidden');
-                modal.style.display = 'flex';
-                modal.style.zIndex = '100001';
-
-                const input = document.getElementById('task-chat-input');
-                if (input) {
-                    setTimeout(() => input.focus(), 150);
-                }
+                this.openViewTask(taskId, 'chat');
             }
 
             closeTaskChat() {
-                const modal = document.getElementById('modal-task-chat');
-                if (modal) {
-                    modal.classList.add('hidden');
-                    modal.style.display = 'none';
-                }
-                const drop = document.getElementById('task-mention-dropdown');
-                if (drop) drop.classList.add('hidden');
+                this.closeViewTaskModal();
             }
 
             openTaskChatFromModal() {
                 if (this.currentChatTaskId) {
-                    this.openTaskChat(this.currentChatTaskId);
+                    this.openViewTask(this.currentChatTaskId, 'chat');
                 }
             }
 
@@ -3526,56 +3542,200 @@
                 }
             }
 
+            // ==========================================
+            // MODAL UNIFICADO: VISUALIZAR TAREFA
+            // (FOTOS + CHAT & DISCUSSÃO EQUIPE)
+            // ==========================================
+            openViewTask(taskIdOrTarget, initialTab = 'auto', initialIndex = 0) {
+                let task = null;
+                let images = [];
+                let title = 'Visualizar Tarefa';
+
+                if (taskIdOrTarget && typeof taskIdOrTarget === 'object' && !Array.isArray(taskIdOrTarget)) {
+                    task = taskIdOrTarget;
+                } else if (typeof taskIdOrTarget === 'string' || typeof taskIdOrTarget === 'number') {
+                    task = this.tasks.find(t => t.id == taskIdOrTarget);
+                    if (!task && (String(taskIdOrTarget).startsWith('data:') || String(taskIdOrTarget).startsWith('http') || String(taskIdOrTarget).startsWith('blob:') || String(taskIdOrTarget).startsWith('/'))) {
+                        images = [taskIdOrTarget];
+                    }
+                } else if (Array.isArray(taskIdOrTarget)) {
+                    images = [...taskIdOrTarget];
+                }
+
+                if (task) {
+                    this.currentViewTaskId = task.id;
+                    this.currentChatTaskId = task.id;
+                    title = task.title || 'Visualizar Tarefa';
+                    if (task.images && Array.isArray(task.images) && task.images.length > 0) {
+                        images = [...task.images];
+                    } else if (task.image) {
+                        images = [task.image];
+                    }
+                } else {
+                    this.currentViewTaskId = null;
+                    if (!this.currentChatTaskId) this.currentChatTaskId = null;
+                }
+
+                this.activeGalleryImages = images;
+                this.activeGalleryIndex = Math.max(0, Math.min(initialIndex, Math.max(0, images.length - 1)));
+                this.activeGalleryTitle = title;
+
+                // 1. Atualiza cabeçalho do modal
+                const titleEl = document.getElementById('view-task-title');
+                if (titleEl) titleEl.innerText = title;
+
+                const prioEl = document.getElementById('view-task-priority-badge');
+                if (prioEl) {
+                    if (task && task.priority) {
+                        prioEl.classList.remove('hidden');
+                        const p = (task.priority || '').toLowerCase();
+                        prioEl.innerText = p.toUpperCase();
+                        if (p === 'alta' || p === 'urgente') {
+                            prioEl.className = 'text-[10px] px-2 py-0.5 rounded uppercase font-bold shrink-0 bg-rose-500/20 text-rose-300 border border-rose-500/30';
+                        } else if (p === 'baixa') {
+                            prioEl.className = 'text-[10px] px-2 py-0.5 rounded uppercase font-bold shrink-0 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                        } else {
+                            prioEl.className = 'text-[10px] px-2 py-0.5 rounded uppercase font-bold shrink-0 bg-blue-500/20 text-blue-300 border border-blue-500/30';
+                        }
+                    } else {
+                        prioEl.classList.add('hidden');
+                    }
+                }
+
+                const assigneeEl = document.getElementById('view-task-assignee');
+                if (assigneeEl) {
+                    assigneeEl.innerText = `Responsável: ${task && task.assignee ? task.assignee : 'Equipe'}`;
+                }
+
+                const dateEl = document.getElementById('view-task-date');
+                if (dateEl) {
+                    dateEl.innerText = task && task.date ? task.date : 'Hoje';
+                }
+
+                const incBadge = document.getElementById('view-task-inc-badge');
+                if (incBadge) {
+                    if (task && (task.inconsistency || task.inconsistencyType || (task.inconsistencyData && task.inconsistencyData.reason))) {
+                        const reason = (task.inconsistencyData && task.inconsistencyData.reason) || task.inconsistencyType || (task.inconsistency && task.inconsistency.reason) || 'Ruptura';
+                        incBadge.innerText = reason;
+                        incBadge.classList.remove('hidden');
+                    } else {
+                        incBadge.classList.add('hidden');
+                    }
+                }
+
+                // 2. Seção de fotos
+                const photosContainer = document.getElementById('view-task-photos-container');
+                const noPhotosState = document.getElementById('view-task-no-photos');
+                const tabPhotosBadge = document.getElementById('tab-badge-photos-count');
+
+                if (tabPhotosBadge) tabPhotosBadge.innerText = `Fotos (${images.length})`;
+
+                if (images.length > 0) {
+                    if (photosContainer) photosContainer.classList.remove('hidden');
+                    if (noPhotosState) noPhotosState.classList.add('hidden');
+                    this.updateGalleryUI();
+                } else {
+                    if (photosContainer) photosContainer.classList.add('hidden');
+                    if (noPhotosState) noPhotosState.classList.remove('hidden');
+                }
+
+                // 3. Seção de chat
+                this.renderTaskChat();
+
+                // 4. Determina aba mobile ativa
+                let selectedTab = initialTab;
+                if (selectedTab === 'auto') {
+                    selectedTab = (images.length > 0) ? 'photos' : 'chat';
+                }
+                this.switchViewTaskTab(selectedTab);
+
+                // Fecha modal de edição se estivesse aberto
+                this.closeModal();
+
+                // Abre o modal unificado
+                const modal = document.getElementById('modal-view-task');
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.style.display = 'flex';
+                    modal.style.zIndex = '100001';
+                    try { history.pushState({ modal: 'view_task' }, ''); } catch(e) {}
+                }
+
+                if (selectedTab === 'chat') {
+                    const input = document.getElementById('task-chat-input');
+                    if (input) setTimeout(() => input.focus(), 150);
+                }
+            }
+
+            switchViewTaskTab(tab) {
+                const photosCol = document.getElementById('view-task-photos-col');
+                const chatCol = document.getElementById('view-task-chat-col');
+                const btnPhotos = document.getElementById('tab-btn-view-photos');
+                const btnChat = document.getElementById('tab-btn-view-chat');
+
+                if (tab === 'photos') {
+                    if (photosCol) {
+                        photosCol.className = 'flex flex-col flex-1 min-w-0 bg-black/60 relative overflow-hidden md:flex';
+                    }
+                    if (chatCol) {
+                        chatCol.className = 'hidden md:flex flex-col flex-1 min-w-0 bg-gray-950/80 overflow-hidden';
+                    }
+                    if (btnPhotos) {
+                        btnPhotos.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm';
+                    }
+                    if (btnChat) {
+                        btnChat.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-gray-400 hover:text-gray-200 bg-transparent';
+                    }
+                } else {
+                    // Chat tab
+                    if (photosCol) {
+                        photosCol.className = 'hidden md:flex flex-col flex-1 min-w-0 bg-black/60 relative overflow-hidden';
+                    }
+                    if (chatCol) {
+                        chatCol.className = 'flex flex-col flex-1 min-w-0 bg-gray-950/80 overflow-hidden md:flex';
+                    }
+                    if (btnPhotos) {
+                        btnPhotos.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-gray-400 hover:text-gray-200 bg-transparent';
+                    }
+                    if (btnChat) {
+                        btnChat.className = 'px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm';
+                    }
+                    const input = document.getElementById('task-chat-input');
+                    if (input) setTimeout(() => input.focus(), 150);
+                }
+            }
+
+            closeViewTaskModal() {
+                const modal = document.getElementById('modal-view-task');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                }
+                const drop = document.getElementById('task-mention-dropdown');
+                if (drop) drop.classList.add('hidden');
+                this.activeGalleryImages = [];
+                this.currentViewTaskId = null;
+            }
+
+            editCurrentViewedTask() {
+                const tid = this.currentViewTaskId;
+                this.closeViewTaskModal();
+                if (tid) {
+                    this.openModal(tid);
+                }
+            }
+
             viewFullImage(target) {
-                this.openGallery(target, 0);
+                this.openViewTask(target, 'photos', 0);
             }
 
             openGallery(target, initialIndex = 0) {
-                let images = [];
-                let title = 'Galeria de Fotos';
-
-                if (typeof target === 'string') {
-                    const task = this.tasks.find(t => t.id == target);
-                    if (task) {
-                        title = task.title || 'Foto da Tarefa';
-                        if (task.images && Array.isArray(task.images) && task.images.length > 0) {
-                            images = [...task.images];
-                        } else if (task.image) {
-                            images = [task.image];
-                        }
-                    } else if (target.startsWith('data:') || target.startsWith('http') || target.startsWith('blob:') || target.startsWith('/')) {
-                        images = [target];
-                    }
-                } else if (Array.isArray(target)) {
-                    images = [...target];
-                } else if (target && typeof target === 'object') {
-                    if (target.images && Array.isArray(target.images)) images = [...target.images];
-                    else if (target.image) images = [target.image];
-                    if (target.title) title = target.title;
-                }
-
-                if (!images || images.length === 0) return;
-
-                this.activeGalleryImages = images;
-                this.activeGalleryIndex = Math.max(0, Math.min(initialIndex, images.length - 1));
-                this.activeGalleryTitle = title;
-
-                const modal = document.getElementById('modal-view-image');
-                if (modal) {
-                    modal.style.zIndex = '100002';
-                    modal.classList.remove('hidden');
-                    modal.style.display = 'flex';
-                    this.updateGalleryUI();
-                    try { history.pushState({ modal: 'photo_gallery' }, ''); } catch(e) {}
-                }
+                this.openViewTask(target, 'photos', initialIndex);
             }
 
             openTaskPhotosGallery(initialIndex = 0) {
                 if (this.currentTaskPhotos && this.currentTaskPhotos.length > 0) {
-                    const taskTitle = document.getElementById('task-title') ? document.getElementById('task-title').value : 'Nova Tarefa';
-                    this.openGallery(this.currentTaskPhotos, initialIndex);
-                    if (this.activeGalleryTitle) this.activeGalleryTitle = taskTitle || 'Fotos da Tarefa';
-                    this.updateGalleryUI();
+                    this.openViewTask(this.currentTaskPhotos, 'photos', initialIndex);
                 }
             }
 
@@ -3588,8 +3748,8 @@
                 const img = document.getElementById('view-image-full');
                 if (img) img.src = currentSrc;
 
-                const titleEl = document.getElementById('gallery-task-title');
-                if (titleEl) titleEl.innerText = this.activeGalleryTitle || 'Foto da Tarefa';
+                const titleEl = document.getElementById('view-task-title') || document.getElementById('gallery-task-title');
+                if (titleEl && this.activeGalleryTitle) titleEl.innerText = this.activeGalleryTitle;
 
                 const badgeEl = document.getElementById('gallery-counter-badge');
                 if (badgeEl) badgeEl.innerText = `${idx + 1} de ${total}`;
@@ -3632,12 +3792,7 @@
             }
 
             closeFullImage() {
-                const modal = document.getElementById('modal-view-image');
-                if (modal) {
-                    modal.classList.add('hidden');
-                    modal.style.display = 'none';
-                }
-                this.activeGalleryImages = [];
+                this.closeViewTaskModal();
             }
 
             // ==========================================
@@ -3659,6 +3814,8 @@
                         </div>
                     `;
                     if (badge) badge.innerText = '0 msg';
+                    const tabBadgeChat = document.getElementById('tab-badge-chat-count');
+                    if (tabBadgeChat) tabBadgeChat.innerText = 'Chat (0)';
                     return;
                 }
 
@@ -3667,6 +3824,8 @@
 
                 const comments = task.comments || [];
                 if (badge) badge.innerText = `${comments.length} msg${comments.length !== 1 ? 's' : ''}`;
+                const tabBadgeChat = document.getElementById('tab-badge-chat-count');
+                if (tabBadgeChat) tabBadgeChat.innerText = `Chat (${comments.length})`;
 
                 if (comments.length === 0) {
                     container.innerHTML = `
@@ -4243,7 +4402,7 @@
                                         </span>
                                     ` : ''}
                                     ${commentsCount > 0 ? `
-                                        <button type="button" onclick="app.openTaskChat('${t.id}')" title="Ver conversa da tarefa" class="bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-800/80 text-indigo-300 px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 transition">
+                                        <button type="button" onclick="app.openViewTask('${t.id}', 'chat')" title="Ver fotos e mensagens da tarefa" class="bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-800/80 text-indigo-300 px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 transition">
                                             <i class="fa-solid fa-comments text-[9px]"></i>
                                             <span>${commentsCount}</span>
                                         </button>
@@ -4255,12 +4414,12 @@
                         </div>
                         <div class="flex items-center gap-2 shrink-0 self-center">
                             ${photos.length > 0 ? `
-                                <div class="relative inline-block cursor-pointer" onclick="app.openGallery('${t.id}', 0)" title="Ver ${photos.length > 1 ? `todas as ${photos.length} fotos` : 'foto'}">
+                                <div class="relative inline-block cursor-pointer" onclick="app.openViewTask('${t.id}', 'photos', 0)" title="Ver ${photos.length > 1 ? `todas as ${photos.length} fotos` : 'foto'}">
                                     <img src="${photos[0]}" class="w-9 h-9 object-cover rounded-xl border border-gray-700 shrink-0 hover:border-indigo-400 hover:scale-105 active:scale-95 transition shadow-sm">
                                     ${photos.length > 1 ? `<span class="absolute -bottom-1 -right-1 bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow border border-indigo-400 leading-tight flex items-center gap-0.5"><i class="fa-solid fa-images text-[8px]"></i>+${photos.length - 1}</span>` : ''}
                                 </div>
                             ` : ''}
-                            <button onclick="app.openTaskChat('${t.id}')" title="Abrir Chat da Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-300 hover:bg-gray-800 transition active:scale-95">
+                            <button onclick="app.openViewTask('${t.id}', 'chat')" title="Visualizar Tarefa e Mensagens" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-indigo-300 hover:bg-gray-800 transition active:scale-95">
                                 <i class="fa-solid fa-comments text-xs"></i>
                             </button>
                             <button onclick='app.openModal(${safeTaskJson})' title="Editar Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition active:scale-95">
@@ -10778,14 +10937,14 @@
                 return;
             }
 
-            // 1. Fecha modal de foto em tela cheia se estiver aberto
-            const photoModal = document.getElementById('modal-view-image');
-            if (photoModal && !photoModal.classList.contains('hidden') && photoModal.style.display !== 'none') {
-                if (window.app && typeof window.app.closeFullImage === 'function') {
-                    window.app.closeFullImage();
+            // 1. Fecha modal unificado de Visualizar Tarefa (fotos + chat)
+            const viewTaskModal = document.getElementById('modal-view-task');
+            if (viewTaskModal && !viewTaskModal.classList.contains('hidden') && viewTaskModal.style.display !== 'none') {
+                if (window.app && typeof window.app.closeViewTaskModal === 'function') {
+                    window.app.closeViewTaskModal();
                 } else {
-                    photoModal.classList.add('hidden');
-                    photoModal.style.display = 'none';
+                    viewTaskModal.classList.add('hidden');
+                    viewTaskModal.style.display = 'none';
                 }
                 return true;
             }
@@ -10954,14 +11113,20 @@
         // NAVEGAÇÃO DE FOTOS POR TECLADO E GESTO SWIPE MOBILE
         // ==========================================
         window.addEventListener('keydown', function(e) {
-            const photoModal = document.getElementById('modal-view-image');
-            if (photoModal && !photoModal.classList.contains('hidden') && photoModal.style.display !== 'none') {
+            const viewModal = document.getElementById('modal-view-task');
+            if (viewModal && !viewModal.classList.contains('hidden') && viewModal.style.display !== 'none') {
+                if (e.target && e.target.id === 'task-chat-input') {
+                    if (e.key === 'Escape') {
+                        if (window.app) window.app.closeViewTaskModal();
+                    }
+                    return;
+                }
                 if (e.key === 'ArrowLeft') {
                     if (window.app) window.app.prevGalleryImage();
                 } else if (e.key === 'ArrowRight') {
                     if (window.app) window.app.nextGalleryImage();
                 } else if (e.key === 'Escape') {
-                    if (window.app) window.app.closeFullImage();
+                    if (window.app) window.app.closeViewTaskModal();
                 }
             }
         });
@@ -10969,16 +11134,16 @@
         (function setupGalleryTouchSwipe() {
             let touchStartX = 0;
             let touchEndX = 0;
-            const modal = document.getElementById('modal-view-image');
-            if (!modal) return;
+            const container = document.getElementById('view-task-photos-container');
+            if (!container) return;
 
-            modal.addEventListener('touchstart', (e) => {
+            container.addEventListener('touchstart', (e) => {
                 if (e.changedTouches && e.changedTouches[0]) {
                     touchStartX = e.changedTouches[0].screenX;
                 }
             }, { passive: true });
 
-            modal.addEventListener('touchend', (e) => {
+            container.addEventListener('touchend', (e) => {
                 if (e.changedTouches && e.changedTouches[0]) {
                     touchEndX = e.changedTouches[0].screenX;
                     const diff = touchEndX - touchStartX;
