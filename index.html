@@ -12136,16 +12136,53 @@
                 const sheetId = this.sheetId || this.defaultSheetId;
                 if (!sheetId) throw new Error('ID da planilha não configurado');
 
-                const gvizUrl = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json&sheet=Diaria&t=' + Date.now();
-                const res = await fetch(gvizUrl);
-                if (!res.ok) throw new Error('HTTP ' + res.status + ' ao acessar Google Sheets');
-                const text = await res.text();
-                const m = text.match(/google\.visualization\.Query\.setResponse\((.*)\);?/s);
-                if (!m) throw new Error('Resposta inválida do Google Sheets');
-                const json = JSON.parse(m[1]);
-                if (!json || !json.table || !json.table.rows) throw new Error('Dados da planilha incompletos');
+                const gvizUrlDiaria = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json&sheet=Diaria&t=' + Date.now();
+                const gvizUrlBanco = 'https://docs.google.com/spreadsheets/d/' + sheetId + '/gviz/tq?tqx=out:json&sheet=Banco%20de%20Dados&t=' + Date.now();
 
-                const rows = json.table.rows;
+                const [resDiaria, resBanco] = await Promise.all([
+                    fetch(gvizUrlDiaria),
+                    fetch(gvizUrlBanco).catch(err => {
+                        console.warn('[Schedule] Erro ao carregar aba Banco de Dados:', err);
+                        return null;
+                    })
+                ]);
+
+                if (!resDiaria.ok) throw new Error('HTTP ' + resDiaria.status + ' ao acessar Google Sheets (Diária)');
+                const textDiaria = await resDiaria.text();
+                const mDiaria = textDiaria.match(/google\.visualization\.Query\.setResponse\((.*)\);?/s);
+                if (!mDiaria) throw new Error('Resposta inválida do Google Sheets (Diária)');
+                const jsonDiaria = JSON.parse(mDiaria[1]);
+                if (!jsonDiaria || !jsonDiaria.table || !jsonDiaria.table.rows) throw new Error('Dados da planilha incompletos');
+
+                const rows = jsonDiaria.table.rows;
+
+                // Processa colaboradores do Banco de Dados
+                const colaboradores = [];
+                if (resBanco && resBanco.ok) {
+                    try {
+                        const textBanco = await resBanco.text();
+                        const mBanco = textBanco.match(/google\.visualization\.Query\.setResponse\((.*)\);?/s);
+                        if (mBanco) {
+                            const jsonBanco = JSON.parse(mBanco[1]);
+                            const bRows = jsonBanco?.table?.rows || [];
+                            bRows.forEach(r => {
+                                const getVal = (idx) => (r.c && r.c[idx]) ? (r.c[idx].f || r.c[idx].v || '') : '';
+                                const bNome = String(getVal(0)).trim();
+                                if (bNome && bNome.toUpperCase() !== 'NOME') {
+                                    colaboradores.push({
+                                        nome: bNome,
+                                        escala: String(getVal(1)).trim(),
+                                        folga: String(getVal(2)).trim(),
+                                        cracha: String(getVal(3)).trim(),
+                                        departamento: String(getVal(4)).trim()
+                                    });
+                                }
+                            });
+                        }
+                    } catch (eBanco) {
+                        console.warn('[Schedule] Falha no parse do Banco de Dados:', eBanco);
+                    }
+                }
 
                 const diasConfig = [
                     { nome: 'Segunda', colDept: 1,  colNome: 2,  colEsc: 3,  colEnt: 4,  colIni: 5,  colRet: 6,  colSai: 7,  colBnc: 8,  colData: 3,  colLetra: 'C' },
@@ -12175,7 +12212,7 @@
                     return s;
                 };
 
-                const result = { success: true, dias: {}, atualizadoEm: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR') };
+                const result = { success: true, dias: {}, colaboradores, atualizadoEm: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR') };
 
                 diasConfig.forEach(cfg => {
                     const dataStr = getCell(0, cfg.colData);
@@ -12464,8 +12501,11 @@
                     statusEl.className = "text-xs px-2.5 py-1 rounded-xl font-bold bg-teal-950 text-teal-300 border border-teal-800";
                 }
 
+                const hideFolgasCheckbox = document.getElementById('modal-sched-hide-folgas');
+                if (hideFolgasCheckbox) hideFolgasCheckbox.checked = true;
+
                 document.getElementById('modal-sched-collab-name').value = isVago ? '' : nome;
-                this.populateCollabSelect(isVago ? '' : nome);
+                this.populateCollabSelect(isVago ? '' : nome, dia);
 
                 // Configura campos de Inconsistência e Justificativa
                 const incCheck = document.getElementById('modal-sched-inconsistency-check');
@@ -12497,33 +12537,96 @@
                 }
             }
 
-            populateCollabSelect(selectedName = '') {
+            refreshCollabSelectFilter() {
+                const dia = document.getElementById('modal-sched-dia')?.value || this.currentDay;
+                const selectedName = document.getElementById('modal-sched-collab-name')?.value || '';
+                this.populateCollabSelect(selectedName, dia);
+            }
+
+            populateCollabSelect(selectedName = '', dia = '') {
                 const select = document.getElementById('modal-sched-collab-select');
                 if (!select) return;
+
+                dia = dia || document.getElementById('modal-sched-dia')?.value || this.currentDay;
+                const norm = s => String(s || '').toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                const diaTarget = norm(dia);
+
+                const diaInfo = this.data && this.data.dias ? this.data.dias[dia] : null;
+                const folgasDoDia = (diaInfo && diaInfo.folgas) ? diaInfo.folgas.map(f => norm(f.nome)) : [];
+
+                const isFolgaHoje = (c) => {
+                    if (norm(c.folga) === diaTarget) return true;
+                    const cNorm = norm(c.nome);
+                    if (folgasDoDia.some(f => f.includes(cNorm) || cNorm.includes(f))) return true;
+                    return false;
+                };
+
+                const hideFolgasEl = document.getElementById('modal-sched-hide-folgas');
+                const hideFolgas = hideFolgasEl ? hideFolgasEl.checked : true;
 
                 select.innerHTML = '<option value="">-- Selecione um colaborador cadastrado --</option>';
 
                 // 1. Colaboradores do Banco de Dados da Planilha
-                const colabsSheet = (this.data && this.data.colaboradores) ? this.data.colaboradores : [];
+                const colabsSheet = (this.data && this.data.colaboradores && this.data.colaboradores.length > 0) 
+                    ? this.data.colaboradores 
+                    : [];
+
                 if (colabsSheet.length > 0) {
-                    const optGroupSheet = document.createElement('optgroup');
-                    optGroupSheet.label = "Colaboradores do Banco de Dados";
+                    const disponiveis = [];
+                    const emFolga = [];
+
                     colabsSheet.forEach(c => {
+                        if (isFolgaHoje(c)) {
+                            emFolga.push(c);
+                        } else {
+                            disponiveis.push(c);
+                        }
+                    });
+
+                    // Grupo 1: Colaboradores Disponíveis para o dia
+                    const optGroupDisp = document.createElement('optgroup');
+                    optGroupDisp.label = `Disponíveis na ${dia} (${disponiveis.length})`;
+
+                    disponiveis.forEach(c => {
                         const opt = document.createElement('option');
                         opt.value = c.nome;
-                        const deptoLabel = c.departamento ? ` [${c.departamento}]` : '';
-                        opt.textContent = c.nome + deptoLabel + (c.escala ? ' (' + c.escala + ')' : '') + (c.folga ? ' - Folga ' + c.folga : '');
+                        const escBadge = c.escala ? ` • ${c.escala}` : '';
+                        const deptoBadge = c.departamento ? ` [${c.departamento}]` : '';
+                        opt.textContent = `${c.nome}${escBadge}${deptoBadge}`;
                         if (c.nome.toUpperCase() === String(selectedName).toUpperCase()) opt.selected = true;
-                        optGroupSheet.appendChild(opt);
+                        optGroupDisp.appendChild(opt);
                     });
-                    select.appendChild(optGroupSheet);
+                    select.appendChild(optGroupDisp);
+
+                    // Grupo 2: Colaboradores em Folga
+                    if (!hideFolgas && emFolga.length > 0) {
+                        const optGroupFolga = document.createElement('optgroup');
+                        optGroupFolga.label = `🏖️ Em Folga na ${dia} (${emFolga.length}) [Indisponíveis]`;
+                        emFolga.forEach(c => {
+                            const opt = document.createElement('option');
+                            opt.value = c.nome;
+                            const escBadge = c.escala ? ` • ${c.escala}` : '';
+                            opt.textContent = `🏖️ ${c.nome}${escBadge} (Folga ${c.folga || dia})`;
+                            if (c.nome.toUpperCase() === String(selectedName).toUpperCase()) opt.selected = true;
+                            optGroupFolga.appendChild(opt);
+                        });
+                        select.appendChild(optGroupFolga);
+                    } else if (hideFolgas && emFolga.some(c => c.nome.toUpperCase() === String(selectedName).toUpperCase())) {
+                        // Se o colaborador atualmente alocado estiver de folga, exibe-o com alerta para não perder a seleção
+                        const c = emFolga.find(c => c.nome.toUpperCase() === String(selectedName).toUpperCase());
+                        const optCurrent = document.createElement('option');
+                        optCurrent.value = c.nome;
+                        optCurrent.textContent = `⚠️ ${c.nome} • ${c.escala} (ALOCADO EM FOLGA HOJE)`;
+                        optCurrent.selected = true;
+                        select.appendChild(optCurrent);
+                    }
                 }
 
                 // 2. Colaboradores cadastrados no app TaskFlow
                 const teamUsers = JSON.parse(localStorage.getItem('taskflow_users') || '[]');
                 if (teamUsers.length > 0) {
                     const optGroupApp = document.createElement('optgroup');
-                    optGroupApp.label = "Usuários do TaskFlow";
+                    optGroupApp.label = "Usuários Cadastrados no TaskFlow";
                     teamUsers.forEach(u => {
                         const opt = document.createElement('option');
                         opt.value = u.name;
@@ -13766,8 +13869,17 @@
 
                 <!-- Seleção Rápida de Colaboradores do Banco de Dados -->
                 <div>
-                    <label class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">Escolher Colaborador do Banco de Dados</label>
-                    <select id="modal-sched-collab-select" onchange="scheduleApp.onSelectCollabChange(this.value)" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-teal-500 transition">
+                    <div class="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                        <label class="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-users text-teal-400"></i>
+                            <span>Escolher Colaborador do Banco de Dados</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-teal-300 font-semibold cursor-pointer select-none transition" title="Quando marcado, oculta colaboradores cuja folga coincide com o dia atual">
+                            <input type="checkbox" id="modal-sched-hide-folgas" checked onchange="scheduleApp.refreshCollabSelectFilter()" class="rounded border-gray-700 bg-gray-950 text-teal-500 focus:ring-0 cursor-pointer">
+                            <span>Ocultar folgas hoje</span>
+                        </label>
+                    </div>
+                    <select id="modal-sched-collab-select" onchange="scheduleApp.onSelectCollabChange(this.value)" class="w-full bg-gray-950 border border-gray-700 hover:border-teal-400 rounded-xl px-3 py-2.5 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-teal-500 transition">
                         <!-- Preenchido via scheduleApp.populateCollabSelect() -->
                     </select>
                 </div>
