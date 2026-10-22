@@ -1433,6 +1433,17 @@
                         <button type="button" onclick="scheduleApp.setFilter('assigned')" id="sched-filter-assigned" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-gray-900 text-gray-300 hover:text-white border border-gray-700 cursor-pointer">
                             <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i> Alocados
                         </button>
+                        <!-- Alternador de Visualização (Cards Mobile vs Planilha) -->
+                        <div class="inline-flex items-center p-1 rounded-xl bg-gray-900/90 border border-gray-700 shrink-0 shadow-sm" id="sched-view-mode-container" title="Alternar formato de visualização">
+                            <button type="button" onclick="scheduleApp.setViewMode('cards')" id="sched-view-cards" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-teal-600 text-white shadow">
+                                <i class="fa-solid fa-id-card text-xs"></i>
+                                <span>Cards</span>
+                            </button>
+                            <button type="button" onclick="scheduleApp.setViewMode('table')" id="sched-view-table" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer text-gray-400 hover:text-white">
+                                <i class="fa-solid fa-table-cells text-xs"></i>
+                                <span>Planilha</span>
+                            </button>
+                        </div>
                         <!-- Filtro de Departamento / Setor Customizado (100% Dark & Legível em Qualquer Sistema) -->
                         <div class="relative shrink-0 z-30" id="sched-dept-dropdown-wrapper">
                             <button type="button" 
@@ -11580,6 +11591,8 @@
                 }
                 localStorage.setItem('taskflow_schedule_sheet_id', this.sheetId);
                 this.currentDay = this.getTodayDayName();
+                const savedViewMode = localStorage.getItem('taskflow_schedule_view_mode');
+                this.viewMode = savedViewMode || (window.innerWidth < 768 ? 'cards' : 'table');
                 this.currentFilter = 'all';
                 this.currentDeptFilter = 'all';
                 this.searchQuery = '';
@@ -12813,6 +12826,22 @@
                 }
             }
 
+            setViewMode(mode) {
+                this.viewMode = mode;
+                try { localStorage.setItem('taskflow_schedule_view_mode', mode); } catch(e) {}
+                this.updateViewModeButtons();
+                this.renderSlots();
+            }
+
+            updateViewModeButtons() {
+                const btnCards = document.getElementById('sched-view-cards');
+                const btnTable = document.getElementById('sched-view-table');
+                const activeCls = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-teal-600 text-white shadow';
+                const inactiveCls = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer text-gray-400 hover:text-white';
+                if (btnCards) btnCards.className = (this.viewMode === 'cards' ? activeCls : inactiveCls);
+                if (btnTable) btnTable.className = (this.viewMode === 'table' ? activeCls : inactiveCls);
+            }
+
             renderSlots() {
                 const container = document.getElementById('schedule-slots-grid');
                 if (!container) return;
@@ -12870,7 +12899,8 @@
                     return;
                 }
 
-                container.innerHTML = this.buildSheetTable(slots);
+                container.innerHTML = (this.viewMode === 'cards') ? this.buildCardsView(slots) : this.buildSheetTable(slots);
+                this.updateViewModeButtons();
             }
 
             // ================= VISUALIZAÇÃO ESTILO PLANILHA =================
@@ -12962,6 +12992,129 @@
                 return '<span class="inline-block px-1.5 py-0.5 rounded-md border text-[10px] font-bold tracking-wide ' + cls + '">' + this.escHtml(e) + '</span>';
             }
 
+            buildCardsView(slots) {
+                const dia = this.currentDay;
+                const diaInfo = (this.data && this.data.dias) ? this.data.dias[dia] : null;
+                const dataStr = diaInfo && diaInfo.data ? diaInfo.data : '';
+                const canEdit = this.canUserEdit();
+                const editTimes = canEdit;
+
+                const grupos = [
+                    { key: 'reposicao', titulo: 'Escala da Reposição' },
+                    { key: 'lideranca', titulo: 'Liderança Operacional e Monitoria' }
+                ];
+
+                let html = '<div class="space-y-4">';
+
+                grupos.forEach(g => {
+                    const rows = slots.filter(s => (s.grupo || 'reposicao') === g.key);
+                    if (rows.length === 0) return;
+
+                    html += '<div class="space-y-2.5">' +
+                        '<div class="flex items-center justify-between px-1.5 py-1">' +
+                            '<h4 class="text-xs font-extrabold uppercase tracking-wider text-teal-300 flex items-center gap-1.5">' +
+                                '<i class="fa-solid fa-users text-teal-400"></i>' +
+                                '<span>' + g.titulo + '</span>' +
+                                (dataStr ? '<span class="text-gray-400 font-semibold">— ' + this.escHtml(dataStr) + '</span>' : '') +
+                            '</h4>' +
+                            '<span class="text-[10px] text-gray-500 font-bold bg-gray-900 border border-gray-800 px-2 py-0.5 rounded-full">' + rows.length + ' postos</span>' +
+                        '</div>' +
+                        '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">';
+
+                    rows.forEach((s) => {
+                        const isVacant = !!s.isVago;
+                        const depto = s.departamento !== undefined ? s.departamento : (this.getSlotDepartmentInfo(s, dia).sector || '');
+                        const nomeSafe = (s.nome || '').replace(/'/g, "\\'");
+                        const horSafe = (s.horario || '').replace(/'/g, "\\'");
+                        const openModal = 'scheduleApp.openEditSlotModal(\'' + dia + '\', ' + s.linha + ', \'' + s.colunaLetra + '\', \'' + this.escHtml(nomeSafe) + '\', \'' + this.escHtml(horSafe) + '\', ' + isVacant + ')';
+
+                        const cardBorder = isVacant 
+                            ? 'border-rose-900/60 bg-gradient-to-br from-rose-950/25 to-gray-900/90' 
+                            : 'border-gray-800/80 bg-gradient-to-br from-gray-900/95 to-gray-950/95';
+                        const saida = s.saida || this.computeSaida(s, dia);
+
+                        html += '<div id="schedule-slot-card-' + s.linha + '" class="rounded-2xl p-3 border ' + cardBorder + ' shadow-lg flex flex-col justify-between gap-2.5 transition hover:border-gray-700 relative">' +
+                            // Cabeçalho da Ficha: Departamento, Escala Chip e Linha Real
+                            '<div class="flex items-center justify-between gap-1.5">' +
+                                '<div class="flex items-center gap-1.5 min-w-0 flex-wrap">' +
+                                    '<span class="px-2 py-0.5 rounded-md bg-teal-950/70 border border-teal-800/50 text-teal-300 font-extrabold text-[10px] uppercase tracking-wider truncate max-w-[140px]">' + this.escHtml(depto || 'GERAL') + '</span>' +
+                                    this.escalaChip(s.escala) +
+                                '</div>' +
+                                '<span class="px-1.5 py-0.5 rounded bg-gray-950 border border-gray-800 text-[10px] font-mono text-gray-400 font-bold shrink-0" title="Linha ' + s.linha + ' na planilha do Google">L' + s.linha + '</span>' +
+                            '</div>' +
+
+                            // Nome do Colaborador (botão para editar)
+                            '<div class="flex items-center justify-between gap-2">' +
+                                (isVacant 
+                                    ? '<button type="button" onclick="' + openModal + '" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs tracking-wide shadow cursor-pointer active:scale-95 transition"><i class="fa-solid fa-triangle-exclamation text-[10px]"></i> VAGA ABERTA <i class="fa-solid fa-plus text-[9px]"></i></button>'
+                                    : '<button type="button" onclick="' + openModal + '" class="group flex items-center gap-1.5 text-left cursor-pointer hover:underline decoration-teal-400 truncate" title="Substituir colaborador">' +
+                                        '<span class="font-bold text-sm text-white group-hover:text-teal-200 truncate">' + this.escHtml(s.nome) + '</span>' +
+                                        '<i class="fa-solid fa-pen text-gray-500 group-hover:text-teal-300 text-[10px]"></i>' +
+                                      '</button>') +
+                            '</div>' +
+
+                            // Grade dos 4 campos de horários (Entrada, Início Alm, Retorno Alm, Banco)
+                            '<div class="bg-gray-950/70 rounded-xl p-2 border border-gray-800/60 grid grid-cols-4 gap-1.5 text-center">' +
+                                // Entrada
+                                '<div>' +
+                                    '<label class="block text-[9px] font-extrabold uppercase text-gray-400 mb-0.5">Entrada</label>' +
+                                    (editTimes 
+                                        ? '<input type="text" inputmode="numeric" autocomplete="off" maxlength="5" value="' + this.escHtml(s.entrada || '') + '" placeholder="--:--" ' +
+                                          'data-dia="' + this.escHtml(dia) + '" data-linha="' + s.linha + '" data-campo="entrada" data-old="' + this.escHtml(s.entrada || '') + '" ' +
+                                          'onfocus="this.select()" oninput="scheduleApp.previewSaidaInline(this)" onkeydown="if(event.key===\'Enter\'){this.blur();}" onchange="scheduleApp.saveCellInline(this)" ' +
+                                          'class="sched-cell-input w-full bg-gray-900 border border-gray-700 hover:border-gray-500 focus:border-teal-400 rounded-lg py-1 px-0.5 text-center font-mono text-xs font-bold text-white placeholder-gray-600 focus:outline-none transition">'
+                                        : '<span class="text-xs font-mono font-bold text-gray-200">' + (s.entrada || '—') + '</span>') +
+                                '</div>' +
+                                // Início Almoço
+                                '<div>' +
+                                    '<label class="block text-[9px] font-extrabold uppercase text-gray-400 mb-0.5">Início Alm.</label>' +
+                                    (editTimes 
+                                        ? '<input type="text" inputmode="numeric" autocomplete="off" maxlength="5" value="' + this.escHtml(s.inicioAlmoco || '') + '" placeholder="--:--" ' +
+                                          'data-dia="' + this.escHtml(dia) + '" data-linha="' + s.linha + '" data-campo="inicioAlmoco" data-old="' + this.escHtml(s.inicioAlmoco || '') + '" ' +
+                                          'onfocus="this.select()" oninput="scheduleApp.previewSaidaInline(this)" onkeydown="if(event.key===\'Enter\'){this.blur();}" onchange="scheduleApp.saveCellInline(this)" ' +
+                                          'class="sched-cell-input w-full bg-gray-900 border border-gray-700 hover:border-gray-500 focus:border-teal-400 rounded-lg py-1 px-0.5 text-center font-mono text-xs font-bold text-white placeholder-gray-600 focus:outline-none transition">'
+                                        : '<span class="text-xs font-mono font-bold text-gray-200">' + (s.inicioAlmoco || '—') + '</span>') +
+                                '</div>' +
+                                // Retorno Almoço
+                                '<div>' +
+                                    '<label class="block text-[9px] font-extrabold uppercase text-gray-400 mb-0.5">Retorno</label>' +
+                                    (editTimes 
+                                        ? '<input type="text" inputmode="numeric" autocomplete="off" maxlength="5" value="' + this.escHtml(s.retornoAlmoco || '') + '" placeholder="--:--" ' +
+                                          'data-dia="' + this.escHtml(dia) + '" data-linha="' + s.linha + '" data-campo="retornoAlmoco" data-old="' + this.escHtml(s.retornoAlmoco || '') + '" ' +
+                                          'onfocus="this.select()" oninput="scheduleApp.previewSaidaInline(this)" onkeydown="if(event.key===\'Enter\'){this.blur();}" onchange="scheduleApp.saveCellInline(this)" ' +
+                                          'class="sched-cell-input w-full bg-gray-900 border border-gray-700 hover:border-gray-500 focus:border-teal-400 rounded-lg py-1 px-0.5 text-center font-mono text-xs font-bold text-white placeholder-gray-600 focus:outline-none transition">'
+                                        : '<span class="text-xs font-mono font-bold text-gray-200">' + (s.retornoAlmoco || '—') + '</span>') +
+                                '</div>' +
+                                // Banco de Horas
+                                '<div>' +
+                                    '<label class="block text-[9px] font-extrabold uppercase text-gray-400 mb-0.5">Banco</label>' +
+                                    (editTimes 
+                                        ? '<input type="text" autocomplete="off" maxlength="6" value="' + this.escHtml(s.banco || '') + '" placeholder="±0:00" ' +
+                                          'data-dia="' + this.escHtml(dia) + '" data-linha="' + s.linha + '" data-campo="banco" data-old="' + this.escHtml(s.banco || '') + '" ' +
+                                          'onfocus="this.select()" oninput="scheduleApp.previewSaidaInline(this)" onkeydown="if(event.key===\'Enter\'){this.blur();}" onchange="scheduleApp.saveCellInline(this)" ' +
+                                          'class="sched-cell-input w-full bg-gray-900 border border-gray-700 hover:border-gray-500 focus:border-teal-400 rounded-lg py-1 px-0.5 text-center font-mono text-xs font-bold ' + this.bancoClass(s.banco) + ' placeholder-gray-600 focus:outline-none transition">'
+                                        : '<span class="text-xs font-mono font-bold ' + this.bancoClass(s.banco) + '">' + (s.banco || '±0:00') + '</span>') +
+                                '</div>' +
+                            '</div>' +
+
+                            // Rodapé da Ficha: Saída Calculada
+                            '<div class="flex items-center justify-between text-xs pt-1 border-t border-gray-800/40">' +
+                                '<span class="text-gray-400 text-[11px] font-semibold flex items-center gap-1">' +
+                                    '<i class="fa-solid fa-lock text-[9px] text-gray-500"></i>' +
+                                    '<span>Saída Calculada:</span>' +
+                                '</span>' +
+                                '<span id="sched-saida-' + s.linha + '" class="font-mono font-extrabold text-sm text-teal-300 bg-teal-950/60 border border-teal-800/60 px-2 py-0.5 rounded-lg">' + (saida ? this.escHtml(saida) : '—') + '</span>' +
+                            '</div>' +
+                        '</div>';
+                    });
+
+                    html += '</div></div>';
+                });
+
+                html += '</div>';
+                return html;
+            }
+
             buildSheetTable(slots) {
                 const dia = this.currentDay;
                 const diaInfo = (this.data && this.data.dias) ? this.data.dias[dia] : null;
@@ -13000,10 +13153,11 @@
                         '<div class="px-3 py-2 border-b border-gray-800 flex items-center justify-between gap-2 bg-gray-900">' +
                         '<h4 class="text-xs font-extrabold uppercase tracking-wider text-teal-300">' + g.titulo + (dataStr ? ' <span class="text-gray-400 font-semibold">— ' + this.escHtml(dataStr) + '</span>' : '') + '</h4>' +
                         '<span class="text-[10px] text-gray-500">' + rows.length + ' linha(s)</span></div>' +
+                        '<div class="md:hidden px-3 py-1.5 bg-gray-950 border-b border-gray-800 text-[11px] text-gray-400 flex items-center justify-between"><span>↔️ Arraste p/ ver horários</span><button type="button" onclick="scheduleApp.setViewMode(\'cards\')" class="text-teal-400 font-bold hover:underline">Ver em Cards 📱</button></div>' +
                         '<div class="overflow-x-auto custom-scrollbar"><table class="w-full min-w-[760px] text-xs border-collapse">' +
                         '<thead><tr class="bg-gray-950 text-[10px] uppercase tracking-wider text-gray-400">' +
                         '<th class="px-2 py-2 text-left font-bold">Departamento</th>' +
-                        '<th class="px-2 py-2 text-left font-bold sticky left-0 bg-gray-950 z-10">Nome</th>' +
+                        '<th class="px-2 py-2 text-left font-bold sticky left-0 bg-gray-950 z-10 max-w-[125px] sm:max-w-none truncate">Nome</th>' +
                         '<th class="px-1.5 py-2 text-center font-bold">Escala</th>' +
                         '<th class="px-1.5 py-2 text-center font-bold">Entrada</th>' +
                         '<th class="px-1.5 py-2 text-center font-bold">Início Alm.</th>' +
