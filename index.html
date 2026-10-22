@@ -12767,8 +12767,8 @@
                 const diaInfo = (this.data && this.data.dias) ? this.data.dias[dia] : null;
                 const dataStr = diaInfo && diaInfo.data ? diaInfo.data : '';
                 const canEdit = this.canUserEdit();
-                const temHorarios = slots.some(s => s.entrada !== undefined);
-                const editTimes = canEdit && temHorarios;
+                const editTimes = canEdit;
+                const temHorarios = slots.some(s => s.entrada !== undefined && s.entrada !== '');
 
                 const grupos = [
                     { key: 'reposicao', titulo: 'Escala da Reposição' },
@@ -12777,8 +12777,10 @@
 
                 let html = '';
                 if (!temHorarios) {
-                    html += '<div class="p-3 rounded-xl border border-amber-800/60 bg-amber-950/40 text-amber-200 text-xs flex items-start gap-2">' +
-                        '<i class="fa-solid fa-circle-info mt-0.5"></i><span>Os horários ainda não estão vindo da planilha. Atualize o script <strong>api_taskflow.gs</strong> (versão 2) e reimplante como <em>Nova versão</em> para ver e editar Entrada, Almoço, Saída e Banco de Horas.</span></div>';
+                    html += '<div class="p-3 rounded-xl border border-teal-800/60 bg-teal-950/40 text-teal-200 text-xs flex flex-wrap items-center justify-between gap-3 shadow-sm">' +
+                        '<div class="flex items-center gap-2"><i class="fa-solid fa-clock text-teal-400"></i><span>Edição direta de Entrada, Almoço e Banco de Horas ativa nas células abaixo. (Saída é calculada e travada)</span></div>' +
+                        '<button type="button" onclick="scheduleApp.copyAppsScriptCode()" class="shrink-0 px-2.5 py-1 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-bold text-[11px] transition cursor-pointer flex items-center gap-1.5 shadow"><i class="fa-solid fa-copy"></i> Copiar Script v2 da Planilha</button>' +
+                        '</div>';
                 }
 
                 const timeCell = (s, campo) => {
@@ -12786,7 +12788,7 @@
                     if (!editTimes) return '<td class="px-1.5 py-1.5 text-center font-mono text-gray-200">' + (v ? this.escHtml(v) : '<span class="text-gray-600">—</span>') + '</td>';
                     return '<td class="px-1 py-1 text-center"><input type="text" inputmode="numeric" autocomplete="off" maxlength="5" value="' + this.escHtml(v) + '" placeholder="--:--" ' +
                         'data-dia="' + this.escHtml(dia) + '" data-linha="' + s.linha + '" data-campo="' + campo + '" data-old="' + this.escHtml(v) + '" ' +
-                        'onfocus="this.select()" onkeydown="if(event.key===\'Enter\'){this.blur();}" onchange="scheduleApp.saveCellInline(this)" ' +
+                        'onfocus="this.select()" oninput="scheduleApp.previewSaidaInline(this)" onkeydown="if(event.key===\'Enter\'){this.blur();}" onchange="scheduleApp.saveCellInline(this)" ' +
                         'class="sched-cell-input w-[58px] bg-gray-950 border border-gray-800 hover:border-gray-600 focus:border-teal-400 rounded-md px-1 py-1 text-center font-mono text-xs text-gray-100 placeholder-gray-700 focus:outline-none transition"></td>';
                 };
 
@@ -12831,12 +12833,12 @@
                                 '<i class="fa-solid ' + (isVacant ? 'fa-plus text-rose-300' : 'fa-pen text-gray-600 group-hover:text-teal-300') + ' text-[9px]"></i></button>';
                         }
 
-                        const saida = s.saida || (temHorarios ? this.computeSaida(s, dia) : '');
+                        const saida = s.saida || this.computeSaida(s, dia);
                         let bancoCell;
                         if (editTimes) {
                             bancoCell = '<td class="px-1 py-1 text-center"><input type="text" autocomplete="off" maxlength="6" value="' + this.escHtml(s.banco || '') + '" placeholder="±0:00" ' +
                                 'data-dia="' + this.escHtml(dia) + '" data-linha="' + s.linha + '" data-campo="banco" data-old="' + this.escHtml(s.banco || '') + '" ' +
-                                'onfocus="this.select()" onkeydown="if(event.key===\'Enter\'){this.blur();}" onchange="scheduleApp.saveCellInline(this)" ' +
+                                'onfocus="this.select()" oninput="scheduleApp.previewSaidaInline(this)" onkeydown="if(event.key===\'Enter\'){this.blur();}" onchange="scheduleApp.saveCellInline(this)" ' +
                                 'class="sched-cell-input w-[62px] bg-gray-950 border border-gray-800 hover:border-gray-600 focus:border-teal-400 rounded-md px-1 py-1 text-center font-mono text-xs font-bold ' + this.bancoClass(s.banco) + ' placeholder-gray-700 focus:outline-none transition"></td>';
                         } else {
                             bancoCell = '<td class="px-1.5 py-1.5 text-center font-mono font-bold ' + this.bancoClass(s.banco) + '">' + (s.banco ? this.escHtml(s.banco) : '<span class="text-gray-600">—</span>') + '</td>';
@@ -12865,6 +12867,21 @@
             findSlot(dia, linha) {
                 if (!this.data || !this.data.dias || !this.data.dias[dia]) return null;
                 return (this.data.dias[dia].slots || []).find(s => Number(s.linha) === Number(linha)) || null;
+            }
+
+            previewSaidaInline(input) {
+                const dia = input.dataset.dia;
+                const linha = parseInt(input.dataset.linha, 10);
+                const campo = input.dataset.campo;
+                const slot = this.findSlot(dia, linha);
+                if (!slot) return;
+                const raw = input.value.trim();
+                const isBanco = campo === 'banco';
+                const norm = this.normalizeHora(raw, isBanco);
+                const temp = Object.assign({}, slot, { [campo]: norm || raw });
+                const saida = this.computeSaida(temp, dia);
+                const saidaEl = document.getElementById('sched-saida-' + linha);
+                if (saidaEl && saida) saidaEl.textContent = saida;
             }
 
             refreshRowDom(dia, linha) {
