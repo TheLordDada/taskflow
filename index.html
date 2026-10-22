@@ -3888,40 +3888,75 @@
                     return;
                 }
 
-                // Coleta todos os colaboradores conhecidos
-                const collabNames = new Set();
+                // Coleta exclusivamente os usuários e colaboradores cadastrados no App
+                const appUsers = [];
+                const seen = new Set();
 
-                // 1. Contas cadastradas no App
+                // 1. Contas cadastradas no App (TaskFlow Accounts)
                 const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
                 accounts.forEach(a => {
-                    if (a.displayName) collabNames.add(a.displayName);
+                    const name = (a.displayName || a.name || '').trim();
+                    if (!name || seen.has(name.toUpperCase())) return;
+                    if (a.status === 'blocked' || a.status === 'rejected') return;
+                    seen.add(name.toUpperCase());
+                    appUsers.push({
+                        name: name,
+                        role: a.role || (a.isAdmin ? 'Administrador' : 'Colaborador'),
+                        email: a.email || ''
+                    });
                 });
 
-                // 2. Colaboradores do Banco de Dados da Escala
-                if (window.scheduleApp && scheduleApp.data && scheduleApp.data.colaboradores) {
-                    scheduleApp.data.colaboradores.forEach(c => {
-                        if (c.nome) collabNames.add(c.nome);
+                // 2. Usuários cadastrados localmente
+                const users = JSON.parse(localStorage.getItem('taskflow_users') || '[]');
+                users.forEach(u => {
+                    const name = (u.name || u.displayName || '').trim();
+                    if (!name || seen.has(name.toUpperCase())) return;
+                    seen.add(name.toUpperCase());
+                    appUsers.push({
+                        name: name,
+                        role: u.role || 'Colaborador',
+                        email: u.email || ''
+                    });
+                });
+
+                // 3. Usuário atualmente logado
+                if (window.auth && auth.currentUser) {
+                    const myName = (auth.currentUser.displayName || auth.currentUser.name || '').trim();
+                    if (myName && !seen.has(myName.toUpperCase())) {
+                        seen.add(myName.toUpperCase());
+                        appUsers.push({
+                            name: myName,
+                            role: auth.currentUser.role || (auth.currentUser.isAdmin ? 'Administrador' : 'Colaborador'),
+                            email: auth.currentUser.email || ''
+                        });
+                    }
+                }
+
+                // 4. Se a lista estiver vazia (primeiro acesso), inclui os líderes/administradores do app
+                if (appUsers.length === 0) {
+                    const defaults = [
+                        { name: "Emerson Diniz", role: "Administrador" },
+                        { name: "João Guilherme", role: "Líder" },
+                        { name: "Admin Juhsim", role: "Administrador" }
+                    ];
+                    defaults.forEach(d => {
+                        if (!seen.has(d.name.toUpperCase())) {
+                            seen.add(d.name.toUpperCase());
+                            appUsers.push(d);
+                        }
                     });
                 }
 
-                // 3. Usuários locais
-                const users = JSON.parse(localStorage.getItem('taskflow_users') || '[]');
-                users.forEach(u => {
-                    if (u.name) collabNames.add(u.name);
-                });
-
-                if (collabNames.size === 0) {
-                    collabNames.add("Carlos Gerente");
-                    collabNames.add("Equipe Geral");
-                }
-
-                let html = '<div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider px-2 py-1">Mencionar Colaborador:</div>';
-                Array.from(collabNames).sort().forEach(name => {
-                    const safeName = name.replace(/'/g, "\\'");
+                let html = '<div class="text-[10px] text-gray-400 font-bold uppercase tracking-wider px-2 py-1">Mencionar Usuário do App:</div>';
+                appUsers.sort((a, b) => a.name.localeCompare(b.name)).forEach(user => {
+                    const safeName = user.name.replace(/'/g, "\\'");
                     html += `
-                        <button type="button" onclick="app.insertMention('${safeName}')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-gray-800 text-xs text-gray-200 flex items-center gap-2 transition">
-                            <span class="w-5 h-5 rounded-md bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 font-bold text-[10px] flex items-center justify-center">@</span>
-                            <span class="font-semibold text-gray-100">${name}</span>
+                        <button type="button" onclick="app.insertMention('${safeName}')" class="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-gray-800 text-xs text-gray-200 flex items-center justify-between transition group">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-5 h-5 rounded-md bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 font-bold text-[10px] flex items-center justify-center shrink-0">@</span>
+                                <span class="font-semibold text-gray-100 truncate">${user.name}</span>
+                            </div>
+                            ${user.role ? `<span class="text-[9px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 group-hover:bg-indigo-950/80 group-hover:text-indigo-300 shrink-0 border border-gray-700/60">${user.role}</span>` : ''}
                         </button>
                     `;
                 });
