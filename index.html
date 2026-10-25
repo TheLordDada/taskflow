@@ -12790,7 +12790,7 @@
                         const needsDetailedAbsences = Object.values(resJson.dias).some(d => !d.folgas || d.folgas.length === 0);
                         if (needsDetailedAbsences && this.webAppUrl) {
                             try {
-                                const fetchCode = 'var s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Diaria"); var res = {}; var dias = [{ nome: "Segunda", rangeF: "B6:D12", rangeA: "E6:H12" }, { nome: "Terça", rangeF: "K6:M12", rangeA: "N6:Q12" }, { nome: "Quarta", rangeF: "T6:V12", rangeA: "W6:Z12" }, { nome: "Quinta", rangeF: "AC6:AE12", rangeA: "AF6:AI12" }, { nome: "Sexta", rangeF: "AL6:AN12", rangeA: "AO6:AR12" }, { nome: "Sábado", rangeF: "AU6:AW12", rangeA: "AX6:BA12" }, { nome: "Domingo", rangeF: "BD6:BF12", rangeA: "BG6:BJ12" }]; for (var i = 0; i < dias.length; i++) { var d = dias[i]; res[d.nome] = { folgas: s.getRange(d.rangeF).getDisplayValues(), ausencias: s.getRange(d.rangeA).getDisplayValues() }; } res;';
+                                const fetchCode = 'var ss = SpreadsheetApp.getActiveSpreadsheet(); var s = ss.getSheetByName("Diaria"); var res = {}; var dias = [{ nome: "Segunda", rangeF: "B6:D12", rangeA: "E6:H12", celData: "D3" }, { nome: "Terça", rangeF: "K6:M12", rangeA: "N6:Q12", celData: "M3" }, { nome: "Quarta", rangeF: "T6:V12", rangeA: "W6:Z12", celData: "V3" }, { nome: "Quinta", rangeF: "AC6:AE12", rangeA: "AF6:AI12", celData: "AE3" }, { nome: "Sexta", rangeF: "AL6:AN12", rangeA: "AO6:AR12", celData: "AN3" }, { nome: "Sábado", rangeF: "AU6:AW12", rangeA: "AX6:BA12", celData: "AW3" }, { nome: "Domingo", rangeF: "BD6:BF12", rangeA: "BG6:BJ12", celData: "BF3" }]; for (var i = 0; i < dias.length; i++) { var d = dias[i]; res[d.nome] = { folgas: s.getRange(d.rangeF).getDisplayValues(), ausencias: s.getRange(d.rangeA).getDisplayValues(), dataDia: s.getRange(d.celData).getDisplayValue() }; } var sheets = ss.getSheets(); var finalizedFolgas = []; var meses = { "janeiro": "01", "fevereiro": "02", "março": "03", "marco": "03", "abril": "04", "maio": "05", "junho": "06", "julho": "07", "agosto": "08", "setembro": "09", "outubro": "10", "novembro": "11", "dezembro": "12" }; function normData(val) { if (!val) return ""; var str = String(val).trim().toLowerCase(); var mNum = str.match(/(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?/); if (mNum) return mNum[1].padStart(2, "0") + "/" + mNum[2].padStart(2, "0") + "/" + (mNum[3] ? (mNum[3].length === 2 ? "20" + mNum[3] : mNum[3]) : "2026"); var mExt = str.match(/(\\d{1,2})\\s+de\\s+([a-zçã]+)(?:\\s+de\\s+(\\d{2,4}))?/); if (mExt && meses[mExt[2]]) return mExt[1].padStart(2, "0") + "/" + meses[mExt[2]] + "/" + (mExt[3] || "2026"); return ""; } for (var sh = 0; sh < sheets.length; sh++) { var shName = sheets[sh].getName(); var shUpper = shName.toUpperCase(); if (shUpper.indexOf("ORGANIZAÇÃO") !== -1 || shUpper.indexOf("ORGANIZACAO") !== -1) continue; if (shUpper.indexOf("FOLGA") !== -1 && shUpper.indexOf("FERIADO") !== -1) { var lR = sheets[sh].getLastRow(); if (lR < 3) continue; var sData = sheets[sh].getRange(1, 1, lR, Math.min(sheets[sh].getLastColumn(), 5)).getDisplayValues(); var cNome = 1, cDia = 2, stR = 2; for (var r = 0; r < Math.min(sData.length, 5); r++) { for (var c = 0; c < sData[r].length; c++) { var cl = sData[r][c].toUpperCase(); if (cl.indexOf("NOME") !== -1) cNome = c; if (cl.indexOf("DIA") !== -1 || cl.indexOf("DATA") !== -1) cDia = c; } if (sData[r][cNome] && sData[r][cNome].toUpperCase().indexOf("NOME") !== -1) { stR = r + 1; break; } } for (var k = stR; k < sData.length; k++) { var n = String(sData[k][cNome] || "").trim(); var dNorm = normData(sData[k][cDia]); if (n && n.toUpperCase() !== "NOME" && dNorm) finalizedFolgas.push({ aba: shName, cracha: String(sData[k][0] || "").trim(), nome: n, dataNorm: dNorm }); } } } ({ dias: res, finalizedFolgas: finalizedFolgas });';
                                 const fastRes = await fetch(this.webAppUrl, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -12798,10 +12798,25 @@
                                 });
                                 const fastJson = await fastRes.json();
                                 if (fastJson && fastJson.result) {
-                                    for (const diaName in fastJson.result) {
+                                    const resultData = fastJson.result.dias || fastJson.result;
+                                    const finalizedFolgas = fastJson.result.finalizedFolgas || [];
+
+                                    // Helper para comparar nomes
+                                    const matchColab = (nA, nB) => {
+                                        if (!nA || !nB) return false;
+                                        const cA = nA.trim().toUpperCase();
+                                        const cB = nB.trim().toUpperCase();
+                                        if (cA === cB || cA.startsWith(cB) || cB.startsWith(cA)) return true;
+                                        const pA = cA.split(' ')[0];
+                                        const pB = cB.split(' ')[0];
+                                        return (pA.length > 3 && pA === pB);
+                                    };
+
+                                    for (const diaName in resultData) {
                                         if (resJson.dias[diaName]) {
-                                            const fRows = fastJson.result[diaName].folgas || [];
-                                            const aRows = fastJson.result[diaName].ausencias || [];
+                                            const fRows = resultData[diaName].folgas || [];
+                                            const aRows = resultData[diaName].ausencias || [];
+                                            const dataDoDia = String(resultData[diaName].dataDia || resJson.dias[diaName].data || '').trim();
                                             resJson.dias[diaName].folgas = [];
                                             fRows.forEach((r, idx) => {
                                                 const depto = String(r[0] || '').trim();
@@ -12819,19 +12834,46 @@
                                                 }
                                             });
                                             resJson.dias[diaName].ausenciasCompletas = [];
+                                            const matchedFeriadosNomes = new Set();
+
                                             aRows.forEach((r, idx) => {
                                                 const nome = String(r[0] || '').trim();
                                                 const depto = String(r[1] || '').trim();
                                                 const sol = String(r[3] || '').trim();
                                                 if (nome && nome.length > 1) {
+                                                    // Verifica se este colaborador tem folga de feriado confirmada na aba finalizada para este dia
+                                                    const ferConfirmado = finalizedFolgas.find(ff => ff.dataNorm === dataDoDia && matchColab(ff.nome, nome));
+                                                    const isFer = !!ferConfirmado || (depto + ' ' + nome + ' ' + sol).toUpperCase().includes('FERIADO');
+                                                    if (ferConfirmado) matchedFeriadosNomes.add(ferConfirmado.nome.toUpperCase());
+
                                                     resJson.dias[diaName].ausenciasCompletas.push({
                                                         linha: 6 + idx,
                                                         nome: nome,
                                                         departamento: depto || 'Geral',
                                                         solucao: sol,
                                                         tipo: 'ausencia',
-                                                        isFeriado: (depto + ' ' + nome + ' ' + sol).toUpperCase().includes('FERIADO')
+                                                        isFeriado: isFer,
+                                                        feriadoOrigem: ferConfirmado ? ferConfirmado.aba : ''
                                                     });
+                                                }
+                                            });
+
+                                            // AUTOMATIZAÇÃO: Qualquer colaborador com folga confirmada na aba específica do feriado para a data do dia entra automaticamente!
+                                            finalizedFolgas.filter(ff => ff.dataNorm === dataDoDia).forEach(ff => {
+                                                if (!matchedFeriadosNomes.has(ff.nome.toUpperCase())) {
+                                                    // Busca departamento no banco de dados
+                                                    const colabObj = (resJson.colaboradores || []).find(c => matchColab(c.nome, ff.nome));
+                                                    const freeLine = [6, 7, 8, 9, 10, 11, 12].find(l => !resJson.dias[diaName].ausenciasCompletas.some(a => a.linha === l)) || 12;
+                                                    resJson.dias[diaName].ausenciasCompletas.push({
+                                                        linha: freeLine,
+                                                        nome: ff.nome,
+                                                        departamento: colabObj?.departamento || 'Reposição',
+                                                        solucao: '',
+                                                        tipo: 'ausencia',
+                                                        isFeriado: true,
+                                                        feriadoOrigem: ff.aba
+                                                    });
+                                                    matchedFeriadosNomes.add(ff.nome.toUpperCase());
                                                 }
                                             });
                                             // Atualiza lista unificada de nomes ausentes no dia
