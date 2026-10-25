@@ -1,5 +1,5 @@
 // Service Worker TaskFlow - Suporte PWA Offline & Limpeza de Cache para Atualização Automática
-const CACHE_NAME = 'taskflow-v16-1792968672179-duas-colunas-feriados';
+const CACHE_NAME = 'taskflow-v17-1792970352150-folgas-feriado-confirmadas';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
