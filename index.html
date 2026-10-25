@@ -871,6 +871,25 @@
         <div id="app-main-content-scroll" class="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-4 md:p-6 max-w-6xl w-full mx-auto transition-all">
             <!-- MÓDULO 1: TAREFAS DA EQUIPE -->
             <div id="view-tasks-container" class="space-y-2.5 pb-28 md:pb-6">
+                <!-- Barra Rápida de Filtros de Tarefas (Sticky para Listas Extensas) -->
+                <div class="sticky top-0 z-20 flex overflow-x-auto custom-scrollbar scrollbar-none bg-gray-950/95 backdrop-blur p-1.5 rounded-2xl border border-gray-800 gap-1.5 shadow-lg shrink-0">
+                    <button type="button" onclick="app.setFilter('all')" id="task-filter-all" class="shrink-0 whitespace-nowrap py-1.5 px-3 text-xs font-bold rounded-xl bg-indigo-600 text-white transition flex items-center gap-1.5 shadow-md">
+                        <i class="fa-solid fa-list-check text-xs"></i>
+                        <span>Todas as Tarefas</span>
+                    </button>
+                    <button type="button" onclick="app.setFilter('mine')" id="task-filter-mine" class="shrink-0 whitespace-nowrap py-1.5 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-user-check text-xs"></i>
+                        <span>Minhas Tarefas</span>
+                    </button>
+                    <button type="button" onclick="app.setFilter('today')" id="task-filter-today" class="shrink-0 whitespace-nowrap py-1.5 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-calendar-day text-xs"></i>
+                        <span>Hoje</span>
+                    </button>
+                    <button type="button" onclick="app.setFilter('upcoming')" id="task-filter-upcoming" class="shrink-0 whitespace-nowrap py-1.5 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-calendar-plus text-xs"></i>
+                        <span>Próximas</span>
+                    </button>
+                </div>
                 <div id="tasks-container" class="space-y-2.5">
                     <!-- Tasks dynamically injected -->
                 </div>
@@ -897,8 +916,8 @@
                     </div>
                 </div>
 
-                <!-- Abas de Filtro de Ocorrências -->
-                <div class="flex flex-wrap gap-2">
+                <!-- Abas de Filtro de Ocorrências - NAVEGAÇÃO FIXA / STICKY -->
+                <div class="sticky top-0 z-20 flex flex-wrap gap-2 bg-gray-950/95 backdrop-blur p-2 rounded-2xl border border-gray-800/80 shadow-lg">
                     <button type="button" onclick="occApp.setFilter('all')" id="occ-filter-all" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-black transition">Todas</button>
                     <button type="button" onclick="occApp.setFilter('pending')" id="occ-filter-pending" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-gray-900 border border-gray-800 text-gray-400 hover:text-gray-200 transition">🟡 Aguardando ADM</button>
                     <button type="button" onclick="occApp.setFilter('answered')" id="occ-filter-answered" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-gray-900 border border-gray-800 text-gray-400 hover:text-gray-200 transition">🟢 Respondidas pelo ADM</button>
@@ -1339,8 +1358,8 @@
                     </button>
                 </div>
 
-                <!-- Seletor dos Dias da Semana (Segunda a Domingo) -->
-                <div class="bg-gray-950/80 p-2 sm:p-2.5 md:p-3 rounded-2xl border border-gray-800 shadow-md">
+                <!-- Seletor dos Dias da Semana (Segunda a Domingo) - NAVEGAÇÃO FIXA / STICKY -->
+                <div class="sticky top-0 z-30 bg-gray-950/95 backdrop-blur p-2 sm:p-2.5 md:p-3 rounded-2xl border border-gray-800/90 shadow-xl">
                     <div class="flex items-center gap-2 sm:gap-2.5 overflow-x-auto custom-scrollbar pb-1 sm:pb-0" id="schedule-days-selector">
                         <!-- Injetado via scheduleApp.renderDaysSelector() -->
                     </div>
@@ -3351,6 +3370,17 @@
                 });
                 const activeBtn = document.getElementById(`nav-${filter}`);
                 if(activeBtn) activeBtn.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition text-indigo-400 bg-indigo-950/50 border border-indigo-900/50";
+
+                ['all', 'mine', 'today', 'upcoming'].forEach(f => {
+                    const topBtn = document.getElementById(`task-filter-${f}`);
+                    if (topBtn) {
+                        if (f === filter) {
+                            topBtn.className = "shrink-0 whitespace-nowrap py-1.5 px-3 text-xs font-bold rounded-xl bg-indigo-600 text-white transition flex items-center gap-1.5 shadow-md";
+                        } else {
+                            topBtn.className = "shrink-0 whitespace-nowrap py-1.5 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 transition flex items-center gap-1.5";
+                        }
+                    }
+                });
                 
                 ['all', 'mine', 'today', 'upcoming'].forEach(f => {
                     const mobBtn = document.getElementById(`mob-nav-${f}`);
