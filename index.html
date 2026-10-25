@@ -1306,10 +1306,11 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <button type="button" onclick="scheduleApp.toggleAiDrawer()" id="btn-schedule-ai-assistant" class="px-3 py-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-teal-600 hover:from-purple-500 hover:to-teal-500 active:scale-95 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 transition shadow-lg shadow-purple-900/30 cursor-pointer" title="Assistente Operacional IA da Escala (Vagas, BH e Auditoria)">
-                            <i class="fa-solid fa-wand-magic-sparkles text-amber-300 animate-pulse"></i>
-                            <span class="hidden sm:inline">Assistente IA</span>
-                            <span id="badge-ai-vacancies" class="hidden px-1.5 py-0.2 rounded-full bg-rose-500 text-white font-black text-[10px]">0</span>
+                        <button type="button" onclick="scheduleApp.toggleShowFolgas()" id="btn-toggle-folgas" class="px-3 py-2 bg-indigo-950/70 hover:bg-indigo-900 active:scale-95 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow cursor-pointer" title="Mostrar colaboradores de folga ao lado da planilha">
+                            <i class="fa-solid fa-bed text-indigo-400"></i>
+                            <span class="hidden sm:inline">Ver Pessoas de Folga</span>
+                            <span class="sm:hidden">Folgas</span>
+                            <span id="badge-folgas-count" class="px-1.5 py-0.2 rounded-full bg-indigo-900 border border-indigo-700/60 text-indigo-200 text-[10px] font-black">0</span>
                         </button>
                         <button type="button" onclick="scheduleApp.syncWithGoogleSheets()" id="btn-schedule-sync" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 active:scale-95 text-teal-300 border border-teal-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow" title="Recarregar dados da planilha Google">
                             <i class="fa-solid fa-rotate" id="icon-schedule-sync"></i>
@@ -11602,6 +11603,8 @@
                 this.currentDeptFilter = 'all';
                 this.searchQuery = '';
                 this.isSyncing = false;
+                this.showFolgas = (localStorage.getItem('taskflow_schedule_show_folgas') === 'true');
+                this.folgasFilterQuery = '';
                 this.data = this.loadInitialData();
             }
 
@@ -12554,92 +12557,84 @@
 
                 dia = dia || document.getElementById('modal-sched-dia')?.value || this.currentDay;
                 const norm = s => String(s || '').toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                const diaTarget = norm(dia);
 
-                const diaInfo = this.data && this.data.dias ? this.data.dias[dia] : null;
-                const folgasDoDia = (diaInfo && diaInfo.folgas) ? diaInfo.folgas.map(f => norm(f.nome)) : [];
+                // 1. Identifica todos que estão de folga no dia (Requisito 4: NUNCA aparecem para alocação)
+                const folgasDoDia = this.getFolgasForDay(dia);
+                const folgaNamesSet = new Set(folgasDoDia.map(f => norm(f.nome)));
 
-                const isFolgaHoje = (c) => {
-                    if (norm(c.folga) === diaTarget) return true;
-                    const cNorm = norm(c.nome);
-                    if (folgasDoDia.some(f => f.includes(cNorm) || cNorm.includes(f))) return true;
-                    return false;
-                };
+                // 2. Identifica quem já está alocado em outro posto no mesmo dia
+                const currentLinha = parseInt(document.getElementById('modal-sched-linha')?.value || '0', 10);
+                const currentSlots = (this.data && this.data.dias && this.data.dias[dia]) ? (this.data.dias[dia].slots || []) : [];
+                const alreadyAllocatedSet = new Set(
+                    currentSlots
+                        .filter(s => s.linha !== currentLinha && s.nome && !s.isVago && s.nome.trim() !== 'X' && s.nome.trim() !== 'VAGO' && s.nome.trim() !== '')
+                        .map(s => norm(s.nome))
+                );
 
-                const hideFolgasEl = document.getElementById('modal-sched-hide-folgas');
-                const hideFolgas = hideFolgasEl ? hideFolgasEl.checked : true;
+                select.innerHTML = '<option value="">-- Selecione um colaborador disponível --</option>';
 
-                select.innerHTML = '<option value="">-- Selecione um colaborador cadastrado --</option>';
-
-                // 1. Colaboradores do Banco de Dados da Planilha
+                // 3. Colaboradores da Planilha
                 const colabsSheet = (this.data && this.data.colaboradores && this.data.colaboradores.length > 0) 
                     ? this.data.colaboradores 
                     : [];
 
-                if (colabsSheet.length > 0) {
-                    const disponiveis = [];
-                    const emFolga = [];
+                const disponiveis = [];
+                const jaAlocadosOutro = [];
 
-                    colabsSheet.forEach(c => {
-                        if (isFolgaHoje(c)) {
-                            emFolga.push(c);
-                        } else {
-                            disponiveis.push(c);
-                        }
-                    });
+                colabsSheet.forEach(c => {
+                    const cNome = String(c.nome || '').trim();
+                    if (!cNome) return;
+                    const cNorm = norm(cNome);
 
-                    // Grupo 1: Colaboradores Disponíveis para o dia
-                    const optGroupDisp = document.createElement('optgroup');
-                    optGroupDisp.label = `Disponíveis na ${dia} (${disponiveis.length})`;
-
-                    disponiveis.forEach(c => {
-                        const opt = document.createElement('option');
-                        opt.value = c.nome;
-                        const escBadge = c.escala ? ` • ${c.escala}` : '';
-                        const deptoBadge = c.departamento ? ` [${c.departamento}]` : '';
-                        opt.textContent = `${c.nome}${escBadge}${deptoBadge}`;
-                        if (c.nome.toUpperCase() === String(selectedName).toUpperCase()) opt.selected = true;
-                        optGroupDisp.appendChild(opt);
-                    });
-                    select.appendChild(optGroupDisp);
-
-                    // Grupo 2: Colaboradores em Folga
-                    if (!hideFolgas && emFolga.length > 0) {
-                        const optGroupFolga = document.createElement('optgroup');
-                        optGroupFolga.label = `🏖️ Em Folga na ${dia} (${emFolga.length}) [Indisponíveis]`;
-                        emFolga.forEach(c => {
-                            const opt = document.createElement('option');
-                            opt.value = c.nome;
-                            const escBadge = c.escala ? ` • ${c.escala}` : '';
-                            opt.textContent = `🏖️ ${c.nome}${escBadge} (Folga ${c.folga || dia})`;
-                            if (c.nome.toUpperCase() === String(selectedName).toUpperCase()) opt.selected = true;
-                            optGroupFolga.appendChild(opt);
-                        });
-                        select.appendChild(optGroupFolga);
-                    } else if (hideFolgas && emFolga.some(c => c.nome.toUpperCase() === String(selectedName).toUpperCase())) {
-                        // Se o colaborador atualmente alocado estiver de folga, exibe-o com alerta para não perder a seleção
-                        const c = emFolga.find(c => c.nome.toUpperCase() === String(selectedName).toUpperCase());
-                        const optCurrent = document.createElement('option');
-                        optCurrent.value = c.nome;
-                        optCurrent.textContent = `⚠️ ${c.nome} • ${c.escala} (ALOCADO EM FOLGA HOJE)`;
-                        optCurrent.selected = true;
-                        select.appendChild(optCurrent);
+                    // REGRA: Se estiver de folga hoje, NUNCA entra na lista (Requisito 4)
+                    if (folgaNamesSet.has(cNorm)) {
+                        return;
                     }
+
+                    // Se já estiver alocado em outro posto no dia
+                    if (alreadyAllocatedSet.has(cNorm)) {
+                        jaAlocadosOutro.push(c);
+                    } else {
+                        // Disponível e não alocado!
+                        disponiveis.push(c);
+                    }
+                });
+
+                // Grupo 1: Colaboradores Disponíveis e Não Alocados no dia
+                const optGroupDisp = document.createElement('optgroup');
+                optGroupDisp.label = `🟢 Disponíveis na ${dia} (${disponiveis.length})`;
+
+                disponiveis.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.nome;
+                    const escBadge = c.escala ? ` • ${c.escala}` : '';
+                    const deptoBadge = c.departamento ? ` [${c.departamento}]` : '';
+                    opt.textContent = `${c.nome}${escBadge}${deptoBadge}`;
+                    if (norm(c.nome) === norm(selectedName)) opt.selected = true;
+                    optGroupDisp.appendChild(opt);
+                });
+                select.appendChild(optGroupDisp);
+
+                // Se o colaborador atualmente alocado neste posto estiver selecionado
+                if (selectedName && !disponiveis.some(c => norm(c.nome) === norm(selectedName))) {
+                    const optCur = document.createElement('option');
+                    optCur.value = selectedName;
+                    optCur.textContent = `📍 Atual nesta Linha: ${selectedName}`;
+                    optCur.selected = true;
+                    select.insertBefore(optCur, select.firstChild.nextSibling);
                 }
 
-                // 2. Colaboradores cadastrados no app TaskFlow
-                const teamUsers = JSON.parse(localStorage.getItem('taskflow_users') || '[]');
-                if (teamUsers.length > 0) {
-                    const optGroupApp = document.createElement('optgroup');
-                    optGroupApp.label = "Usuários Cadastrados no TaskFlow";
-                    teamUsers.forEach(u => {
+                // Grupo 2: Já alocados em outro posto hoje
+                if (jaAlocadosOutro.length > 0) {
+                    const optGroupAloc = document.createElement('optgroup');
+                    optGroupAloc.label = `⚠️ Já Alocados em Outro Posto Hoje (${jaAlocadosOutro.length})`;
+                    jaAlocadosOutro.forEach(c => {
                         const opt = document.createElement('option');
-                        opt.value = u.name;
-                        opt.textContent = u.name + (u.role ? ' [' + u.role + ']' : '');
-                        if (u.name.toUpperCase() === String(selectedName).toUpperCase()) opt.selected = true;
-                        optGroupApp.appendChild(opt);
+                        opt.value = c.nome;
+                        opt.textContent = `⚠️ ${c.nome} (Já alocado hoje no setor ${c.departamento || 'outro'})`;
+                        optGroupAloc.appendChild(opt);
                     });
-                    select.appendChild(optGroupApp);
+                    select.appendChild(optGroupAloc);
                 }
             }
 
@@ -12651,21 +12646,67 @@
             }
 
             markAsVacant() {
-                const nameInput = document.getElementById('modal-sched-collab-name');
-                const select = document.getElementById('modal-sched-collab-select');
-                if (nameInput) nameInput.value = '';
-                if (select) select.value = '';
+                const dia = document.getElementById('modal-sched-dia').value;
+                const linha = parseInt(document.getElementById('modal-sched-linha').value, 10);
+                const colLetra = document.getElementById('modal-sched-coluna').value;
+                const horarioLabel = document.getElementById('modal-sched-horario-label') ? document.getElementById('modal-sched-horario-label').innerText : '';
 
-                // Habilita automaticamente justificativa de vaga aberta
-                const incCheck = document.getElementById('modal-sched-inconsistency-check');
-                if (incCheck) {
-                    incCheck.checked = true;
-                    this.toggleInconsistencyFields(true);
+                // 1. Limpa na memória local INSTANTANEAMENTE (Requisito 1: Tirar o horário quando marcar vaga aberta)
+                if (this.data && this.data.dias && this.data.dias[dia]) {
+                    const slots = this.data.dias[dia].slots || [];
+                    const slot = slots.find(s => s.linha === linha);
+                    if (slot) {
+                        slot.nome = '';
+                        slot.isVago = true;
+                        slot.corFundo = '#ea4335';
+                        // Limpa todos os horários da pessoa
+                        slot.entrada = '';
+                        slot.inicioAlmoco = '';
+                        slot.retornoAlmoco = '';
+                        slot.banco = '';
+                        slot.saida = '';
+                        slot.horario = '';
+                    }
+                    localStorage.setItem('taskflow_schedule_data', JSON.stringify(this.data));
                 }
-                this.handleSaveSlot();
+
+                // Registra inconsistência operacional de desfalque
+                const slotDeptInfo = this.getSlotDepartmentInfo({ linha, colunaLetra: colLetra, nome: '', horario: horarioLabel, isVago: true }, dia);
+                const dept = (dia === 'Domingo') ? horarioLabel : (slotDeptInfo.hasRealSector ? slotDeptInfo.sector : (slotDeptInfo.titular ? 'Posto de ' + slotDeptInfo.titular : 'Geral'));
+
+                const inconsistencyRecord = {
+                    id: 'inc_sched_' + Date.now(),
+                    source: 'escala',
+                    type: 'Desfalque de Escala / Vaga Aberta',
+                    dia: dia,
+                    linha: linha,
+                    posto: horarioLabel,
+                    departamento: dept,
+                    colaboradorAusente: 'Posto Descoberto',
+                    reason: 'Vaga Aberta',
+                    notes: 'Posto ' + horarioLabel + ' marcado como vaga aberta no dia ' + dia + ' (horário removido)',
+                    date: (this.data && this.data.dias && this.data.dias[dia] ? this.data.dias[dia].data : getLocalTodayString()),
+                    author: (window.auth && auth.currentUser) ? auth.currentUser.displayName : 'Líder / Admin',
+                    createdAt: Date.now()
+                };
+                this.saveInconsistency(inconsistencyRecord);
+
+                // 2. FECHA O MODAL IMEDIATAMENTE (Requisito 2: Alocação 100% instantânea sem espera de rede)
+                this.closeEditSlotModal();
+
+                // 3. ATUALIZA A TELA INSTANTANEAMENTE
+                this.render();
+
+                // 4. FEEDBACK IMEDIATO
+                if (window.notifications) {
+                    notifications.showToast('Vaga aberta marcada com sucesso! Horário removido.', 'success');
+                }
+
+                // 5. SINCRONIZAÇÃO EM SEGUNDO PLANO COM O GOOGLE
+                this.syncSlotInBackground(dia, linha, colLetra, '', true);
             }
 
-            async handleSaveSlot(e) {
+            handleSaveSlot(e) {
                 if (e) e.preventDefault();
 
                 const dia = document.getElementById('modal-sched-dia').value;
@@ -12674,9 +12715,30 @@
                 const nomeInput = document.getElementById('modal-sched-collab-name').value.trim();
                 const horarioLabel = document.getElementById('modal-sched-horario-label') ? document.getElementById('modal-sched-horario-label').innerText : '';
 
-                const isVacant = (!nomeInput || nomeInput.toUpperCase() === 'X');
+                const isVacant = (!nomeInput || nomeInput.toUpperCase() === 'X' || nomeInput.toUpperCase() === 'VAGA ABERTA');
 
-                // Checa se o usuário marcou justificativa / inconsistência operacional
+                // 1. ATUALIZAÇÃO OTIMISTA E INSTANTÂNEA NA MEMÓRIA LOCAL
+                if (this.data && this.data.dias && this.data.dias[dia]) {
+                    const slots = this.data.dias[dia].slots || [];
+                    const slot = slots.find(s => s.linha === linha);
+                    if (slot) {
+                        slot.nome = isVacant ? '' : nomeInput;
+                        slot.isVago = isVacant;
+                        slot.corFundo = isVacant ? '#ea4335' : '';
+                        if (isVacant) {
+                            // Requisito 1: Tirar o horário quando marcar vaga aberta
+                            slot.entrada = '';
+                            slot.inicioAlmoco = '';
+                            slot.retornoAlmoco = '';
+                            slot.banco = '';
+                            slot.saida = '';
+                            slot.horario = '';
+                        }
+                    }
+                    localStorage.setItem('taskflow_schedule_data', JSON.stringify(this.data));
+                }
+
+                // Justificativa / inconsistência se marcada
                 const incCheck = document.getElementById('modal-sched-inconsistency-check');
                 if (incCheck && incCheck.checked) {
                     const reason = document.getElementById('modal-sched-inconsistency-reason') ? document.getElementById('modal-sched-inconsistency-reason').value : 'Sem colaborador disponível no setor';
@@ -12696,29 +12758,58 @@
                         departamento: dept,
                         colaboradorAusente: isVacant ? 'Posto Descoberto' : nomeInput,
                         reason: reason,
-                        notes: notes || `Sem colaborador disponível no dia ${dia} para o posto ${horarioLabel}`,
+                        notes: notes || ('Sem colaborador disponível no dia ' + dia + ' para o posto ' + horarioLabel),
                         date: (this.data && this.data.dias && this.data.dias[dia] ? this.data.dias[dia].data : getLocalTodayString()),
                         author: (window.auth && auth.currentUser) ? auth.currentUser.displayName : 'Líder / Admin',
                         createdAt: Date.now()
                     };
-
                     this.saveInconsistency(inconsistencyRecord);
                 }
 
-                const btn = document.getElementById('btn-save-sched-slot');
-                if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Salvando...</span>';
+                // 2. FECHA O MODAL IMEDIATAMENTE (Requisito 2: Alocação 100% instantânea sem espera de rede)
+                this.closeEditSlotModal();
 
-                try {
-                    await this.updateSlot(dia, linha, colLetra, nomeInput);
-                    this.closeEditSlotModal();
-                    if (window.notifications) {
-                        notifications.showToast('Escala salva e sincronizada com sucesso!', 'success');
-                    }
-                } catch (err) {
-                    alert('Erro ao salvar: ' + err.message);
-                } finally {
-                    if (btn) btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> <span>Salvar & Sincronizar</span>';
+                // 3. ATUALIZA A TELA INSTANTANEAMENTE (0 ms de delay)
+                this.render();
+
+                // 4. FEEDBACK IMEDIATO
+                if (window.notifications) {
+                    notifications.showToast(isVacant ? 'Posto marcado como Vaga Aberta!' : ('Colaborador ' + nomeInput + ' alocado instantaneamente!'), 'success');
                 }
+
+                // 5. SINCRONIZAÇÃO EM SEGUNDO PLANO COM O GOOGLE
+                this.syncSlotInBackground(dia, linha, colLetra, isVacant ? '' : nomeInput, isVacant);
+            }
+
+            syncSlotInBackground(dia, linha, colLetra, novoNome, isVacant) {
+                if (window.syncManager) {
+                    window.syncManager.publish({
+                        type: 'SCHEDULE_SLOT_UPDATE',
+                        dia: dia,
+                        linha: linha,
+                        nome: novoNome,
+                        timestamp: Date.now()
+                    });
+                }
+
+                if (!this.webAppUrl) return;
+
+                const sendUrl = this.webAppUrl + (this.webAppUrl.includes('?') ? '&' : '?') + 
+                    'action=update_slot&dia=' + encodeURIComponent(dia) + 
+                    '&linha=' + linha + 
+                    '&colunaLetra=' + encodeURIComponent(colLetra) + 
+                    '&nome=' + encodeURIComponent(novoNome) + 
+                    (isVacant ? '&limparHorario=1' : '') +
+                    '&t=' + Date.now();
+
+                fetch(sendUrl, { redirect: 'follow' })
+                    .then(r => r.json())
+                    .then(res => {
+                        console.log('[Schedule] Sincronização em segundo plano concluída:', res);
+                    })
+                    .catch(err => {
+                        console.warn('[Schedule] Erro na sincronização em segundo plano:', err);
+                    });
             }
 
             async updateSlot(dia, linha, colLetra, novoNome) {
@@ -12950,9 +13041,192 @@
                 if (btnTable) btnTable.className = (this.viewMode === 'table' ? activeCls : inactiveCls);
             }
 
+            // ===============================================================
+            // PAINEL LATERAL INTERATIVO: PESSOAS DE FOLGA NO DIA (REQUISITO 3)
+            // ===============================================================
+            toggleShowFolgas(forceState) {
+                this.showFolgas = (forceState !== undefined) ? !!forceState : !this.showFolgas;
+                try { localStorage.setItem('taskflow_schedule_show_folgas', this.showFolgas); } catch (e) {}
+                this.updateFolgasButtonState();
+                this.renderSlots();
+            }
+
+            filterFolgasSidePanel(q) {
+                this.folgasFilterQuery = String(q || '').trim();
+                const container = document.getElementById('sched-side-folgas-content');
+                if (container) {
+                    container.innerHTML = this.buildInteractiveFolgasList();
+                }
+            }
+
+            updateFolgasButtonState() {
+                const btn = document.getElementById('btn-toggle-folgas');
+                const badge = document.getElementById('badge-folgas-count');
+                const folgas = this.getFolgasForDay(this.currentDay);
+                if (badge) badge.innerText = folgas.length;
+
+                if (btn) {
+                    if (this.showFolgas) {
+                        btn.className = "px-3 py-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white border border-indigo-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-lg shadow-indigo-950/60 cursor-pointer";
+                    } else {
+                        btn.className = "px-3 py-2 bg-indigo-950/70 hover:bg-indigo-900 active:scale-95 text-indigo-300 border border-indigo-500/40 rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow cursor-pointer";
+                    }
+                }
+            }
+
+            getFolgasForDay(dia) {
+                dia = dia || this.currentDay;
+                const norm = s => String(s || '').toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                const diaNorm = norm(dia);
+
+                const diaMap = {
+                    'SEGUNDA': ['2A', '2', 'SEGUNDA', 'SEG'],
+                    'TERCA': ['3A', '3', 'TERCA', 'TER'],
+                    'QUARTA': ['4A', '4', 'QUARTA', 'QUA'],
+                    'QUINTA': ['5A', '5', 'QUINTA', 'QUI'],
+                    'SEXTA': ['6A', '6', 'SEXTA', 'SEX'],
+                    'SABADO': ['SABADO', 'SAB'],
+                    'DOMINGO': ['DOMINGO', 'DOM']
+                };
+                const targetKeys = diaMap[diaNorm] || [diaNorm];
+
+                const folgasMap = new Map();
+
+                // 1. Folgas explícitas da Diária (linhas 5 a 12 da planilha)
+                const diaInfo = (this.data && this.data.dias) ? this.data.dias[dia] : null;
+                if (diaInfo && diaInfo.folgas) {
+                    diaInfo.folgas.forEach(f => {
+                        const n = String(f.nome || '').trim();
+                        if (n && n !== '-' && !n.toUpperCase().includes('FOLGA')) {
+                            const cNorm = norm(n);
+                            folgasMap.set(cNorm, {
+                                nome: n,
+                                departamento: this.getCollabDepartment(n) || 'Geral',
+                                motivo: f.motivo || 'Folga da Escala Diária'
+                            });
+                        }
+                    });
+                }
+
+                // 2. Colaboradores do Banco de Dados
+                const colabs = (this.data && this.data.colaboradores) ? this.data.colaboradores : [];
+                colabs.forEach(c => {
+                    const cNome = String(c.nome || '').trim();
+                    if (!cNome) return;
+                    const cNorm = norm(cNome);
+
+                    const f1 = norm(c.folga || '');
+                    const f2 = norm(c.folga2 || '');
+                    const isMatch = targetKeys.some(k => f1.includes(k) || f2.includes(k));
+
+                    if (isMatch) {
+                        if (!folgasMap.has(cNorm)) {
+                            folgasMap.set(cNorm, {
+                                nome: cNome,
+                                cracha: c.cracha || '',
+                                escala: c.escala || '',
+                                departamento: c.departamento || this.getCollabDepartment(cNome) || 'Geral',
+                                motivo: 'Folga (' + (c.folga || dia) + ')'
+                            });
+                        }
+                    }
+                });
+
+                return Array.from(folgasMap.values());
+            }
+
+            buildInteractiveFolgasList() {
+                const dia = this.currentDay;
+                const folgas = this.getFolgasForDay(dia);
+                const q = String(this.folgasFilterQuery || '').toLowerCase().trim();
+                const filtered = q 
+                    ? folgas.filter(f => f.nome.toLowerCase().includes(q) || (f.departamento && f.departamento.toLowerCase().includes(q)))
+                    : folgas;
+
+                if (filtered.length === 0) {
+                    return '<div class="p-6 text-center text-xs text-gray-400 bg-gray-900/40 rounded-xl border border-gray-800/60">' +
+                        (q ? 'Nenhum colaborador encontrado para "' + this.escHtml(q) + '"' : 'Nenhuma folga registrada para ' + dia) +
+                    '</div>';
+                }
+
+                let html = '<div class="space-y-2">';
+                filtered.forEach(f => {
+                    html += '<div class="p-2.5 rounded-xl bg-gray-900/80 border border-indigo-950/80 hover:border-indigo-800/60 transition flex items-center justify-between gap-2 shadow-sm">' +
+                        '<div class="flex items-center gap-2 min-w-0">' +
+                            '<div class="w-7 h-7 rounded-lg bg-indigo-950 border border-indigo-800/60 text-indigo-300 flex items-center justify-center font-bold text-xs shrink-0">' +
+                                f.nome.charAt(0).toUpperCase() +
+                            '</div>' +
+                            '<div class="min-w-0">' +
+                                '<div class="font-bold text-xs text-gray-200 truncate">' + this.escHtml(f.nome) + '</div>' +
+                                '<div class="flex items-center gap-1.5 text-[10px] text-gray-400 truncate">' +
+                                    '<span class="text-teal-400 font-semibold truncate">' + this.escHtml(f.departamento || 'Geral') + '</span>' +
+                                    (f.escala ? '<span class="text-gray-600">•</span><span class="text-indigo-400">' + this.escHtml(f.escala) + '</span>' : '') +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="shrink-0 text-right">' +
+                            '<span class="px-2 py-0.5 rounded-md bg-rose-950/70 border border-rose-800/60 text-rose-300 text-[10px] font-black tracking-wide flex items-center gap-1">' +
+                                '<i class="fa-solid fa-umbrella-beach text-[9px]"></i> FOLGA' +
+                            '</span>' +
+                        '</div>' +
+                    '</div>';
+                });
+                html += '</div>';
+                return html;
+            }
+
+            buildInteractiveFolgasPanel() {
+                const dia = this.currentDay;
+                const folgas = this.getFolgasForDay(dia);
+
+                let html = '<div class="space-y-3">' +
+                    // Cabeçalho do Painel Lateral
+                    '<div class="flex items-center justify-between pb-2 border-b border-indigo-900/40">' +
+                        '<div class="flex items-center gap-2">' +
+                            '<div class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">' +
+                                '<i class="fa-solid fa-bed text-sm"></i>' +
+                            '</div>' +
+                            '<div>' +
+                                '<h4 class="text-xs font-bold text-gray-100 flex items-center gap-1.5">' +
+                                    '<span>Pessoas de Folga</span>' +
+                                    '<span class="px-1.5 py-0.2 rounded-full bg-indigo-900 text-indigo-200 text-[10px] font-black">' + folgas.length + '</span>' +
+                                '</h4>' +
+                                '<p class="text-[10px] text-gray-400">Ausentes em ' + dia + '</p>' +
+                            '</div>' +
+                        '</div>' +
+                        '<button type="button" onclick="scheduleApp.toggleShowFolgas(false)" class="w-7 h-7 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer" title="Fechar painel">' +
+                            '<i class="fa-solid fa-xmark text-xs"></i>' +
+                        '</button>' +
+                    '</div>' +
+
+                    // Busca Rápida no Painel Lateral
+                    '<div class="relative">' +
+                        '<i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[11px]"></i>' +
+                        '<input type="text" placeholder="Filtrar por nome ou setor..." value="' + this.escHtml(this.folgasFilterQuery || '') + '" ' +
+                        'oninput="scheduleApp.filterFolgasSidePanel(this.value)" ' +
+                        'class="w-full bg-gray-900 border border-gray-800 focus:border-indigo-500 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none transition">' +
+                    '</div>' +
+
+                    // Lista Rolável de Colaboradores de Folga
+                    '<div id="sched-side-folgas-content" class="max-h-[calc(100vh-320px)] overflow-y-auto pr-1 custom-scrollbar">' +
+                        this.buildInteractiveFolgasList() +
+                    '</div>' +
+
+                    // Rodapé do Painel
+                    '<div class="pt-2 border-t border-gray-900 flex items-center justify-between text-[11px] text-gray-500">' +
+                        '<span>Dia ativo: <strong class="text-indigo-300">' + dia + '</strong></span>' +
+                        '<span class="text-emerald-400 font-semibold">' + folgas.length + ' de folga hoje</span>' +
+                    '</div>' +
+                '</div>';
+
+                return html;
+            }
+
             renderSlots() {
                 const container = document.getElementById('schedule-slots-grid');
                 if (!container) return;
+
+                this.updateFolgasButtonState();
 
                 const diaInfo = (this.data && this.data.dias && this.data.dias[this.currentDay]) ? this.data.dias[this.currentDay] : null;
                 if (!diaInfo || !diaInfo.slots || diaInfo.slots.length === 0) {
@@ -12969,7 +13243,7 @@
                     slots = slots.filter(s => !s.isVago);
                 }
 
-                // Filtro de Departamento (Estritamente com base nos setores reais da planilha)
+                // Filtro de Departamento
                 if (this.currentDeptFilter === 'uncovered') {
                     slots = slots.filter(s => s.isVago);
                 } else if (this.currentDeptFilter && this.currentDeptFilter !== 'all') {
@@ -13007,8 +13281,21 @@
                     return;
                 }
 
-                container.innerHTML = (this.viewMode === 'cards') ? this.buildCardsView(slots) : this.buildSheetTable(slots);
+                const mainViewHtml = (this.viewMode === 'cards') ? this.buildCardsView(slots) : this.buildSheetTable(slots);
                 this.updateViewModeButtons();
+
+                // Requisito 3: Painel Lateral Interativo de Folgas exibido ao lado da planilha/cards
+                if (this.showFolgas) {
+                    container.innerHTML = 
+                        '<div class="flex flex-col lg:flex-row gap-4 items-start w-full">' +
+                            '<div class="flex-1 w-full min-w-0">' + mainViewHtml + '</div>' +
+                            '<div class="w-full lg:w-80 xl:w-96 shrink-0 bg-gray-950/95 border border-indigo-900/60 rounded-2xl p-4 shadow-2xl sticky top-4 select-none">' +
+                                this.buildInteractiveFolgasPanel() +
+                            '</div>' +
+                        '</div>';
+                } else {
+                    container.innerHTML = mainViewHtml;
+                }
             }
 
             // ================= VISUALIZAÇÃO ESTILO PLANILHA =================
@@ -13162,7 +13449,12 @@
                             '</div>' +
 
                             // Grade dos 4 campos de horários (Entrada, Início Alm, Retorno Alm, Banco)
-                            '<div class="bg-gray-950/70 rounded-xl p-2 border border-gray-800/60 grid grid-cols-4 gap-1.5 text-center">' +
+                            (isVacant 
+                                ? '<div class="bg-rose-950/20 border border-rose-900/40 rounded-xl p-2.5 text-center text-xs text-rose-300 font-semibold flex items-center justify-center gap-2">' +
+                                    '<i class="fa-solid fa-clock-slash text-rose-400"></i>' +
+                                    '<span>Sem horário definido (Vaga Aberta)</span>' +
+                                  '</div>'
+                                : '<div class="bg-gray-950/70 rounded-xl p-2 border border-gray-800/60 grid grid-cols-4 gap-1.5 text-center">' +
                                 // Entrada
                                 '<div>' +
                                     '<label class="block text-[9px] font-extrabold uppercase text-gray-400 mb-0.5">Entrada</label>' +
@@ -13203,7 +13495,7 @@
                                           'class="sched-cell-input w-full bg-gray-900 border border-gray-700 hover:border-gray-500 focus:border-teal-400 rounded-lg py-1 px-0.5 text-center font-mono text-xs font-bold ' + this.bancoClass(s.banco) + ' placeholder-gray-600 focus:outline-none transition">'
                                         : '<span class="text-xs font-mono font-bold ' + this.bancoClass(s.banco) + '">' + (s.banco || '±0:00') + '</span>') +
                                 '</div>' +
-                            '</div>' +
+                            '</div>') +
 
                             // Rodapé da Ficha: Saída Calculada
                             '<div class="flex items-center justify-between text-xs pt-1 border-t border-gray-800/40">' +
@@ -13245,7 +13537,10 @@
                 }
 
                 const timeCell = (s, campo) => {
-                    const v = s[campo] || '';
+                    const v = (s.isVago ? '' : (s[campo] || ''));
+                    if (s.isVago) {
+                        return '<td class="px-1.5 py-1.5 text-center font-mono text-gray-600 text-xs">—</td>';
+                    }
                     if (!editTimes) return '<td class="px-1.5 py-1.5 text-center font-mono text-gray-200">' + (v ? this.escHtml(v) : '<span class="text-gray-600">—</span>') + '</td>';
                     return '<td class="px-1 py-1 text-center"><input type="text" inputmode="numeric" autocomplete="off" maxlength="5" value="' + this.escHtml(v) + '" placeholder="--:--" ' +
                         'data-dia="' + this.escHtml(dia) + '" data-linha="' + s.linha + '" data-campo="' + campo + '" data-old="' + this.escHtml(v) + '" ' +
@@ -14751,71 +15046,12 @@
     <!-- ============================================================== -->
     <!-- BOTÃO FLUTUANTE ASSISTENTE IA (FAB - Mobile e Desktop)         -->
     <!-- ============================================================== -->
-    <button type="button" onclick="scheduleApp.toggleAiDrawer()" id="fab-schedule-ai" class="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 px-3.5 py-2.5 sm:px-4 sm:py-3 bg-gradient-to-r from-purple-600 via-indigo-600 to-teal-600 text-white rounded-2xl shadow-2xl shadow-purple-950/80 border border-purple-400/40 flex items-center gap-2 font-extrabold text-xs sm:text-sm hover:scale-105 active:scale-95 transition-all backdrop-blur-md cursor-pointer group" title="Abrir Assistente Operacional IA">
-        <div class="relative">
-            <i class="fa-solid fa-wand-magic-sparkles text-amber-300 text-sm sm:text-base group-hover:rotate-12 transition-transform"></i>
-            <span id="fab-ai-badge" class="hidden absolute -top-2 -right-2 w-4 h-4 rounded-full bg-rose-500 text-[10px] font-black flex items-center justify-center text-white border-2 border-gray-950">!</span>
-        </div>
-        <span class="font-bold tracking-wide">Assistente IA</span>
-    </button>
+    
 
     <!-- BACKDROP DA GAVETA LATERAL -->
-    <div id="drawer-schedule-ai-backdrop" onclick="scheduleApp.toggleAiDrawer(false)" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden transition-opacity duration-300"></div>
+    
 
     <!-- GAVETA LATERAL ASSISTENTE IA (OFF-CANVAS DRAWER) -->
-    <aside id="drawer-schedule-ai" class="fixed inset-y-0 right-0 z-50 w-full sm:w-[480px] md:w-[520px] bg-gray-950 border-l border-gray-800 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300 ease-out select-none">
-        
-        <!-- Topo da Gaveta -->
-        <div class="p-4 sm:p-5 border-b border-gray-800/80 bg-gray-900/60 backdrop-blur-md flex items-center justify-between shrink-0">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-600 to-teal-500 text-white flex items-center justify-center shadow-lg shadow-purple-600/30">
-                    <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h3 class="font-bold text-sm sm:text-base text-gray-100">Assistente da Escala</h3>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/30 text-teal-300">Local • 100% Grátis</span>
-                    </div>
-                    <p class="text-[11px] text-gray-400">Otimização inteligente, vagas e banco de horas</p>
-                </div>
-            </div>
-            <button type="button" onclick="scheduleApp.toggleAiDrawer(false)" class="w-8 h-8 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white flex items-center justify-center transition active:scale-95">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-
-        <!-- Seletor de Abas do Assistente -->
-        <div class="grid grid-cols-4 p-2 bg-gray-950 border-b border-gray-800/80 gap-1 shrink-0 text-[11px] font-bold">
-            <button type="button" onclick="scheduleApp.switchAiTab('vacancies')" id="ai-tab-btn-vacancies" class="py-2 rounded-xl transition flex flex-col items-center gap-1 bg-purple-950/60 border border-purple-500/40 text-purple-200">
-                <i class="fa-solid fa-shield-halved text-xs"></i>
-                <span>Vagas</span>
-            </button>
-            <button type="button" onclick="scheduleApp.switchAiTab('bh')" id="ai-tab-btn-bh" class="py-2 rounded-xl transition flex flex-col items-center gap-1 text-gray-400 hover:bg-gray-900 hover:text-gray-200">
-                <i class="fa-solid fa-clock text-xs"></i>
-                <span>Reduzir BH</span>
-            </button>
-            <button type="button" onclick="scheduleApp.switchAiTab('senior')" id="ai-tab-btn-senior" class="py-2 rounded-xl transition flex flex-col items-center gap-1 text-gray-400 hover:bg-gray-900 hover:text-gray-200">
-                <i class="fa-solid fa-file-import text-xs"></i>
-                <span>Senior (Ctrl+V)</span>
-            </button>
-            <button type="button" onclick="scheduleApp.switchAiTab('audit')" id="ai-tab-btn-audit" class="py-2 rounded-xl transition flex flex-col items-center gap-1 text-gray-400 hover:bg-gray-900 hover:text-gray-200">
-                <i class="fa-solid fa-magnifying-glass text-xs"></i>
-                <span>Auditoria</span>
-            </button>
-        </div>
-
-        <!-- Conteúdo Rolável da Gaveta -->
-        <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 custom-scrollbar" id="ai-drawer-body">
-            <!-- Renderizado dinamicamente via scheduleApp.renderAiDrawer() -->
-        </div>
-
-        <!-- Rodapé da Gaveta -->
-        <div class="p-3 border-t border-gray-800/80 bg-gray-900/40 flex items-center justify-between text-[11px] text-gray-400 shrink-0">
-            <span id="ai-drawer-footer-day">Dia ativo: Quinta</span>
-            <button type="button" onclick="scheduleApp.syncWithGoogleSheets()" class="text-teal-400 hover:underline flex items-center gap-1 font-semibold">
-                <i class="fa-solid fa-rotate text-[10px]"></i> Sincronizar Planilha
-            </button>
-        </div>
-    </aside>
+    
 </body>
 </html>
