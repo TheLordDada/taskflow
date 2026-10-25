@@ -12044,6 +12044,39 @@
                 this.render();
             }
 
+            isValidPersonName(n) {
+                if (!n || typeof n !== 'string') return false;
+                const clean = n.trim().toUpperCase();
+                if (clean.length < 2) return false;
+                if (clean === '-' || clean === 'X' || clean === 'VAGO' || clean === 'POSTO VAGO') return false;
+
+                const bannedWords = [
+                    'DEPARTAMENTO',
+                    'NOME DO COLABORADOR',
+                    'NOME',
+                    'SOLUÇÃO DA FOLGA',
+                    'SOLUCAO DA FOLGA',
+                    'ESCALA DA REPOSIÇÃO',
+                    'ESCALA DA REPOSICAO',
+                    'FOLGAS',
+                    'FOLGA',
+                    'COND',
+                    'FAR.',
+                    'MAC.',
+                    'LIMP.',
+                    'BISC/MAT',
+                    'ARROZ/OLEO',
+                    'BEBIDA',
+                    'PERFUMARIA',
+                    'LEITE',
+                    'CAFÉ',
+                    'CAFE'
+                ];
+                if (bannedWords.includes(clean)) return false;
+                if (clean.includes('ESCALA DA REPOSIÇÃO') || clean.includes('ESCALA DA REPOSICAO') || clean.includes('DEPARTAMENTO')) return false;
+                return true;
+            }
+
             getCollabDepartment(collabName) {
                 if (!collabName) return '';
                 const nameUp = String(collabName).trim().toUpperCase();
@@ -12540,10 +12573,16 @@
                     const slots = [];
                     const folgas = [];
 
-                    for (let r = 5; r <= 12; r++) {
-                        const fNome = getCell(r, cfg.colDept);
-                        if (fNome && fNome !== '-' && !fNome.toUpperCase().includes('FOLGA')) {
-                            folgas.push({ linha: r + 1, nome: fNome, motivo: 'Folga da Escala' });
+                    for (let r = 3; r <= 9; r++) {
+                        const fDept = getCell(r, cfg.colDept);
+                        const fNome = getCell(r, cfg.colNome);
+                        if (this.isValidPersonName(fNome)) {
+                            folgas.push({
+                                linha: r + 1,
+                                nome: fNome.trim(),
+                                departamento: fDept.trim() || 'Geral',
+                                motivo: 'Folga da Escala Diária'
+                            });
                         }
                     }
 
@@ -13437,11 +13476,11 @@
                 if (diaInfo && diaInfo.folgas) {
                     diaInfo.folgas.forEach(f => {
                         const n = String(f.nome || '').trim();
-                        if (n && n !== '-' && !n.toUpperCase().includes('FOLGA')) {
+                        if (this.isValidPersonName(n)) {
                             const cNorm = norm(n);
                             folgasMap.set(cNorm, {
                                 nome: n,
-                                departamento: this.getCollabDepartment(n) || 'Geral',
+                                departamento: this.getCollabDepartment(n) || f.departamento || 'Geral',
                                 motivo: f.motivo || 'Folga da Escala Diária'
                             });
                         }
@@ -13452,7 +13491,7 @@
                 const colabs = (this.data && this.data.colaboradores) ? this.data.colaboradores : [];
                 colabs.forEach(c => {
                     const cNome = String(c.nome || '').trim();
-                    if (!cNome) return;
+                    if (!this.isValidPersonName(cNome)) return;
                     const cNorm = norm(cNome);
 
                     const f1 = norm(c.folga || '');
