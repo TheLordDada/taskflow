@@ -870,14 +870,14 @@
         <!-- Main Content Area: Tarefas vs Ocorrências vs Escala -->
         <div id="app-main-content-scroll" class="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-4 md:p-6 max-w-6xl w-full mx-auto transition-all">
             <!-- MÓDULO 1: TAREFAS DA EQUIPE -->
-            <div id="view-tasks-container" class="space-y-2.5 pb-20 md:pb-6">
+            <div id="view-tasks-container" class="space-y-2.5 pb-28 md:pb-6">
                 <div id="tasks-container" class="space-y-2.5">
                     <!-- Tasks dynamically injected -->
                 </div>
             </div>
 
             <!-- MÓDULO 2: OCORRÊNCIAS & PROCESSOS (NOVA FUNCIONALIDADE) -->
-            <div id="view-occurrences-container" class="hidden space-y-4 pb-20 md:pb-6">
+            <div id="view-occurrences-container" class="hidden space-y-4 pb-28 md:pb-6">
                 <!-- Barra de Filtros e Resumo de Ocorrências -->
                 <div class="bg-gray-950/80 p-3 sm:p-4 rounded-2xl border border-gray-800 flex items-center justify-between gap-3 shadow-lg">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -914,7 +914,7 @@
             <!-- ========================================== -->
             <!-- MÓDULO 3: FEEDBACK DE COLABORADORES & 1-ON-1 -->
             <!-- ========================================== -->
-            <div id="view-feedback-container" class="hidden space-y-4 pb-20 md:pb-6">
+            <div id="view-feedback-container" class="hidden space-y-4 pb-28 md:pb-6">
                 <!-- Topo Informativo do Módulo -->
                 <div class="bg-gray-950/80 p-3 sm:p-4 rounded-2xl border border-gray-800 flex items-center justify-between gap-3 shadow-lg">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -935,7 +935,7 @@
                 </div>
 
                 <!-- Abas Internas: 1. Histórico | 2. Aplicar Feedback | 3. Diretrizes ADM -->
-                <div class="flex overflow-x-auto custom-scrollbar scrollbar-none bg-gray-950 p-1.5 rounded-2xl border border-gray-800 gap-2 shrink-0">
+                <div class="sticky top-0 z-20 flex overflow-x-auto custom-scrollbar scrollbar-none bg-gray-950/95 backdrop-blur p-1.5 rounded-2xl border border-gray-800 gap-2 shrink-0 shadow-lg">
                     <button type="button" onclick="feedbackApp.switchTab('history')" id="fb-tab-history-btn" class="shrink-0 whitespace-nowrap py-2 px-3.5 text-xs font-bold rounded-xl bg-purple-600 text-white transition flex items-center justify-center gap-2 shadow-md shadow-purple-600/30">
                         <i class="fa-solid fa-chart-pie text-xs shrink-0"></i>
                         <span>Histórico & Relatórios</span>
@@ -1487,7 +1487,7 @@
         </div>
 
         <!-- Bottom Navigation Bar Mobile -->
-        <nav class="md:hidden bg-gray-900/95 backdrop-blur border-t border-gray-800 px-3 py-2 flex items-center justify-around shrink-0 z-40">
+        <nav id="app-bottom-nav-bar" class="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur border-t border-gray-800 px-3 py-2 flex items-center justify-around z-40 shadow-2xl pb-safe-bottom">
             <button onclick="window.switchMainView('tasks')" id="mob-nav-tasks" class="flex flex-col items-center gap-1 text-indigo-400 py-1 px-2.5 transition active:scale-90">
                 <i class="fa-solid fa-list-check text-base"></i>
                 <span class="text-[10px] font-semibold">Tarefas</span>
@@ -1556,6 +1556,10 @@
                     <i class="fa-solid fa-tags text-purple-400"></i>
                     <span>Cargos & Setores</span>
                 </button>
+                <button type="button" onclick="admin.switchTab('hierarchy')" id="admin-tab-hierarchy" class="shrink-0 whitespace-nowrap py-2 px-3.5 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 transition flex items-center justify-center gap-2" title="Quadro Organizacional e Níveis Hierárquicos">
+                    <i class="fa-solid fa-sitemap text-indigo-400"></i>
+                    <span>Quadro Organizacional & Hierarquia</span>
+                </button>
                 <button type="button" onclick="admin.switchTab('feedback_guidelines')" id="admin-tab-feedback_guidelines" class="shrink-0 whitespace-nowrap py-2 px-3.5 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 transition flex items-center justify-center gap-2">
                     <i class="fa-solid fa-comments text-purple-400"></i>
                     <span>Diretrizes Feedback</span>
@@ -1607,7 +1611,52 @@
             </div>
 
             <!-- CONTEÚDO DA ABA: GESTÃO DE CARGOS & SETORES (MODO EDITOR COMPLETO) -->
-            <div id="admin-content-roles" class="space-y-6 hidden">
+            
+            <!-- CONTEÚDO DA ABA: QUADRO ORGANIZACIONAL & HIERARQUIA CORPORATIVA -->
+            <div id="admin-content-hierarchy" class="space-y-5 hidden">
+                <!-- Banner de Topo com Toggle de Ativação da Regra -->
+                <div class="bg-gradient-to-r from-indigo-950/80 via-purple-950/70 to-gray-950 p-4 rounded-2xl border border-indigo-500/40 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex items-center justify-center font-bold text-base shrink-0">
+                            <i class="fa-solid fa-sitemap"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <h4 class="text-xs sm:text-sm font-extrabold text-white uppercase tracking-wider">Quadro Organizacional & Hierarquia</h4>
+                                <span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">EMPRESA RONDON</span>
+                            </div>
+                            <p class="text-[11px] text-gray-300 mt-0.5 leading-snug">
+                                Regra de Autoridade: <strong>Cargos subordinados não podem delegar tarefas para cargos superiores</strong> (ex: Líder não atribui para Gerente; Monitor não atribui para Líder).
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="admin-toggle-hierarchy-enforcement" onchange="admin.setHierarchyEnforcement(this.checked)" class="sr-only peer" checked>
+                            <div class="w-11 h-6 bg-gray-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <span class="ml-2 text-xs font-bold text-indigo-300">Bloqueio Ativo</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Quadro Visual em Níveis (Árvore Hierárquica Organizada) -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between px-1">
+                        <h5 class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-indigo-400"></i>
+                            Estrutura de Níveis da Empresa
+                        </h5>
+                        <span class="text-[11px] text-gray-500">Do topo estratégico à operação</span>
+                    </div>
+
+                    <!-- Container onde a lista dinâmica de níveis e cargos é injetada -->
+                    <div id="admin-hierarchy-levels-container" class="space-y-3">
+                        <!-- Injetado dinamicamente via admin.renderHierarchyTab() -->
+                    </div>
+                </div>
+            </div>
+
+<div id="admin-content-roles" class="space-y-6 hidden">
                 <!-- BANNER DE DESTAQUE: MODO EDITOR ADMINISTRATIVO -->
                 <div class="bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-gray-950 p-3 sm:p-3.5 rounded-2xl border border-purple-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 shadow-lg shrink-0">
                     <div class="flex items-center gap-2.5 min-w-0">
@@ -2063,6 +2112,10 @@
                             <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Atribuir a</label>
                             <input type="text" id="task-assignee" list="collaborators-datalist" placeholder="Ex: Carlos, Gerência..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
                             <datalist id="collaborators-datalist"></datalist>
+                            <p id="task-hierarchy-hint" class="text-[10px] text-indigo-400/90 mt-1 flex items-center gap-1">
+                                <i class="fa-solid fa-sitemap text-indigo-400"></i>
+                                <span>Quadro Organizacional ativo: só é permitido atribuir a membros de nível igual ou subordinado.</span>
+                            </p>
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Prioridade</label>
@@ -4285,6 +4338,35 @@
                         return;
                     }
                     const assignee = (document.getElementById('task-assignee').value || '').trim() || 'Equipe';
+
+                    // Validação de Hierarquia Organizacional & Autoridade
+                    if (window.admin && typeof admin.canAssignTask === 'function') {
+                        const authorRole = auth.currentUser ? auth.currentUser.role : 'Colaborador';
+                        const authorIsAdmin = auth.currentUser ? !!auth.currentUser.isAdmin : false;
+
+                        let targetRole = null;
+                        const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                        const targetUser = accounts.find(a => 
+                            a.displayName && (
+                                a.displayName.toLowerCase() === assignee.toLowerCase() ||
+                                assignee.toLowerCase().includes(a.displayName.toLowerCase())
+                            )
+                        );
+                        if (targetUser) {
+                            targetRole = targetUser.role;
+                        } else {
+                            const matchRole = assignee.match(/\(([^)]+)\)/);
+                            if (matchRole) targetRole = matchRole[1];
+                        }
+
+                        if (targetRole && !authorIsAdmin) {
+                            const check = admin.canAssignTask(authorRole, targetRole, authorIsAdmin);
+                            if (!check.allowed) {
+                                alert("⚠️ Ação Bloqueada pela Hierarquia Organizacional:\n\n" + check.reason);
+                                return;
+                            }
+                        }
+                    }
                     const date = document.getElementById('task-date').value || getLocalTodayString();
                     const priority = document.getElementById('task-priority').value || 'media';
 
@@ -4547,7 +4629,7 @@
                     const authorEmail = (t.authorEmail || '').toLowerCase().trim();
 
                     // 1. Sem definir pessoa a executar (livre para qualquer um / tarefas gerais)
-                    const isUnassigned = !assignee || assignee === '' || assignee === 'todos' || assignee === 'todos da equipe' || assignee === 'livre' || assignee === 'geral';
+                    const isUnassigned = !assignee || assignee === '' || assignee === 'todos' || assignee === 'todos da equipe' || assignee === 'livre' || assignee === 'geral' || assignee === 'equipe';
                     if (isUnassigned) return true;
 
                     // 2. Definida para ele
@@ -8216,7 +8298,7 @@
 
             switchTab(tab) {
                 this.currentTab = tab;
-                ['users', 'roles', 'audit', 'occurrences', 'tasks', 'reports', 'settings', 'email', 'feedback_guidelines'].forEach(t => {
+                ['users', 'roles', 'hierarchy', 'audit', 'occurrences', 'tasks', 'reports', 'settings', 'email', 'feedback_guidelines'].forEach(t => {
                     const btn = document.getElementById(`admin-tab-${t}`);
                     const content = document.getElementById(`admin-content-${t}`);
                     if (btn && content) {
@@ -9722,6 +9804,170 @@
             }
 
             // ==========================================
+            
+            // ==========================================
+            // QUADRO ORGANIZACIONAL & HIERARQUIA CORPORATIVA
+            // ==========================================
+            getDefaultHierarchyLevels() {
+                return {
+                    "Administrador": 10,
+                    "Diretoria / Geral": 10,
+                    "Gerente": 8,
+                    "Supervisor": 6,
+                    "Líder": 4,
+                    "Líder Setorial": 4,
+                    "Líder de Reposição": 4,
+                    "Encarregado": 4,
+                    "Fiscal de Loja": 3,
+                    "Monitor": 3,
+                    "Açougue": 2,
+                    "Padaria": 2,
+                    "Operador de Caixa": 2,
+                    "Depósito / Estoque": 2,
+                    "Repositor": 1,
+                    "Colaborador": 1
+                };
+            }
+
+            getRoleHierarchyLevels() {
+                const stored = localStorage.getItem('taskflow_hierarchy_levels');
+                if (stored) {
+                    try { return Object.assign({}, this.getDefaultHierarchyLevels(), JSON.parse(stored)); } catch(e) {}
+                }
+                return this.getDefaultHierarchyLevels();
+            }
+
+            saveRoleHierarchyLevels(levels) {
+                localStorage.setItem('taskflow_hierarchy_levels', JSON.stringify(levels));
+                this.renderHierarchyTab();
+                if (window.syncManager) {
+                    syncManager.publish({
+                        type: 'APP_CONFIG_UPDATE',
+                        config: { hierarchyLevels: levels }
+                    });
+                }
+            }
+
+            isHierarchyEnforcementEnabled() {
+                const stored = localStorage.getItem('taskflow_enforce_hierarchy');
+                return stored === null ? true : (stored === 'true');
+            }
+
+            setHierarchyEnforcement(enabled) {
+                localStorage.setItem('taskflow_enforce_hierarchy', enabled ? 'true' : 'false');
+                this.renderHierarchyTab();
+                if (window.notifications) notifications.showToast(enabled ? '✓ Bloqueio hierárquico ativado' : '⚠️ Bloqueio hierárquico desativado', 'info');
+            }
+
+            getRoleLevel(roleName) {
+                if (!roleName) return 1;
+                const levels = this.getRoleHierarchyLevels();
+                const trimmed = roleName.trim();
+                if (levels[trimmed] !== undefined) return levels[trimmed];
+
+                const lower = trimmed.toLowerCase();
+                if (lower.includes('admin') || lower.includes('diretor') || lower.includes('proprietário')) return 10;
+                if (lower.includes('gerente')) return 8;
+                if (lower.includes('supervisor') || lower.includes('subgerente')) return 6;
+                if (lower.includes('líder') || lower.includes('lider') || lower.includes('encarregado')) return 4;
+                if (lower.includes('fiscal') || lower.includes('monitor') || lower.includes('auditor')) return 3;
+                if (lower.includes('caixa') || lower.includes('açougue') || lower.includes('acougue') || lower.includes('padaria') || lower.includes('estoque')) return 2;
+                return 1;
+            }
+
+            canAssignTask(authorRole, targetRole, authorIsAdmin = false) {
+                if (authorIsAdmin) return { allowed: true };
+                if (!this.isHierarchyEnforcementEnabled()) return { allowed: true };
+
+                const authorLvl = this.getRoleLevel(authorRole);
+                const targetLvl = this.getRoleLevel(targetRole);
+
+                if (authorLvl < targetLvl) {
+                    return {
+                        allowed: false,
+                        reason: `Seu cargo atual (${authorRole || 'Colaborador'} - Nível ${authorLvl}) não possui permissão para delegar tarefas para ${targetRole || 'Cargo Superior'} (Nível ${targetLvl}). Na hierarquia da empresa, atribuições são restritas à sua própria equipe ou mesmo nível hierárquico.`
+                    };
+                }
+                return { allowed: true };
+            }
+
+            changeRoleHierarchyLevel(role, newLevel) {
+                const levels = this.getRoleHierarchyLevels();
+                levels[role] = parseInt(newLevel, 10) || 1;
+                this.saveRoleHierarchyLevels(levels);
+                if (window.notifications) notifications.showToast(`✓ Nível de "${role}" atualizado para Nível ${newLevel}`, 'success');
+            }
+
+            renderHierarchyTab() {
+                const container = document.getElementById('admin-hierarchy-levels-container');
+                const toggle = document.getElementById('admin-toggle-hierarchy-enforcement');
+                if (toggle) toggle.checked = this.isHierarchyEnforcementEnabled();
+                if (!container) return;
+
+                const levels = this.getRoleHierarchyLevels();
+                const roles = this.getRoles();
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+
+                const levelCategories = [
+                    { min: 10, label: "Diretoria & Administração", badge: "Nível 10 - Estratégico Máximo", color: "from-rose-950/60 to-red-950/40 border-rose-500/40 text-rose-300" },
+                    { min: 8, label: "Gerência Geral & Operacional", badge: "Nível 8 - Tático / Gerencial", color: "from-amber-950/60 to-orange-950/40 border-amber-500/40 text-amber-300" },
+                    { min: 6, label: "Supervisão de Turno & Setor", badge: "Nível 6 - Supervisão", color: "from-purple-950/60 to-indigo-950/40 border-purple-500/40 text-purple-300" },
+                    { min: 4, label: "Liderança de Equipe & Encarregados", badge: "Nível 4 - Liderança de Campo", color: "from-blue-950/60 to-cyan-950/40 border-blue-500/40 text-blue-300" },
+                    { min: 3, label: "Monitores & Fiscais de Loja", badge: "Nível 3 - Monitoria & Fiscalização", color: "from-teal-950/60 to-emerald-950/40 border-teal-500/40 text-teal-300" },
+                    { min: 2, label: "Operadores Especializados", badge: "Nível 2 - Especialistas / Seções", color: "from-emerald-950/60 to-green-950/40 border-emerald-500/40 text-emerald-300" },
+                    { min: 1, label: "Operacional & Repositores", badge: "Nível 1 - Execução Operacional", color: "from-gray-900 to-gray-950 border-gray-800 text-gray-300" }
+                ];
+
+                let html = '';
+                levelCategories.forEach(cat => {
+                    const matchedRoles = roles.filter(r => {
+                        const lvl = levels[r] !== undefined ? levels[r] : this.getRoleLevel(r);
+                        if (cat.min === 10) return lvl >= 10;
+                        if (cat.min === 8) return lvl === 8 || lvl === 9;
+                        if (cat.min === 6) return lvl === 6 || lvl === 7;
+                        if (cat.min === 4) return lvl === 4 || lvl === 5;
+                        if (cat.min === 3) return lvl === 3;
+                        if (cat.min === 2) return lvl === 2;
+                        return lvl <= 1;
+                    });
+
+                    html += `
+                        <div class="bg-gradient-to-r ${cat.color} p-3.5 rounded-2xl border shadow-md space-y-2.5">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-lg bg-black/40 flex items-center justify-center text-xs font-black">${cat.min}</span>
+                                    <h6 class="font-bold text-xs sm:text-sm text-white">${cat.label}</h6>
+                                </div>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-black/40 border border-white/10 uppercase tracking-wide">${cat.badge}</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                ${matchedRoles.length === 0 ? `<p class="text-xs text-gray-500 italic p-1">Nenhum cargo neste nível.</p>` : matchedRoles.map(r => {
+                                    const currentLvl = levels[r] !== undefined ? levels[r] : this.getRoleLevel(r);
+                                    const userCount = accounts.filter(a => a.role === r).length;
+                                    return `
+                                        <div class="bg-gray-950/80 border border-gray-800/80 p-2.5 rounded-xl flex items-center justify-between gap-2">
+                                            <div class="min-w-0">
+                                                <p class="font-bold text-xs text-gray-100 truncate">${r}</p>
+                                                <p class="text-[10px] text-gray-400">${userCount} colaborador(es)</p>
+                                            </div>
+                                            <div class="flex items-center gap-1 shrink-0">
+                                                <span class="text-[9px] text-gray-500 font-bold uppercase">Nível:</span>
+                                                <select onchange="admin.changeRoleHierarchyLevel('${r}', this.value)" class="bg-gray-900 border border-gray-700 text-indigo-300 text-xs font-bold rounded-lg px-1.5 py-0.5 focus:outline-none cursor-pointer">
+                                                    ${[10,8,6,4,3,2,1].map(n => `<option value="${n}" ${currentLvl === n ? 'selected' : ''}>Nível ${n}</option>`).join('')}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            }
+
             // MODO EDITOR: GESTÃO DINÂMICA DE CARGOS & SETORES
             // ==========================================
             getRoles() {
@@ -14550,7 +14796,23 @@
             }
         }
 
-                // Inicializa o módulo de Escalas Diárias
+                
+        // Gerenciamento de Visibilidade do Botão Voltar ao Topo
+        document.addEventListener('DOMContentLoaded', () => {
+            const scrollArea = document.getElementById('app-main-content-scroll');
+            const btt = document.getElementById('btn-back-to-top');
+            if (scrollArea && btt) {
+                scrollArea.addEventListener('scroll', () => {
+                    if (scrollArea.scrollTop > 220) {
+                        btt.classList.remove('hidden');
+                    } else {
+                        btt.classList.add('hidden');
+                    }
+                });
+            }
+        });
+
+        // Inicializa o módulo de Escalas Diárias
         window.scheduleApp = new ScheduleApp();
         document.addEventListener('DOMContentLoaded', () => {
             if (window.scheduleApp) window.scheduleApp.init();
@@ -15053,5 +15315,10 @@
 
     <!-- GAVETA LATERAL ASSISTENTE IA (OFF-CANVAS DRAWER) -->
     
+
+    <!-- Botão Flutuante Voltar ao Topo (Otimização para Abas Longas como Feedback e Escala) -->
+    <button id="btn-back-to-top" onclick="document.getElementById('app-main-content-scroll') ? document.getElementById('app-main-content-scroll').scrollTo({top: 0, behavior: 'smooth'}) : window.scrollTo({top: 0, behavior: 'smooth'})" class="hidden fixed bottom-16 right-4 z-40 w-9 h-9 rounded-full bg-indigo-600/90 hover:bg-indigo-500 text-white shadow-xl flex items-center justify-center transition active:scale-95 border border-indigo-400/40" title="Voltar ao início">
+        <i class="fa-solid fa-arrow-up text-xs"></i>
+    </button>
 </body>
 </html>
