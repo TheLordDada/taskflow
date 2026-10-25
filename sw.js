@@ -1,5 +1,5 @@
 // Service Worker TaskFlow - Suporte PWA Offline & Limpeza de Cache para Atualização Automática
-const CACHE_NAME = 'taskflow-v12-20261025-sync-realtime';
+const CACHE_NAME = 'taskflow-v13-20261025-fix-folgas-nomes';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
