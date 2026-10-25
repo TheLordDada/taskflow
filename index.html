@@ -1405,18 +1405,54 @@
                     </div>
                 </div>
 
-                <!-- Quadro de Ausências do Dia (Linhas 6 a 13 da Planilha) -->
-                <div id="schedule-absences-card" class="bg-gray-950/90 p-4 md:p-5 rounded-2xl border border-gray-800 shadow-md space-y-3">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2.5">
-                            <i class="fa-solid fa-user-clock text-amber-400 text-sm md:text-base"></i>
-                            <h4 class="text-xs md:text-sm font-extrabold text-white">Quadro de Ausências & Folgas do Dia</h4>
-                            <span id="schedule-absences-count" class="text-xs md:text-sm px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 font-black border border-amber-800/80">0</span>
+                <!-- Quadro de Ausências, Folgas & Coberturas do Dia (Linhas 6 a 12 da Planilha) -->
+                <div id="schedule-absences-card" class="bg-gray-950/95 p-4 sm:p-5 rounded-3xl border border-gray-800 shadow-xl space-y-4">
+                    <!-- Top Bar: Título, Badges e Botões de Ação -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-gray-800/80">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2.5 flex-wrap">
+                                <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 text-white flex items-center justify-center text-sm shadow-md shadow-amber-500/20">
+                                    <i class="fa-solid fa-user-clock"></i>
+                                </span>
+                                <h4 class="text-sm sm:text-base font-black text-white tracking-wide">Quadro de Folgas, Ausências & Coberturas</h4>
+                                <span id="schedule-absences-total-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 font-extrabold border border-amber-800/80">0 registros</span>
+                            </div>
+                            <p class="text-[11px] sm:text-xs text-gray-400 font-medium">Linhas 6 a 12 da planilha • Acompanhe folgas, atestados e substitutos sem alterar a largura das células</p>
                         </div>
-                        <span class="text-xs md:text-xs text-gray-400 font-medium">Linhas 6 a 13 da Planilha</span>
+                        <!-- Botões de Ação Rápida -->
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <button type="button" onclick="scheduleApp.openNewAbsenceModal('folga')" class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-teal-950 hover:bg-teal-900 border border-teal-600/60 text-teal-200 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer">
+                                <i class="fa-solid fa-umbrella-beach text-teal-400"></i>
+                                <span>+ Nova Folga</span>
+                            </button>
+                            <button type="button" onclick="scheduleApp.openNewAbsenceModal('ausencia')" class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-indigo-950 hover:bg-indigo-900 border border-indigo-600/60 text-indigo-200 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer">
+                                <i class="fa-solid fa-notes-medical text-indigo-400"></i>
+                                <span>+ Nova Ausência</span>
+                            </button>
+                        </div>
                     </div>
-                    <div id="schedule-absences-list" class="flex flex-wrap gap-2.5 pt-1">
-                        <!-- Injetado dinamicamente -->
+
+                    <!-- Filtros Rápidos do Quadro -->
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-1.5 flex-wrap" id="schedule-absences-filters">
+                            <button type="button" onclick="scheduleApp.setAbsenceFilter('all')" id="btn-abs-filter-all" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-teal-600 text-white shadow-sm cursor-pointer">
+                                Todos (<span id="count-abs-all">0</span>)
+                            </button>
+                            <button type="button" onclick="scheduleApp.setAbsenceFilter('folga')" id="btn-abs-filter-folga" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-teal-300 border border-teal-900/60 cursor-pointer">
+                                🌴 Folgas (<span id="count-abs-folgas">0</span>)
+                            </button>
+                            <button type="button" onclick="scheduleApp.setAbsenceFilter('ausencia')" id="btn-abs-filter-ausencia" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-indigo-300 border border-indigo-900/60 cursor-pointer">
+                                🩺 Ausências / Atestados (<span id="count-abs-ausencias">0</span>)
+                            </button>
+                            <button type="button" onclick="scheduleApp.setAbsenceFilter('uncovered')" id="btn-abs-filter-uncovered" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-rose-300 border border-rose-900/60 cursor-pointer">
+                                ⚠️ Sem Cobertura (<span id="count-abs-uncovered">0</span>)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Cards de Folgas e Ausências -->
+                    <div id="schedule-absences-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                        <!-- Injetado dinamicamente via scheduleApp.renderStatsAndAbsences() -->
                     </div>
                 </div>
 
@@ -3224,6 +3260,9 @@
             constructor() {
                 this.tasks = JSON.parse(localStorage.getItem('taskflow_work_tasks')) || [];
                 this.currentFilter = 'all';
+                this.absenceFilter = 'all';
+                this.editingAbsence = null;
+                this.newAbsenceType = 'folga';
                 this.tempImage = null;
                 this.mediaStream = null;
                 this.pomoInterval = null;
@@ -12573,15 +12612,37 @@
                     const slots = [];
                     const folgas = [];
 
+                    // Leitura das Folgas da Escala (Linhas 6 a 12 na Planilha / r=3 a 9 no GViz)
                     for (let r = 3; r <= 9; r++) {
                         const fDept = getCell(r, cfg.colDept);
                         const fNome = getCell(r, cfg.colNome);
+                        const fSol = getCell(r, cfg.colEsc); // Coluna D/M/V/... é a SOLUÇÃO DA FOLGA
                         if (this.isValidPersonName(fNome)) {
                             folgas.push({
-                                linha: r + 1,
+                                linha: r + 3, // Linha 6 a 12 na planilha Google
                                 nome: fNome.trim(),
                                 departamento: fDept.trim() || 'Geral',
+                                solucao: fSol.trim(),
+                                tipo: 'folga',
                                 motivo: 'Folga da Escala Diária'
+                            });
+                        }
+                    }
+
+                    // Leitura das Ausências / Atestados / Férias (Linhas 6 a 12 / Colunas E:H)
+                    const ausenciasCompletas = [];
+                    for (let r = 3; r <= 9; r++) {
+                        const aNome = getCell(r, cfg.colDept + 3);
+                        const aDept = getCell(r, cfg.colDept + 4);
+                        const aSol = getCell(r, cfg.colDept + 6);
+                        if (this.isValidPersonName(aNome)) {
+                            ausenciasCompletas.push({
+                                linha: r + 3,
+                                nome: aNome.trim(),
+                                departamento: aDept.trim() || 'Geral',
+                                solucao: aSol.trim(),
+                                tipo: 'ausencia',
+                                motivo: 'Ausência / Atestado / Férias'
                             });
                         }
                     }
@@ -12681,7 +12742,11 @@
                         }
                     }
 
-                    result.dias[cfg.nome] = { diaSemana: cfg.nome, data: dataStr, slots, folgas, ausencias: folgas.map(f => f.nome) };
+                    const todosAusentesNomes = Array.from(new Set([
+                        ...folgas.map(f => f.nome),
+                        ...ausenciasCompletas.map(a => a.nome)
+                    ]));
+                    result.dias[cfg.nome] = { diaSemana: cfg.nome, data: dataStr, slots, folgas, ausenciasCompletas, ausencias: todosAusentesNomes };
                 });
 
                 return result;
@@ -13386,21 +13451,537 @@
                 }
 
                 // Renderiza ausências
-                const absencesList = document.getElementById('schedule-absences-list');
-                const absencesCount = document.getElementById('schedule-absences-count');
-                if (absencesCount) absencesCount.innerText = ausencias.length;
+                // Atualização Completa do Quadro de Ausências, Folgas e Coberturas do Dia
+                this.renderAbsencesCard(diaInfo, slots);
+            }
 
-                if (absencesList) {
-                    if (ausencias.length === 0) {
-                        absencesList.innerHTML = '<span class="text-xs sm:text-sm text-gray-400 italic">Nenhum colaborador ausente ou de folga cadastrado para este dia.</span>';
+            setAbsenceFilter(filter) {
+                this.absenceFilter = filter;
+                const diaInfo = (this.data && this.data.dias && this.data.dias[this.currentDay]) ? this.data.dias[this.currentDay] : null;
+                const slots = this.getCleanSlots(this.currentDay);
+                this.renderAbsencesCard(diaInfo, slots);
+            }
+
+            renderAbsencesCard(diaInfo, slots) {
+                const absencesList = document.getElementById('schedule-absences-list');
+                const badgeTotal = document.getElementById('schedule-absences-total-badge');
+                if (!absencesList) return;
+
+                const folgas = (diaInfo && diaInfo.folgas) ? diaInfo.folgas : [];
+                const ausenciasCompletas = (diaInfo && diaInfo.ausenciasCompletas) ? diaInfo.ausenciasCompletas : [];
+
+                // Caso ausenciasCompletas não tenha vindo detalhado do WebApp mas ausencias tenha nomes que não são folgas
+                const folgaNames = new Set(folgas.map(f => (f.nome || '').toUpperCase().trim()));
+                const extraAus = (diaInfo?.ausencias || [])
+                    .filter(n => typeof n === 'string' && n.trim() && !folgaNames.has(n.toUpperCase().trim()))
+                    .map((n, idx) => ({
+                        linha: 6 + idx,
+                        nome: n.trim(),
+                        departamento: 'Geral',
+                        solucao: '',
+                        tipo: 'ausencia'
+                    }));
+                const effectiveAus = ausenciasCompletas.length > 0 ? ausenciasCompletas : extraAus;
+
+                const allItems = [
+                    ...folgas.map(f => ({ ...f, tipo: 'folga' })),
+                    ...effectiveAus.map(a => ({ ...a, tipo: 'ausencia' }))
+                ];
+
+                const totalFolgas = folgas.length;
+                const totalAusencias = effectiveAus.length;
+                const totalAll = allItems.length;
+
+                const isUncovered = (item) => {
+                    const s = String(item.solucao || '').trim().toUpperCase();
+                    return !s || s === 'X' || s === 'POSTO VAGO' || s === 'SEM COBERTURA' || s === '-';
+                };
+
+                const totalUncovered = allItems.filter(isUncovered).length;
+
+                if (badgeTotal) badgeTotal.innerText = `${totalAll} registro${totalAll === 1 ? '' : 's'}`;
+
+                // Atualiza contadores dos botões de filtro
+                const cAll = document.getElementById('count-abs-all');
+                const cFolgas = document.getElementById('count-abs-folgas');
+                const cAus = document.getElementById('count-abs-ausencias');
+                const cUnc = document.getElementById('count-abs-uncovered');
+
+                if (cAll) cAll.innerText = totalAll;
+                if (cFolgas) cFolgas.innerText = totalFolgas;
+                if (cAus) cAus.innerText = totalAusencias;
+                if (cUnc) cUnc.innerText = totalUncovered;
+
+                // Estilo ativo nos botões de filtro
+                const btnAll = document.getElementById('btn-abs-filter-all');
+                const btnFolga = document.getElementById('btn-abs-filter-folga');
+                const btnAus = document.getElementById('btn-abs-filter-ausencia');
+                const btnUnc = document.getElementById('btn-abs-filter-uncovered');
+
+                const activeCls = ['bg-teal-600', 'text-white', 'border-transparent'];
+                const inactiveCls = ['bg-gray-900', 'hover:bg-gray-800'];
+
+                [
+                    { btn: btnAll, id: 'all', textCol: 'text-gray-300' },
+                    { btn: btnFolga, id: 'folga', textCol: 'text-teal-300' },
+                    { btn: btnAus, id: 'ausencia', textCol: 'text-indigo-300' },
+                    { btn: btnUnc, id: 'uncovered', textCol: 'text-rose-300' }
+                ].forEach(item => {
+                    if (!item.btn) return;
+                    if (this.absenceFilter === item.id) {
+                        item.btn.className = `px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-teal-600 text-white shadow-sm cursor-pointer`;
                     } else {
-                        absencesList.innerHTML = ausencias.map(a => `
-                            <span class="inline-flex items-center gap-2 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-xl bg-amber-950/80 border border-amber-800/80 text-amber-200 shadow-sm">
-                                <i class="fa-solid fa-umbrella-beach text-amber-400 text-xs"></i>
-                                <span>${a}</span>
-                            </span>
-                        `).join('');
+                        item.btn.className = `px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 ${item.textCol} border border-gray-800 cursor-pointer`;
                     }
+                });
+
+                // Filtragem dos itens exibidos
+                let displayItems = allItems;
+                if (this.absenceFilter === 'folga') {
+                    displayItems = allItems.filter(i => i.tipo === 'folga');
+                } else if (this.absenceFilter === 'ausencia') {
+                    displayItems = allItems.filter(i => i.tipo === 'ausencia');
+                } else if (this.absenceFilter === 'uncovered') {
+                    displayItems = allItems.filter(isUncovered);
+                }
+
+                if (displayItems.length === 0) {
+                    absencesList.innerHTML = `
+                        <div class="col-span-full p-6 rounded-2xl bg-gray-900/60 border border-gray-800 text-center space-y-2">
+                            <div class="w-10 h-10 rounded-2xl bg-gray-800 text-gray-400 mx-auto flex items-center justify-center text-base">
+                                <i class="fa-solid fa-umbrella-beach"></i>
+                            </div>
+                            <h5 class="text-xs sm:text-sm font-bold text-gray-300">Nenhum registro encontrado para este filtro (${this.currentDay})</h5>
+                            <p class="text-[11px] text-gray-500">Utilize os botões acima para registrar uma nova folga ou ausência para o dia.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                absencesList.innerHTML = displayItems.map(item => {
+                    const isFolga = item.tipo === 'folga';
+                    const unc = isUncovered(item);
+                    const solucaoUpper = String(item.solucao || '').trim().toUpperCase();
+                    const isX = solucaoUpper === 'X';
+
+                    // Avatar initials
+                    const initials = (item.nome || '?').split(' ').filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase();
+
+                    // Cores e status da cobertura
+                    let statusBoxClass = '';
+                    let statusIcon = '';
+                    let statusLabel = '';
+                    let statusValue = '';
+
+                    if (isX) {
+                        statusBoxClass = 'bg-rose-950/80 border-rose-800/80 text-rose-200';
+                        statusIcon = 'fa-solid fa-triangle-exclamation text-rose-400';
+                        statusLabel = 'Desfalque Confirmado:';
+                        statusValue = 'Sem Cobertura (X)';
+                    } else if (!item.solucao || item.solucao.trim() === '') {
+                        statusBoxClass = 'bg-amber-950/70 border-amber-800/70 text-amber-200';
+                        statusIcon = 'fa-solid fa-clock text-amber-400';
+                        statusLabel = 'Substituto:';
+                        statusValue = 'Cobertura Não Definida';
+                    } else {
+                        statusBoxClass = 'bg-emerald-950/70 border-emerald-800/70 text-emerald-200';
+                        statusIcon = 'fa-solid fa-circle-check text-emerald-400';
+                        statusLabel = 'Coberto por:';
+                        statusValue = item.solucao;
+                    }
+
+                    const cardBorder = unc ? 'border-rose-900/60 hover:border-rose-700/80' : 'border-gray-800 hover:border-gray-700';
+
+                    const safeNome = (item.nome || '').replace(/'/g, "\'");
+                    const safeDepto = (item.departamento || '').replace(/'/g, "\'");
+                    const safeSolucao = (item.solucao || '').replace(/'/g, "\'");
+
+                    return `
+                        <div class="p-4 rounded-2xl bg-gray-900/90 border ${cardBorder} transition shadow-md flex flex-col justify-between gap-3 group relative overflow-hidden">
+                            ${unc ? '<div class="absolute top-0 right-0 w-12 h-12 overflow-hidden pointer-events-none"><div class="bg-rose-600 text-white text-[9px] font-black uppercase py-0.5 w-16 text-center transform rotate-45 translate-x-3 -translate-y-1 shadow-sm">VAGA</div></div>' : ''}
+                            
+                            <!-- Cabeçalho do Card: Tipo + Setor + Linha -->
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[10px] uppercase font-black px-2 py-0.5 rounded-lg ${isFolga ? 'bg-teal-950 text-teal-300 border border-teal-800' : 'bg-indigo-950 text-indigo-300 border border-indigo-800'}">
+                                        ${isFolga ? '<i class="fa-solid fa-umbrella-beach mr-1 text-teal-400"></i>Folga' : '<i class="fa-solid fa-notes-medical mr-1 text-indigo-400"></i>Ausência'}
+                                    </span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-gray-800 text-gray-300 border border-gray-700">
+                                        <i class="fa-solid fa-boxes-stacked mr-1 text-gray-400"></i>${item.departamento || 'Geral'}
+                                    </span>
+                                </div>
+                                <span class="text-[10px] font-mono text-gray-500 font-bold">L${item.linha}</span>
+                            </div>
+
+                            <!-- Colaborador Principal -->
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl ${isFolga ? 'bg-teal-700/60 border border-teal-500/40' : 'bg-indigo-700/60 border border-indigo-500/40'} text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
+                                    ${initials}
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <h5 class="text-sm font-black text-white truncate group-hover:text-amber-200 transition">${item.nome}</h5>
+                                    <span class="text-[11px] text-gray-400 font-medium block truncate">${isFolga ? 'Folga programada da escala' : 'Afastamento / Atestado / Férias'}</span>
+                                </div>
+                            </div>
+
+                            <!-- Box de Solução e Botão de Editar -->
+                            <div class="p-2.5 rounded-xl border ${statusBoxClass} flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <i class="${statusIcon} text-xs shrink-0"></i>
+                                    <div class="min-w-0">
+                                        <span class="text-[9px] uppercase tracking-wider font-extrabold block text-gray-400 leading-tight">${statusLabel}</span>
+                                        <span class="text-xs font-bold block truncate text-white leading-snug">${statusValue}</span>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="scheduleApp.openEditAbsenceModal('${item.tipo}', ${item.linha}, '${safeNome}', '${safeDepto}', '${safeSolucao}')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white border border-gray-600 transition shrink-0 cursor-pointer flex items-center gap-1 shadow-sm active:scale-95" title="Definir substituto ou alterar cobertura">
+                                    <i class="fa-solid fa-pen text-[10px]"></i>
+                                    <span>Definir</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            getDayColConfig(dia) {
+                const map = {
+                    'Segunda': { colDepto: 2 },
+                    'Terça':   { colDepto: 11 },
+                    'Quarta':  { colDepto: 20 },
+                    'Quinta':  { colDepto: 29 },
+                    'Sexta':   { colDepto: 38 },
+                    'Sábado':  { colDepto: 47 },
+                    'Domingo': { colDepto: 56 }
+                };
+                return map[dia] || { colDepto: 2 };
+            }
+
+            openEditAbsenceModal(tipo, linha, nome, depto, solucao) {
+                this.editingAbsence = { tipo, linha, nome, depto, solucao };
+
+                const modal = document.getElementById('modal-schedule-absence-edit');
+                const colabNameEl = document.getElementById('modal-abs-edit-colab-name');
+                const subtitleEl = document.getElementById('modal-abs-edit-subtitle');
+                const tipoBadgeEl = document.getElementById('modal-abs-edit-tipo-badge');
+                const deptoEl = document.getElementById('modal-abs-edit-depto');
+                const linhaEl = document.getElementById('modal-abs-edit-linha');
+                const inputSolucao = document.getElementById('modal-abs-edit-solucao-input');
+                const selectSubstitute = document.getElementById('modal-abs-substitute-select');
+
+                if (colabNameEl) colabNameEl.innerText = nome;
+                if (subtitleEl) subtitleEl.innerText = tipo === 'folga' ? 'Definir Substituto para Folga' : 'Definir Substituto para Ausência/Atestado';
+                if (tipoBadgeEl) {
+                    tipoBadgeEl.innerText = tipo === 'folga' ? '🌴 Folga da Escala' : '🩺 Ausência / Atestado';
+                    tipoBadgeEl.className = tipo === 'folga' 
+                        ? 'font-bold px-2 py-0.5 rounded-lg bg-teal-950 text-teal-300 border border-teal-800' 
+                        : 'font-bold px-2 py-0.5 rounded-lg bg-indigo-950 text-indigo-300 border border-indigo-800';
+                }
+                if (deptoEl) deptoEl.innerText = depto || 'Geral';
+                if (linhaEl) linhaEl.innerText = `Linha ${linha} da Planilha Google`;
+                if (inputSolucao) inputSolucao.value = solucao || '';
+
+                // Preenche dropdown de colaboradores escalados hoje
+                if (selectSubstitute) {
+                    const diaInfo = (this.data && this.data.dias && this.data.dias[this.currentDay]) ? this.data.dias[this.currentDay] : null;
+                    const ausentesSet = new Set((diaInfo?.ausencias || []).map(n => String(n).toUpperCase().trim()));
+                    const slots = this.getCleanSlots(this.currentDay);
+
+                    // Colaboradores que estão trabalhando hoje e não estão ausentes/folga
+                    const disponiveisHoje = slots
+                        .filter(s => !s.isVago && s.nome && s.nome !== '-' && s.nome.toUpperCase() !== 'VAGO' && !ausentesSet.has(s.nome.toUpperCase().trim()) && s.nome.toUpperCase().trim() !== nome.toUpperCase().trim())
+                        .map(s => ({ nome: s.nome, departamento: s.departamento, horario: s.horario }))
+                        .sort((a, b) => a.nome.localeCompare(b.nome));
+
+                    const optionsHtml = ['<option value="">-- Escolha um colaborador escalado hoje --</option>']
+                        .concat(disponiveisHoje.map(c => `<option value="${c.nome}">${c.nome} (${c.departamento} • ${c.horario})</option>`))
+                        .join('');
+
+                    selectSubstitute.innerHTML = optionsHtml;
+                    selectSubstitute.value = '';
+                }
+
+                if (modal) {
+                    modal.style.display = 'flex';
+                    modal.classList.remove('hidden');
+                }
+            }
+
+            closeEditAbsenceModal() {
+                const modal = document.getElementById('modal-schedule-absence-edit');
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.classList.add('hidden');
+                }
+                this.editingAbsence = null;
+            }
+
+            handleSubstituteSelectChange(val) {
+                const input = document.getElementById('modal-abs-edit-solucao-input');
+                if (input && val) input.value = val;
+            }
+
+            setSubstituteFastAction(val) {
+                const input = document.getElementById('modal-abs-edit-solucao-input');
+                const sel = document.getElementById('modal-abs-substitute-select');
+                if (input) input.value = val;
+                if (sel && !val) sel.value = '';
+            }
+
+            async saveAbsenceModalSubmit() {
+                if (!this.editingAbsence) return;
+                const input = document.getElementById('modal-abs-edit-solucao-input');
+                const solucao = input ? input.value.trim() : '';
+
+                const { tipo, linha, nome, depto } = this.editingAbsence;
+                this.closeEditAbsenceModal();
+
+                await this.saveAbsenceCoverage(tipo, linha, nome, depto, solucao);
+            }
+
+            async confirmRemoveAbsence() {
+                if (!this.editingAbsence) return;
+                const { tipo, linha, nome } = this.editingAbsence;
+
+                if (!confirm(`Deseja realmente remover o registro de ${nome} (Linha ${linha}) e limpar esta linha na planilha?`)) {
+                    return;
+                }
+
+                this.closeEditAbsenceModal();
+                await this.removeAbsenceEntry(tipo, linha);
+            }
+
+            async saveAbsenceCoverage(tipo, linha, nome, depto, solucao) {
+                const diaInfo = (this.data && this.data.dias && this.data.dias[this.currentDay]) ? this.data.dias[this.currentDay] : null;
+                if (!diaInfo) return;
+
+                // 1. Atualização Otimista Instantânea (0ms de espera)
+                if (tipo === 'folga') {
+                    if (!diaInfo.folgas) diaInfo.folgas = [];
+                    const item = diaInfo.folgas.find(f => f.linha === linha);
+                    if (item) {
+                        item.solucao = solucao;
+                        item.departamento = depto;
+                    } else {
+                        diaInfo.folgas.push({ linha, nome, departamento: depto, solucao, tipo: 'folga' });
+                    }
+                } else {
+                    if (!diaInfo.ausenciasCompletas) diaInfo.ausenciasCompletas = [];
+                    const item = diaInfo.ausenciasCompletas.find(a => a.linha === linha);
+                    if (item) {
+                        item.solucao = solucao;
+                        item.departamento = depto;
+                    } else {
+                        diaInfo.ausenciasCompletas.push({ linha, nome, departamento: depto, solucao, tipo: 'ausencia' });
+                    }
+                }
+
+                // Salva no localStorage e re-renderiza o card imediatamente
+                try { localStorage.setItem('taskflow_schedule_data', JSON.stringify(this.data)); } catch(e) {}
+                this.renderStatsAndAbsences();
+
+                if (window.notifications) {
+                    notifications.showToast(`✓ Cobertura de ${nome} salva com sucesso!`, 'success');
+                }
+
+                // 2. Sincroniza em segundo plano com a Planilha Google
+                await this.syncAbsenceToGoogleSheets(tipo, linha, nome, depto, solucao);
+            }
+
+            async removeAbsenceEntry(tipo, linha) {
+                const diaInfo = (this.data && this.data.dias && this.data.dias[this.currentDay]) ? this.data.dias[this.currentDay] : null;
+                if (!diaInfo) return;
+
+                // 1. Otimista
+                if (tipo === 'folga' && diaInfo.folgas) {
+                    diaInfo.folgas = diaInfo.folgas.filter(f => f.linha !== linha);
+                } else if (diaInfo.ausenciasCompletas) {
+                    diaInfo.ausenciasCompletas = diaInfo.ausenciasCompletas.filter(a => a.linha !== linha);
+                }
+
+                // Atualiza lista unificada de ausencias
+                const folgaNames = (diaInfo.folgas || []).map(f => f.nome);
+                const ausNames = (diaInfo.ausenciasCompletas || []).map(a => a.nome);
+                diaInfo.ausencias = Array.from(new Set([...folgaNames, ...ausNames]));
+
+                try { localStorage.setItem('taskflow_schedule_data', JSON.stringify(this.data)); } catch(e) {}
+                this.renderStatsAndAbsences();
+                this.renderColabSelect();
+
+                if (window.notifications) {
+                    notifications.showToast('✓ Registro removido da planilha Google!', 'info');
+                }
+
+                // 2. Limpa as células na Planilha Google
+                await this.syncAbsenceToGoogleSheets(tipo, linha, '', '', '');
+            }
+
+            openNewAbsenceModal(defaultTipo = 'folga') {
+                this.newAbsenceType = defaultTipo;
+
+                const modal = document.getElementById('modal-schedule-absence-new');
+                const titleEl = document.getElementById('modal-abs-new-title');
+                const dayEl = document.getElementById('modal-abs-new-day-label');
+                const selColab = document.getElementById('modal-abs-new-colab-select');
+                const inputDepto = document.getElementById('modal-abs-new-depto-input');
+                const selSub = document.getElementById('modal-abs-new-substitute-select');
+                const inputSol = document.getElementById('modal-abs-new-solucao-input');
+
+                if (titleEl) titleEl.innerText = defaultTipo === 'folga' ? 'Registrar Nova Folga' : 'Registrar Atestado / Ausência';
+                if (dayEl) dayEl.innerText = `Dia selecionado: ${this.currentDay} (${this.data?.dias?.[this.currentDay]?.data || ''})`;
+
+                this.setNewAbsenceType(defaultTipo);
+
+                // Preenche colaboradores do Banco de Dados
+                if (selColab) {
+                    const todosColabs = (this.data?.colaboradores || []).slice().sort((a, b) => a.nome.localeCompare(b.nome));
+                    selColab.innerHTML = ['<option value="">-- Selecione o colaborador --</option>']
+                        .concat(todosColabs.map(c => `<option value="${c.nome}">${c.nome} (${c.departamento || 'Geral'})</option>`))
+                        .join('');
+                    selColab.value = '';
+                }
+
+                if (inputDepto) inputDepto.value = '';
+                if (inputSol) inputSol.value = '';
+
+                // Preenche substitutos escalados hoje
+                if (selSub) {
+                    const diaInfo = (this.data && this.data.dias && this.data.dias[this.currentDay]) ? this.data.dias[this.currentDay] : null;
+                    const ausentesSet = new Set((diaInfo?.ausencias || []).map(n => String(n).toUpperCase().trim()));
+                    const slots = this.getCleanSlots(this.currentDay);
+
+                    const disponiveisHoje = slots
+                        .filter(s => !s.isVago && s.nome && s.nome !== '-' && s.nome.toUpperCase() !== 'VAGO' && !ausentesSet.has(s.nome.toUpperCase().trim()))
+                        .map(s => ({ nome: s.nome, departamento: s.departamento, horario: s.horario }))
+                        .sort((a, b) => a.nome.localeCompare(b.nome));
+
+                    selSub.innerHTML = ['<option value="">-- Selecionar substituto escalado hoje --</option>']
+                        .concat(disponiveisHoje.map(c => `<option value="${c.nome}">${c.nome} (${c.departamento} • ${c.horario})</option>`))
+                        .join('');
+                    selSub.value = '';
+                }
+
+                if (modal) {
+                    modal.style.display = 'flex';
+                    modal.classList.remove('hidden');
+                }
+            }
+
+            closeNewAbsenceModal() {
+                const modal = document.getElementById('modal-schedule-absence-new');
+                if (modal) {
+                    modal.style.display = 'none';
+                    modal.classList.add('hidden');
+                }
+            }
+
+            setNewAbsenceType(tipo) {
+                this.newAbsenceType = tipo;
+                const btnFolga = document.getElementById('btn-new-type-folga');
+                const btnAus = document.getElementById('btn-new-type-ausencia');
+
+                if (tipo === 'folga') {
+                    if (btnFolga) btnFolga.className = 'p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer bg-teal-600 text-white border-teal-500 shadow-md';
+                    if (btnAus) btnAus.className = 'p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer bg-gray-800 text-gray-300 border-gray-700 hover:text-white';
+                } else {
+                    if (btnFolga) btnFolga.className = 'p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer bg-gray-800 text-gray-300 border-gray-700 hover:text-white';
+                    if (btnAus) btnAus.className = 'p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer bg-indigo-600 text-white border-indigo-500 shadow-md';
+                }
+            }
+
+            handleNewAbsenceColabChange(nome) {
+                const colab = (this.data?.colaboradores || []).find(c => c.nome === nome);
+                const inputDepto = document.getElementById('modal-abs-new-depto-input');
+                if (colab && inputDepto) {
+                    inputDepto.value = colab.departamento || '';
+                }
+            }
+
+            async saveNewAbsenceModalSubmit() {
+                const selColab = document.getElementById('modal-abs-new-colab-select');
+                const inputDepto = document.getElementById('modal-abs-new-depto-input');
+                const inputSol = document.getElementById('modal-abs-new-solucao-input');
+
+                const nome = selColab ? selColab.value.trim() : '';
+                const depto = inputDepto ? inputDepto.value.trim() : '';
+                const solucao = inputSol ? inputSol.value.trim() : '';
+
+                if (!nome) {
+                    alert('Por favor, selecione um colaborador.');
+                    return;
+                }
+
+                const diaInfo = (this.data && this.data.dias && this.data.dias[this.currentDay]) ? this.data.dias[this.currentDay] : null;
+                if (!diaInfo) return;
+
+                // Encontra a primeira linha vaga entre as linhas 6 e 12
+                const tipo = this.newAbsenceType || 'folga';
+                const itemsExistentes = tipo === 'folga' ? (diaInfo.folgas || []) : (diaInfo.ausenciasCompletas || []);
+                const linhasOcupadas = new Set(itemsExistentes.map(i => i.linha));
+
+                let targetLinha = null;
+                for (let l = 6; l <= 12; l++) {
+                    if (!linhasOcupadas.has(l)) {
+                        targetLinha = l;
+                        break;
+                    }
+                }
+
+                if (!targetLinha) {
+                    alert('Aviso: Todas as 7 linhas (6 a 12) para este dia já estão preenchidas. Edite uma linha existente ou libere um posto.');
+                    return;
+                }
+
+                this.closeNewAbsenceModal();
+
+                // 1. Otimista
+                if (tipo === 'folga') {
+                    if (!diaInfo.folgas) diaInfo.folgas = [];
+                    diaInfo.folgas.push({ linha: targetLinha, nome, departamento: depto, solucao, tipo: 'folga' });
+                } else {
+                    if (!diaInfo.ausenciasCompletas) diaInfo.ausenciasCompletas = [];
+                    diaInfo.ausenciasCompletas.push({ linha: targetLinha, nome, departamento: depto, solucao, tipo: 'ausencia' });
+                }
+
+                if (!diaInfo.ausencias) diaInfo.ausencias = [];
+                if (!diaInfo.ausencias.includes(nome)) diaInfo.ausencias.push(nome);
+
+                try { localStorage.setItem('taskflow_schedule_data', JSON.stringify(this.data)); } catch(e) {}
+                this.renderStatsAndAbsences();
+                this.renderColabSelect();
+
+                if (window.notifications) {
+                    notifications.showToast(`✓ ${tipo === 'folga' ? 'Folga' : 'Ausência'} de ${nome} registrada na Linha ${targetLinha}!`, 'success');
+                }
+
+                // 2. Sincroniza em segundo plano
+                await this.syncAbsenceToGoogleSheets(tipo, targetLinha, nome, depto, solucao);
+            }
+
+            async syncAbsenceToGoogleSheets(tipo, linha, nome, depto, solucao) {
+                if (!this.webAppUrl) return;
+
+                const cfgCol = this.getDayColConfig(this.currentDay);
+                const safeDepto = (depto || '').replace(/"/g, '\\"');
+                const safeNome = (nome || '').replace(/"/g, '\\"');
+                const safeSol = (solucao || '').replace(/"/g, '\\"');
+
+                let code = '';
+                if (tipo === 'folga') {
+                    // Colunas B, C, D (ou K, L, M, etc.)
+                    code = `var s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Diaria"); s.getRange(${linha}, ${cfgCol.colDepto}).setValue("${safeDepto}"); s.getRange(${linha}, ${cfgCol.colDepto + 1}).setValue("${safeNome}"); s.getRange(${linha}, ${cfgCol.colDepto + 2}).setValue("${safeSol}");`;
+                } else {
+                    // Colunas E, F, H (ou N, O, Q, etc.)
+                    code = `var s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Diaria"); s.getRange(${linha}, ${cfgCol.colDepto + 3}).setValue("${safeNome}"); s.getRange(${linha}, ${cfgCol.colDepto + 4}).setValue("${safeDepto}"); s.getRange(${linha}, ${cfgCol.colDepto + 6}).setValue("${safeSol}");`;
+                }
+
+                try {
+                    await fetch(this.webAppUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'execute_command', code })
+                    });
+                } catch (err) {
+                    console.warn('[Schedule] Erro ao sincronizar ausência com Google Sheets:', err);
                 }
             }
 
@@ -15363,6 +15944,160 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: EDITAR COBERTURA / AUSÊNCIA         -->
+    <!-- ========================================== -->
+    <div id="modal-schedule-absence-edit" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-gray-900 border border-amber-500/50 rounded-3xl w-full max-w-md p-5 sm:p-6 shadow-2xl overflow-y-auto max-h-[92vh] custom-scrollbar space-y-4">
+            <div class="flex items-start justify-between pb-3 border-b border-gray-800">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-base shrink-0 border border-amber-500/30">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm sm:text-base font-black text-white" id="modal-abs-edit-colab-name">Colaborador</h3>
+                        <p class="text-xs text-gray-400" id="modal-abs-edit-subtitle">Definir Cobertura do Setor</p>
+                    </div>
+                </div>
+                <button type="button" onclick="scheduleApp.closeEditAbsenceModal()" class="w-8 h-8 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white flex items-center justify-center text-xs transition cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Dados da Folga / Ausência -->
+            <div class="p-3 rounded-2xl bg-gray-950 border border-gray-800 space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-400">Tipo de Registro:</span>
+                    <span id="modal-abs-edit-tipo-badge" class="font-bold px-2 py-0.5 rounded-lg bg-teal-950 text-teal-300 border border-teal-800">Folga</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-400">Departamento:</span>
+                    <span id="modal-abs-edit-depto" class="font-bold text-white">LIMPEZA</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-400">Linha na Planilha:</span>
+                    <span id="modal-abs-edit-linha" class="font-mono text-gray-300">Linha 6</span>
+                </div>
+            </div>
+
+            <!-- Seleção Rápida de Substituto Disponível -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-300">
+                    <i class="fa-solid fa-user-check text-emerald-400 mr-1"></i> Selecionar Substituto Escalado Hoje:
+                </label>
+                <select id="modal-abs-substitute-select" onchange="scheduleApp.handleSubstituteSelectChange(this.value)" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-gray-100 focus:outline-none focus:border-teal-500 transition">
+                    <option value="">-- Escolha um colaborador escalado hoje --</option>
+                </select>
+                <p class="text-[10px] text-gray-500">Lista apenas os colaboradores que estão trabalhando hoje (sem folga/atestado).</p>
+            </div>
+
+            <!-- Botões de Atalho Rápido -->
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="scheduleApp.setSubstituteFastAction('X')" class="flex-1 py-1.5 px-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-800/80 text-rose-200 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-triangle-exclamation text-rose-400 text-xs"></i>
+                    <span>Sem Cobertura (X)</span>
+                </button>
+                <button type="button" onclick="scheduleApp.setSubstituteFastAction('')" class="py-1.5 px-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold transition cursor-pointer">
+                    Limpar
+                </button>
+            </div>
+
+            <!-- Campo de Texto Livre para Solução / Observação -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-300">
+                    <i class="fa-solid fa-pen text-amber-400 mr-1"></i> Solução / Cobertura Personalizada:
+                </label>
+                <input type="text" id="modal-abs-edit-solucao-input" placeholder="Ex: JOÃO CARVALHO / ANA LAURA ENTRA AS 06 / X..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-gray-100 focus:outline-none focus:border-amber-500 transition font-bold">
+            </div>
+
+            <!-- Rodapé com Botões de Salvar e Excluir -->
+            <div class="flex items-center gap-2 pt-2 border-t border-gray-800">
+                <button type="button" onclick="scheduleApp.confirmRemoveAbsence()" class="p-2.5 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/60 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer" title="Remover e limpar linha na planilha">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span class="hidden sm:inline">Excluir</span>
+                </button>
+                <button type="button" onclick="scheduleApp.closeEditAbsenceModal()" class="flex-1 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" onclick="scheduleApp.saveAbsenceModalSubmit()" class="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition shadow-lg shadow-teal-600/30 flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Salvar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL: REGISTRAR NOVA FOLGA / AUSÊNCIA     -->
+    <!-- ========================================== -->
+    <div id="modal-schedule-absence-new" style="display: none; z-index: 99999;" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-gray-900 border border-teal-500/50 rounded-3xl w-full max-w-md p-5 sm:p-6 shadow-2xl overflow-y-auto max-h-[92vh] custom-scrollbar space-y-4">
+            <div class="flex items-start justify-between pb-3 border-b border-gray-800">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-base shrink-0 border border-teal-500/30">
+                        <i class="fa-solid fa-calendar-plus"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm sm:text-base font-black text-white" id="modal-abs-new-title">Registrar Ausência / Folga</h3>
+                        <p class="text-xs text-gray-400" id="modal-abs-new-day-label">Dia Selecionado</p>
+                    </div>
+                </div>
+                <button type="button" onclick="scheduleApp.closeNewAbsenceModal()" class="w-8 h-8 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white flex items-center justify-center text-xs transition cursor-pointer">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Tipo: Folga vs Ausência -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-300">Tipo de Registro:</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" id="btn-new-type-folga" onclick="scheduleApp.setNewAbsenceType('folga')" class="p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer bg-teal-600 text-white border-teal-500 shadow-md">
+                        <i class="fa-solid fa-umbrella-beach"></i>
+                        <span>🌴 Folga</span>
+                    </button>
+                    <button type="button" id="btn-new-type-ausencia" onclick="scheduleApp.setNewAbsenceType('ausencia')" class="p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer bg-gray-800 text-gray-300 border-gray-700 hover:text-white">
+                        <i class="fa-solid fa-notes-medical"></i>
+                        <span>🩺 Atestado / Férias</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Colaborador -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-300">Colaborador Ausente / de Folga:</label>
+                <select id="modal-abs-new-colab-select" onchange="scheduleApp.handleNewAbsenceColabChange(this.value)" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2.5 text-xs text-gray-100 focus:outline-none focus:border-teal-500 transition">
+                    <option value="">-- Selecione o colaborador --</option>
+                </select>
+            </div>
+
+            <!-- Departamento -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-300">Departamento / Setor:</label>
+                <input type="text" id="modal-abs-new-depto-input" placeholder="Ex: LIMPEZA, BEBIDAS, COND, FAR..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-gray-100 focus:outline-none focus:border-teal-500 transition font-bold uppercase">
+            </div>
+
+            <!-- Solução / Cobertura -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-gray-300">Solução da Cobertura (Opcional):</label>
+                <select id="modal-abs-new-substitute-select" onchange="document.getElementById('modal-abs-new-solucao-input').value = this.value" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-100 focus:outline-none focus:border-teal-500 transition mb-1.5">
+                    <option value="">-- Selecionar substituto escalado hoje --</option>
+                </select>
+                <input type="text" id="modal-abs-new-solucao-input" placeholder="Ex: JOÃO CARVALHO ou 'X' se não houver cobertura" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-gray-100 focus:outline-none focus:border-teal-500 transition font-bold">
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="flex items-center gap-2 pt-2 border-t border-gray-800">
+                <button type="button" onclick="scheduleApp.closeNewAbsenceModal()" class="flex-1 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" onclick="scheduleApp.saveNewAbsenceModalSubmit()" class="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition shadow-lg shadow-teal-600/30 flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-check"></i>
+                    <span>Confirmar & Salvar</span>
+                </button>
+            </div>
         </div>
     </div>
 
