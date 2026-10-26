@@ -1,5 +1,5 @@
 // Service Worker TaskFlow - Suporte PWA Offline & Limpeza de Cache para Atualização Automática
-const CACHE_NAME = 'taskflow-v24-1793034720806';
+const CACHE_NAME = 'taskflow-v25-1793035806628';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
