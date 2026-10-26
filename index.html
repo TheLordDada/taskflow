@@ -7650,25 +7650,49 @@
             }
 
             init() {
-                // Pre-cadastro persistente de JOÃO GUILHERME SITA ROSA
+                // Pre-cadastro persistente oficial e garantia da conta de JOÃO GUILHERME SITA ROSA
                 let accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
-                const joaoExists = accounts.some(a => a.displayName && a.displayName.toUpperCase().includes('JOÃO GUILHERME SITA ROSA'));
-                if (!joaoExists) {
-                    accounts.push({
+                let joao = accounts.find(a => 
+                    (a.email && a.email.toLowerCase() === 'joaoguilherme11jg10@gmail.com') ||
+                    (a.email && a.email.toLowerCase() === 'joao.guilherme@empresa.com') ||
+                    (a.displayName && a.displayName.toUpperCase().includes('JOÃO GUILHERME'))
+                );
+
+                if (!joao) {
+                    joao = {
                         uid: 'usr_joao_guilherme',
-                        displayName: 'JOÃO GUILHERME SITA ROSA',
-                        email: 'joao.guilherme@empresa.com',
+                        displayName: 'João Guilherme Sita Rosa',
+                        email: 'joaoguilherme11jg10@gmail.com',
                         role: 'Líder de Reposição',
                         dept: 'Reposição & Loja',
                         isAdmin: false,
                         canAccessOccurrences: true,
+                        canEditSchedule: true,
                         status: 'approved',
                         emailVerified: true,
-                        password: '123',
-                        createdAt: Date.now()
-                    });
-                    localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                        password: 'J11ao20gui10',
+                        createdAt: 1729197240000
+                    };
+                    accounts.push(joao);
+                } else {
+                    // Garante migração imediata com dados oficiais e senha correta
+                    joao.uid = joao.uid || 'usr_joao_guilherme';
+                    joao.displayName = 'João Guilherme Sita Rosa';
+                    joao.email = 'joaoguilherme11jg10@gmail.com';
+                    joao.password = 'J11ao20gui10';
+                    joao.status = 'approved';
+                    joao.role = 'Líder de Reposição';
+                    joao.dept = 'Reposição & Loja';
+                    joao.canAccessOccurrences = true;
+                    joao.canEditSchedule = true;
+                    joao.emailVerified = true;
                 }
+                localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+
+                // Sincronização automática em background com a base oficial de contas na nuvem (Google Sheets)
+                setTimeout(() => {
+                    this.syncRemoteAccounts().catch(() => {});
+                }, 800);
 
                 const savedUser = localStorage.getItem('taskflow_current_user');
                 if (savedUser) {
@@ -7710,24 +7734,29 @@
                 }
             }
 
-            handleLogin(e) {
+            async handleLogin(e) {
                 e.preventDefault();
-                const email = document.getElementById('login-email').value.trim();
-                const password = document.getElementById('login-password').value;
+                const emailInput = document.getElementById('login-email');
+                const passInput = document.getElementById('login-password');
+                const btnSubmit = document.getElementById('btn-login-submit');
                 const errBox = document.getElementById('login-error');
                 const successBox = document.getElementById('login-success-msg');
 
-                errBox.classList.add('hidden');
-                successBox.classList.add('hidden');
+                const email = (emailInput ? emailInput.value : '').trim();
+                const password = passInput ? passInput.value : '';
 
-                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
-                const acc = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+                if (errBox) errBox.classList.add('hidden');
+                if (successBox) successBox.classList.add('hidden');
 
-                // Caso seja um dos dois administradores mestres
+                // 1. Caso seja um dos dois administradores mestres
                 if (this.isEmailAdmin(email)) {
+                    let accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                    let acc = accounts.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
                     if (acc && acc.password && acc.password !== password) {
-                        errBox.innerText = "Senha incorreta para a conta de Administrador.";
-                        errBox.classList.remove('hidden');
+                        if (errBox) {
+                            errBox.innerText = "Senha incorreta para a conta de Administrador.";
+                            errBox.classList.remove('hidden');
+                        }
                         return;
                     }
                     this.currentUser = {
@@ -7745,37 +7774,81 @@
                     return;
                 }
 
+                // 2. Busca inicial local
+                let accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                let acc = accounts.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
+
+                // 3. Se não encontrou localmente OU se a senha não bate,
+                // consulta a base de contas na nuvem (Google Sheets) antes de dar erro
+                if (!acc || acc.password !== password) {
+                    let originalBtnText = btnSubmit ? btnSubmit.innerHTML : '';
+                    if (btnSubmit) {
+                        btnSubmit.disabled = true;
+                        btnSubmit.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-sm"></i><span>Verificando base de contas...</span>`;
+                    }
+
+                    try {
+                        await this.syncRemoteAccounts(true);
+                    } catch (syncErr) {
+                        console.warn('Erro ao consultar contas remotas:', syncErr);
+                    }
+
+                    if (btnSubmit) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = originalBtnText;
+                    }
+
+                    // Reavalia após consulta na nuvem
+                    accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                    acc = accounts.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
+                }
+
                 // Para colaboradores comuns:
                 if (!acc) {
-                    errBox.innerText = "Conta não encontrada. Por favor, crie sua conta na aba 'Criar Conta'.";
-                    errBox.classList.remove('hidden');
+                    if (errBox) {
+                        errBox.innerHTML = `
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-triangle-exclamation text-red-400 mt-0.5"></i>
+                                <div>
+                                    <strong class="text-red-300">Conta não encontrada!</strong><br>
+                                    Verifique o e-mail digitado ou solicite ao Administrador a ativação do seu cadastro.
+                                </div>
+                            </div>`;
+                        errBox.classList.remove('hidden');
+                    }
                     return;
                 }
 
                 if (acc.password !== password) {
-                    errBox.innerText = "Senha incorreta para esta conta.";
-                    errBox.classList.remove('hidden');
+                    if (errBox) {
+                        errBox.innerText = "Senha incorreta para esta conta.";
+                        errBox.classList.remove('hidden');
+                    }
                     return;
                 }
 
                 // Verifica aprovação pelo administrador
                 if (acc.status === 'pending') {
-                    errBox.innerHTML = `
-                        <div class="flex items-start gap-2">
-                            <i class="fa-solid fa-clock text-amber-400 mt-0.5"></i>
-                            <div>
-                                <strong class="text-amber-300">Conta Aguardando Aprovação!</strong><br>
-                                Seu e-mail foi verificado, mas o acesso precisa ser aprovado pelo administrador 
-                                (<em>juhsim@live.com</em> ou <em>zinidnosreme@gmail.com</em>) no Painel de Controle.
-                            </div>
-                        </div>`;
-                    errBox.classList.remove('hidden');
+                    if (errBox) {
+                        errBox.innerHTML = `
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-clock text-amber-400 mt-0.5"></i>
+                                <div>
+                                    <strong class="text-amber-300">Conta Aguardando Aprovação!</strong><br>
+                                    Seu cadastro foi recebido, mas o acesso precisa ser liberado pelo administrador 
+                                    (<em>juhsim@live.com</em> ou <em>zinidnosreme@gmail.com</em>) no Painel de Controle.
+                                </div>
+                            </div>`;
+                        errBox.classList.remove('hidden');
+                    }
                     return;
                 }
 
                 if (acc.status === 'rejected' || acc.status === 'blocked') {
-                    errBox.innerText = "Esta conta foi suspensa ou rejeitada pelo Administrador.";
-                    errBox.classList.remove('hidden');
+                    if (errBox) {
+                        errBox.innerText = "Esta conta foi suspensa ou rejeitada pelo Administrador.";
+                        errBox.classList.remove('hidden');
+                    }
                     return;
                 }
 
@@ -8339,6 +8412,207 @@
                 }
             }
 
+            
+            /**
+             * Busca todas as contas cadastradas na aba Usuarios_TaskFlow da planilha Google
+             */
+            async syncRemoteAccounts(force = false) {
+                try {
+                    const webAppUrl = (window.scheduleApp && window.scheduleApp.webAppUrl) ||
+                        localStorage.getItem('taskflow_schedule_webapp_url') ||
+                        'https://script.google.com/macros/s/AKfycbzlmXyjnVs5uH41a_9bddnNfIn-M2KMU4arwHreAlRkB0DFw3ziMLeR5MOVRarQy_4r/exec';
+
+                    const code = `(function() {
+                        var ss = SpreadsheetApp.getActiveSpreadsheet();
+                        var sheet = ss.getSheetByName("Usuarios_TaskFlow");
+                        if (!sheet) return [];
+                        var lr = sheet.getLastRow();
+                        if (lr <= 1) return [];
+                        var values = sheet.getRange(2, 1, lr - 1, 13).getValues();
+                        var users = [];
+                        for (var i = 0; i < values.length; i++) {
+                            var row = values[i];
+                            var rawJson = row[12];
+                            var userObj = null;
+                            if (rawJson) {
+                                try { userObj = JSON.parse(rawJson); } catch(e) {}
+                            }
+                            if (!userObj) {
+                                userObj = {
+                                    uid: row[0],
+                                    displayName: row[1],
+                                    email: (row[2] || '').toString().toLowerCase().trim(),
+                                    password: row[3],
+                                    role: row[4],
+                                    dept: row[5],
+                                    isAdmin: !!row[6],
+                                    canAccessOccurrences: !!row[7],
+                                    canEditSchedule: !!row[8],
+                                    status: row[9] || 'approved',
+                                    emailVerified: !!row[10]
+                                };
+                            }
+                            users.push(userObj);
+                        }
+                        return users;
+                    })()`;
+
+                    const resp = await fetch(webAppUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'execute_command',
+                            code: code
+                        })
+                    });
+
+                    if (!resp.ok) return false;
+                    const data = await resp.json();
+                    if (data && data.success && Array.isArray(data.result)) {
+                        const remoteUsers = data.result;
+                        let accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                        let changed = false;
+
+                        remoteUsers.forEach(rem => {
+                            if (!rem || !rem.email) return;
+                            const remEmail = rem.email.toLowerCase().trim();
+                            const idx = accounts.findIndex(a => a.email && a.email.toLowerCase().trim() === remEmail);
+                            if (idx === -1) {
+                                accounts.push(rem);
+                                changed = true;
+                            } else {
+                                const cur = accounts[idx];
+                                let updated = false;
+                                ['displayName', 'password', 'role', 'dept', 'status', 'canAccessOccurrences', 'canEditSchedule', 'isAdmin'].forEach(prop => {
+                                    if (rem[prop] !== undefined && rem[prop] !== cur[prop]) {
+                                        cur[prop] = rem[prop];
+                                        updated = true;
+                                    }
+                                });
+                                if (updated) changed = true;
+                            }
+                        });
+
+                        if (changed) {
+                            localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                            this.updateCollaboratorsList();
+                            if (window.admin && admin.renderAdminUsers) admin.renderAdminUsers();
+                        }
+                        return true;
+                    }
+                } catch (e) {
+                    console.warn('Aviso: Consulta de contas remotas ignorada:', e);
+                }
+                return false;
+            }
+
+            /**
+             * Salva ou atualiza uma conta de usuário diretamente na aba Usuarios_TaskFlow da planilha Google
+             */
+            async syncUserToCloud(user) {
+                if (!user || !user.email) return;
+                try {
+                    const webAppUrl = (window.scheduleApp && window.scheduleApp.webAppUrl) ||
+                        localStorage.getItem('taskflow_schedule_webapp_url') ||
+                        'https://script.google.com/macros/s/AKfycbzlmXyjnVs5uH41a_9bddnNfIn-M2KMU4arwHreAlRkB0DFw3ziMLeR5MOVRarQy_4r/exec';
+
+                    const userPayload = JSON.stringify(user);
+                    const code = `(function() {
+                        var ss = SpreadsheetApp.getActiveSpreadsheet();
+                        var sheet = ss.getSheetByName("Usuarios_TaskFlow");
+                        if (!sheet) {
+                            sheet = ss.insertSheet("Usuarios_TaskFlow");
+                            var headers = ["UID", "Nome", "Email", "Senha", "Cargo", "Departamento", "IsAdmin", "AcessoOcorrencias", "EditaEscala", "Status", "EmailVerificado", "DataCriacao", "JSON_Completo"];
+                            sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+                        }
+                        var target = ${userPayload};
+                        var targetEmail = (target.email || "").toString().toLowerCase().trim();
+                        var lr = sheet.getLastRow();
+                        var foundRow = -1;
+                        if (lr > 1) {
+                            var emails = sheet.getRange(2, 3, lr - 1, 1).getValues();
+                            for (var i = 0; i < emails.length; i++) {
+                                if ((emails[i][0] || "").toString().toLowerCase().trim() === targetEmail) {
+                                    foundRow = 2 + i;
+                                    break;
+                                }
+                            }
+                        }
+                        var rowData = [
+                            target.uid || ("usr_" + Date.now()),
+                            target.displayName || "",
+                            target.email || "",
+                            target.password || "",
+                            target.role || "Colaborador",
+                            target.dept || "Geral",
+                            !!target.isAdmin,
+                            target.canAccessOccurrences !== false,
+                            !!target.canEditSchedule,
+                            target.status || "approved",
+                            target.emailVerified !== false,
+                            target.createdAt ? new Date(target.createdAt).toLocaleString("pt-BR") : new Date().toLocaleString("pt-BR"),
+                            JSON.stringify(target)
+                        ];
+                        if (foundRow > 0) {
+                            sheet.getRange(foundRow, 1, 1, rowData.length).setValues([rowData]);
+                        } else {
+                            sheet.getRange(sheet.getLastRow() + 1, 1, 1, rowData.length).setValues([rowData]);
+                        }
+                        SpreadsheetApp.flush();
+                        return { success: true, row: foundRow > 0 ? foundRow : sheet.getLastRow() };
+                    })()`;
+
+                    fetch(webAppUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'execute_command',
+                            code: code
+                        })
+                    }).catch(err => console.warn('Erro ao salvar usuario no Google Sheets:', err));
+                } catch (e) {
+                    console.warn('syncUserToCloud exception:', e);
+                }
+            }
+
+            /**
+             * Remove uma conta de usuário da aba Usuarios_TaskFlow da planilha Google
+             */
+            async deleteUserFromCloud(email) {
+                if (!email) return;
+                try {
+                    const webAppUrl = (window.scheduleApp && window.scheduleApp.webAppUrl) ||
+                        localStorage.getItem('taskflow_schedule_webapp_url') ||
+                        'https://script.google.com/macros/s/AKfycbzlmXyjnVs5uH41a_9bddnNfIn-M2KMU4arwHreAlRkB0DFw3ziMLeR5MOVRarQy_4r/exec';
+
+                    const code = `(function() {
+                        var ss = SpreadsheetApp.getActiveSpreadsheet();
+                        var sheet = ss.getSheetByName("Usuarios_TaskFlow");
+                        if (!sheet) return { success: false };
+                        var targetEmail = "${email.toLowerCase().trim()}";
+                        var lr = sheet.getLastRow();
+                        if (lr <= 1) return { success: true };
+                        var emails = sheet.getRange(2, 3, lr - 1, 1).getValues();
+                        for (var i = 0; i < emails.length; i++) {
+                            if ((emails[i][0] || "").toString().toLowerCase().trim() === targetEmail) {
+                                sheet.deleteRow(2 + i);
+                                SpreadsheetApp.flush();
+                                return { success: true, deletedRow: 2 + i };
+                            }
+                        }
+                        return { success: true, notFound: true };
+                    })()`;
+
+                    fetch(webAppUrl, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            action: 'execute_command',
+                            code: code
+                        })
+                    }).catch(err => console.warn('Erro ao excluir usuario do Google Sheets:', err));
+                } catch (e) {
+                    console.warn('deleteUserFromCloud exception:', e);
+                }
+            }
+
             showAuthScreen() {
                 document.getElementById('auth-screen').classList.remove('hidden');
             }
@@ -8617,6 +8891,7 @@
                         });
                     }
 
+                    if (window.auth && auth.syncUserToCloud) auth.syncUserToCloud(acc);
                     this.updatePendingBadge();
                     this.renderAdminUsers();
                     auth.updateCollaboratorsList();
@@ -8641,6 +8916,7 @@
                         });
                     }
 
+                    if (window.auth && auth.syncUserToCloud) auth.syncUserToCloud(acc);
                     this.updatePendingBadge();
                     this.renderAdminUsers();
                     syncManager.showToast(`Usuário ${acc.displayName} bloqueado.`);
@@ -8660,10 +8936,11 @@
                     });
                 }
 
-                this.updatePendingBadge();
-                this.renderAdminUsers();
-                auth.updateCollaboratorsList();
-                syncManager.showToast("Cadastro excluído.");
+                if (window.auth && auth.deleteUserFromCloud) auth.deleteUserFromCloud(email);
+                    this.updatePendingBadge();
+                    this.renderAdminUsers();
+                    auth.updateCollaboratorsList();
+                    syncManager.showToast("Cadastro excluído.");
             }
 
             changeUserRole(email, newRole) {
@@ -9742,6 +10019,7 @@
 
                 acc.canAccessOccurrences = !acc.canAccessOccurrences;
                 localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                if (window.auth && auth.syncUserToCloud) auth.syncUserToCloud(acc);
 
                 if (window.syncManager) {
                     window.syncManager.publish({
@@ -10515,6 +10793,7 @@
                 }
 
                 localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                if (window.auth && auth.syncUserToCloud) auth.syncUserToCloud(accounts[accIdx]);
 
                 // Se estiver editando a si próprio
                 if (auth.currentUser && auth.currentUser.email.toLowerCase() === originalEmail.toLowerCase()) {
