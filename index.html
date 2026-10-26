@@ -1427,7 +1427,7 @@
                             <p id="stat-schedule-vagos" class="text-base sm:text-xl font-black text-rose-400">0</p>
                         </div>
                     </div>
-                    <div onclick="scheduleApp.toggleShowFolgas()" class="bg-gray-950/90 hover:bg-gray-900/90 p-3 sm:p-3.5 rounded-xl border border-gray-800 hover:border-indigo-500/50 shadow-md flex items-center gap-3 cursor-pointer transition active:scale-95 group" title="Clique para abrir ou fechar o painel lateral de folgas ao lado da escala">
+                    <div onclick="scheduleApp.toggleAbsencesSection()" class="bg-gray-950/90 hover:bg-gray-900/90 p-3 sm:p-3.5 rounded-xl border border-gray-800 hover:border-amber-500/50 shadow-md flex items-center gap-3 cursor-pointer transition active:scale-95 group" title="Clique para abrir ou fechar o quadro de folgas e ausências">
                         <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/20 text-amber-400 group-hover:bg-amber-500/30 flex items-center justify-center shrink-0 text-sm sm:text-base transition">
                             <i class="fa-solid fa-umbrella-beach"></i>
                         </div>
@@ -12525,15 +12525,24 @@
             toggleAbsencesSection() {
                 const card = document.getElementById('schedule-absences-card');
                 const arrow = document.getElementById('arrow-toggle-abs');
+                const btn = document.getElementById('btn-toggle-absences-view');
                 if (!card) return;
                 const isHidden = card.classList.contains('hidden');
                 if (isHidden) {
                     card.classList.remove('hidden');
                     if (arrow) arrow.style.transform = 'rotate(180deg)';
+                    if (btn) {
+                        btn.classList.add('bg-amber-500', 'text-gray-950', 'shadow-lg');
+                        btn.classList.remove('bg-amber-500/20', 'text-amber-300');
+                    }
                     card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 } else {
                     card.classList.add('hidden');
                     if (arrow) arrow.style.transform = 'rotate(0deg)';
+                    if (btn) {
+                        btn.classList.remove('bg-amber-500', 'text-gray-950', 'shadow-lg');
+                        btn.classList.add('bg-amber-500/20', 'text-amber-300');
+                    }
                 }
             }
 
