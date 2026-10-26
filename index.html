@@ -12170,7 +12170,7 @@
                 if (window.notifications) notifications.showToast('Carregando escala de ' + this.selectedMonthYear + '...', 'info');
 
                 try {
-                    // 1. Tenta carregar via GViz direto da aba Historico_Escalas (ultra rápido e sem depender da nova implantação do Apps Script!)
+                    // 1. Tenta carregar via GViz direto da aba Historico_Escalas (ultra rápido)
                     const gvizUrl = `https://docs.google.com/spreadsheets/d/${this.sheetId || this.defaultSheetId}/gviz/tq?tqx=out:json&sheet=Historico_Escalas&t=${Date.now()}`;
                     const gvizRes = await fetch(gvizUrl);
                     if (gvizRes.ok) {
@@ -12184,9 +12184,9 @@
                             rows.forEach(r => {
                                 const c = r.c || [];
                                 const id = c[0]?.v ? String(c[0].v).trim() : '';
-                                const dataStr = c[1]?.f || (c[1]?.v ? String(c[1].v).trim() : '');
+                                let dataStr = c[1]?.f || (c[1]?.v ? String(c[1].v).trim() : '');
                                 const diaSem = c[2]?.v ? String(c[2].v).trim() : '';
-                                const mesAno = c[3]?.v ? String(c[3].v).trim() : '';
+                                let mesAno = c[3]?.f || (c[3]?.v ? String(c[3].v).trim() : '');
                                 const linha = c[4]?.v ? Number(c[4].v) : 0;
                                 const depto = c[5]?.v ? String(c[5].v).trim() : '';
                                 const titular = c[6]?.v ? String(c[6].v).trim() : '';
@@ -12196,6 +12196,20 @@
                                 const status = c[10]?.v ? String(c[10].v).trim() : '';
                                 const solucao = c[11]?.v ? String(c[11].v).trim() : '';
                                 const tipoReg = c[12]?.v ? String(c[12].v).trim() : '';
+
+                                // Normaliza Date(ano, mes, dia) caso não venha formatado (.f)
+                                if (dataStr.startsWith('Date(')) {
+                                    const m = dataStr.match(/Date\((\d+),(\d+),(\d+)\)/);
+                                    if (m) {
+                                        dataStr = String(m[3]).padStart(2, '0') + '/' + String(Number(m[2]) + 1).padStart(2, '0') + '/' + m[1];
+                                    }
+                                }
+                                if (mesAno.startsWith('Date(')) {
+                                    const m = mesAno.match(/Date\((\d+),(\d+)/);
+                                    if (m) {
+                                        mesAno = String(Number(m[2]) + 1).padStart(2, '0') + '/' + m[1];
+                                    }
+                                }
 
                                 if (!dataStr) return;
 
@@ -12210,7 +12224,8 @@
                                         diaSemana: diaSem,
                                         slots: [],
                                         folgas: [],
-                                        ausencias: []
+                                        ausencias: [],
+                                        ausenciasCompletas: []
                                     };
                                 }
 
@@ -12227,7 +12242,8 @@
                                         entrada: entrada,
                                         saida: saida,
                                         isVago: isVago,
-                                        status: status
+                                        status: status,
+                                        grupo: (linha >= 55) ? 'lideranca' : 'reposicao'
                                     });
                                 } else if (tipoReg === 'FOLGA_SEMANAL') {
                                     diasMap[dataStr].folgas.push({
@@ -12238,7 +12254,7 @@
                                         tipo: 'folga'
                                     });
                                 } else {
-                                    diasMap[dataStr].ausencias.push({
+                                    diasMap[dataStr].ausenciasCompletas.push({
                                         linha: linha,
                                         nome: colab,
                                         departamento: depto,
@@ -12247,6 +12263,7 @@
                                         tipo: 'ausencia',
                                         isFeriado: status.toUpperCase().includes('FERIADO')
                                     });
+                                    diasMap[dataStr].ausencias.push(colab);
                                 }
                             });
 
@@ -12259,7 +12276,7 @@
                         }
                     }
 
-                    // 2. Se o GViz não trouxer, tenta endpoint do Web App
+                    // 2. Fallback via Web App do Google Apps Script
                     const url = (this.webAppUrl || this.defaultOfficialUrl) + 
                         ((this.webAppUrl || this.defaultOfficialUrl).includes('?') ? '&' : '?') +
                         'action=get_monthly_history&mes_ano=' + encodeURIComponent(this.selectedMonthYear) +
@@ -12309,6 +12326,10 @@
             switchDay(dayName) {
                 if (this.periodMode === 'monthly') {
                     this.currentMonthlyDay = parseInt(dayName, 10);
+                    const curData = this.getCurrentDayData();
+                    if (curData && curData.diaSemana) {
+                        this.currentDay = curData.diaSemana;
+                    }
                 } else {
                     this.currentDay = dayName;
                 }
