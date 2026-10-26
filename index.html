@@ -8414,7 +8414,7 @@
 
             
             /**
-             * Busca todas as contas cadastradas na aba Usuarios_TaskFlow da planilha Google
+             * Busca todas as contas cadastradas no PropertiesService interno do Google Script (100% invisível na planilha)
              */
             async syncRemoteAccounts(force = false) {
                 try {
@@ -8423,38 +8423,10 @@
                         'https://script.google.com/macros/s/AKfycbzlmXyjnVs5uH41a_9bddnNfIn-M2KMU4arwHreAlRkB0DFw3ziMLeR5MOVRarQy_4r/exec';
 
                     const code = `(function() {
-                        var ss = SpreadsheetApp.getActiveSpreadsheet();
-                        var sheet = ss.getSheetByName("Usuarios_TaskFlow");
-                        if (!sheet) return [];
-                        var lr = sheet.getLastRow();
-                        if (lr <= 1) return [];
-                        var values = sheet.getRange(2, 1, lr - 1, 13).getValues();
-                        var users = [];
-                        for (var i = 0; i < values.length; i++) {
-                            var row = values[i];
-                            var rawJson = row[12];
-                            var userObj = null;
-                            if (rawJson) {
-                                try { userObj = JSON.parse(rawJson); } catch(e) {}
-                            }
-                            if (!userObj) {
-                                userObj = {
-                                    uid: row[0],
-                                    displayName: row[1],
-                                    email: (row[2] || '').toString().toLowerCase().trim(),
-                                    password: row[3],
-                                    role: row[4],
-                                    dept: row[5],
-                                    isAdmin: !!row[6],
-                                    canAccessOccurrences: !!row[7],
-                                    canEditSchedule: !!row[8],
-                                    status: row[9] || 'approved',
-                                    emailVerified: !!row[10]
-                                };
-                            }
-                            users.push(userObj);
-                        }
-                        return users;
+                        var props = PropertiesService.getScriptProperties();
+                        var raw = props.getProperty("TASKFLOW_USERS_DB");
+                        if (!raw) return [];
+                        try { return JSON.parse(raw); } catch(e) { return []; }
                     })()`;
 
                     const resp = await fetch(webAppUrl, {
@@ -8506,7 +8478,7 @@
             }
 
             /**
-             * Salva ou atualiza uma conta de usuário diretamente na aba Usuarios_TaskFlow da planilha Google
+             * Salva ou atualiza uma conta no PropertiesService interno do Google Script (100% invisível na planilha)
              */
             async syncUserToCloud(user) {
                 if (!user || !user.email) return;
@@ -8517,48 +8489,28 @@
 
                     const userPayload = JSON.stringify(user);
                     const code = `(function() {
-                        var ss = SpreadsheetApp.getActiveSpreadsheet();
-                        var sheet = ss.getSheetByName("Usuarios_TaskFlow");
-                        if (!sheet) {
-                            sheet = ss.insertSheet("Usuarios_TaskFlow");
-                            var headers = ["UID", "Nome", "Email", "Senha", "Cargo", "Departamento", "IsAdmin", "AcessoOcorrencias", "EditaEscala", "Status", "EmailVerificado", "DataCriacao", "JSON_Completo"];
-                            sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+                        var props = PropertiesService.getScriptProperties();
+                        var raw = props.getProperty("TASKFLOW_USERS_DB");
+                        var users = [];
+                        if (raw) {
+                            try { users = JSON.parse(raw); } catch(e) { users = []; }
                         }
                         var target = ${userPayload};
                         var targetEmail = (target.email || "").toString().toLowerCase().trim();
-                        var lr = sheet.getLastRow();
-                        var foundRow = -1;
-                        if (lr > 1) {
-                            var emails = sheet.getRange(2, 3, lr - 1, 1).getValues();
-                            for (var i = 0; i < emails.length; i++) {
-                                if ((emails[i][0] || "").toString().toLowerCase().trim() === targetEmail) {
-                                    foundRow = 2 + i;
-                                    break;
-                                }
+                        var idx = -1;
+                        for (var i = 0; i < users.length; i++) {
+                            if ((users[i].email || "").toString().toLowerCase().trim() === targetEmail) {
+                                idx = i;
+                                break;
                             }
                         }
-                        var rowData = [
-                            target.uid || ("usr_" + Date.now()),
-                            target.displayName || "",
-                            target.email || "",
-                            target.password || "",
-                            target.role || "Colaborador",
-                            target.dept || "Geral",
-                            !!target.isAdmin,
-                            target.canAccessOccurrences !== false,
-                            !!target.canEditSchedule,
-                            target.status || "approved",
-                            target.emailVerified !== false,
-                            target.createdAt ? new Date(target.createdAt).toLocaleString("pt-BR") : new Date().toLocaleString("pt-BR"),
-                            JSON.stringify(target)
-                        ];
-                        if (foundRow > 0) {
-                            sheet.getRange(foundRow, 1, 1, rowData.length).setValues([rowData]);
+                        if (idx >= 0) {
+                            users[idx] = Object.assign(users[idx], target);
                         } else {
-                            sheet.getRange(sheet.getLastRow() + 1, 1, 1, rowData.length).setValues([rowData]);
+                            users.push(target);
                         }
-                        SpreadsheetApp.flush();
-                        return { success: true, row: foundRow > 0 ? foundRow : sheet.getLastRow() };
+                        props.setProperty("TASKFLOW_USERS_DB", JSON.stringify(users));
+                        return { success: true, count: users.length };
                     })()`;
 
                     fetch(webAppUrl, {
@@ -8567,14 +8519,14 @@
                             action: 'execute_command',
                             code: code
                         })
-                    }).catch(err => console.warn('Erro ao salvar usuario no Google Sheets:', err));
+                    }).catch(err => console.warn('Erro ao salvar usuario no Google Script:', err));
                 } catch (e) {
                     console.warn('syncUserToCloud exception:', e);
                 }
             }
 
             /**
-             * Remove uma conta de usuário da aba Usuarios_TaskFlow da planilha Google
+             * Remove uma conta do PropertiesService interno do Google Script
              */
             async deleteUserFromCloud(email) {
                 if (!email) return;
@@ -8584,21 +8536,17 @@
                         'https://script.google.com/macros/s/AKfycbzlmXyjnVs5uH41a_9bddnNfIn-M2KMU4arwHreAlRkB0DFw3ziMLeR5MOVRarQy_4r/exec';
 
                     const code = `(function() {
-                        var ss = SpreadsheetApp.getActiveSpreadsheet();
-                        var sheet = ss.getSheetByName("Usuarios_TaskFlow");
-                        if (!sheet) return { success: false };
+                        var props = PropertiesService.getScriptProperties();
+                        var raw = props.getProperty("TASKFLOW_USERS_DB");
+                        if (!raw) return { success: true };
+                        var users = [];
+                        try { users = JSON.parse(raw); } catch(e) { return { success: true }; }
                         var targetEmail = "${email.toLowerCase().trim()}";
-                        var lr = sheet.getLastRow();
-                        if (lr <= 1) return { success: true };
-                        var emails = sheet.getRange(2, 3, lr - 1, 1).getValues();
-                        for (var i = 0; i < emails.length; i++) {
-                            if ((emails[i][0] || "").toString().toLowerCase().trim() === targetEmail) {
-                                sheet.deleteRow(2 + i);
-                                SpreadsheetApp.flush();
-                                return { success: true, deletedRow: 2 + i };
-                            }
-                        }
-                        return { success: true, notFound: true };
+                        var filtered = users.filter(function(u) {
+                            return (u.email || "").toString().toLowerCase().trim() !== targetEmail;
+                        });
+                        props.setProperty("TASKFLOW_USERS_DB", JSON.stringify(filtered));
+                        return { success: true, count: filtered.length };
                     })()`;
 
                     fetch(webAppUrl, {
@@ -8607,7 +8555,7 @@
                             action: 'execute_command',
                             code: code
                         })
-                    }).catch(err => console.warn('Erro ao excluir usuario do Google Sheets:', err));
+                    }).catch(err => console.warn('Erro ao excluir usuario do Google Script:', err));
                 } catch (e) {
                     console.warn('deleteUserFromCloud exception:', e);
                 }
