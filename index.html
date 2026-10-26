@@ -12418,13 +12418,8 @@
                                 const depto = c[5]?.v ? String(c[5].v).trim() : '';
                                 const titular = c[6]?.v ? String(c[6].v).trim() : '';
                                 const colab = c[7]?.v ? String(c[7].v).trim() : '';
-                                const entrada = c[8]?.f || (c[8]?.v ? String(c[8].v).trim() : '');
-                                const saida = c[9]?.f || (c[9]?.v ? String(c[9].v).trim() : '');
-                                const status = c[10]?.v ? String(c[10].v).trim() : '';
-                                const solucao = c[11]?.v ? String(c[11].v).trim() : '';
-                                const tipoReg = c[12]?.v ? String(c[12].v).trim() : '';
 
-                                // Normaliza Date(ano, mes, dia) caso não venha formatado (.f)
+                                // Normaliza Date(ano, mes, dia)
                                 if (dataStr.startsWith('Date(')) {
                                     const m = dataStr.match(/Date\((\d+),(\d+),(\d+)\)/);
                                     if (m) {
@@ -12440,7 +12435,7 @@
 
                                 if (!dataStr) return;
 
-                                // Filtra pelo mês/ano selecionado (ex: "10/2026")
+                                // Filtra pelo mês/ano selecionado
                                 if (this.selectedMonthYear && mesAno && mesAno !== this.selectedMonthYear) {
                                     return;
                                 }
@@ -12456,22 +12451,55 @@
                                     };
                                 }
 
+                                // Detecta layout de colunas (Novo de 19 colunas ou clássico de 14 colunas)
+                                const hasExtendedCols = (c.length >= 18 && c[17]?.v);
+                                let entrada = '', inicioAlm = '', retornoAlm = '', saida = '', banco = '', escala = '', status = '', solucao = '', tipoReg = '', jsonSlot = null;
+
+                                if (hasExtendedCols || c.length >= 17) {
+                                    entrada = c[8]?.f || (c[8]?.v ? String(c[8].v).trim() : '');
+                                    inicioAlm = c[9]?.f || (c[9]?.v ? String(c[9].v).trim() : '');
+                                    retornoAlm = c[10]?.f || (c[10]?.v ? String(c[10].v).trim() : '');
+                                    saida = c[11]?.f || (c[11]?.v ? String(c[11].v).trim() : '');
+                                    banco = c[12]?.f || (c[12]?.v ? String(c[12].v).trim() : '');
+                                    escala = c[13]?.v ? String(c[13].v).trim() : '';
+                                    status = c[14]?.v ? String(c[14].v).trim() : '';
+                                    solucao = c[15]?.v ? String(c[15].v).trim() : '';
+                                    tipoReg = c[16]?.v ? String(c[16].v).trim() : 'ESCALA_POSTO';
+                                    if (c[17]?.v) {
+                                        try { jsonSlot = JSON.parse(String(c[17].v)); } catch(e) {}
+                                    }
+                                } else {
+                                    entrada = c[8]?.f || (c[8]?.v ? String(c[8].v).trim() : '');
+                                    saida = c[9]?.f || (c[9]?.v ? String(c[9].v).trim() : '');
+                                    status = c[10]?.v ? String(c[10].v).trim() : '';
+                                    solucao = c[11]?.v ? String(c[11].v).trim() : '';
+                                    tipoReg = c[12]?.v ? String(c[12].v).trim() : 'ESCALA_POSTO';
+                                }
+
                                 const isVago = (!colab || colab === '-' || colab.toUpperCase() === 'VAGO' || colab.toUpperCase() === 'X');
 
                                 if (tipoReg === 'ESCALA_POSTO') {
-                                    diasMap[dataStr].slots.push({
-                                        linha: linha,
-                                        colaborador: colab,
-                                        nome: colab,
-                                        depto: depto,
-                                        departamento: depto,
-                                        horario: entrada,
-                                        entrada: entrada,
-                                        saida: saida,
-                                        isVago: isVago,
-                                        status: status,
-                                        grupo: (linha >= 55) ? 'lideranca' : 'reposicao'
-                                    });
+                                    if (jsonSlot && jsonSlot.linha) {
+                                        diasMap[dataStr].slots.push(jsonSlot);
+                                    } else {
+                                        diasMap[dataStr].slots.push({
+                                            linha: linha,
+                                            colaborador: colab,
+                                            nome: isVago ? '' : colab,
+                                            depto: depto,
+                                            departamento: depto,
+                                            escala: escala,
+                                            horario: escala || entrada,
+                                            entrada: entrada,
+                                            inicioAlmoco: inicioAlm,
+                                            retornoAlmoco: retornoAlm,
+                                            saida: saida,
+                                            banco: banco,
+                                            isVago: isVago,
+                                            status: status,
+                                            grupo: (linha >= 55) ? 'lideranca' : 'reposicao'
+                                        });
+                                    }
                                 } else if (tipoReg === 'FOLGA_SEMANAL') {
                                     diasMap[dataStr].folgas.push({
                                         linha: linha,
@@ -14028,8 +14056,32 @@
                     const diaFmt = (this.currentMonthlyDay < 10 ? '0' : '') + this.currentMonthlyDay;
                     const dataStr = diaFmt + '/' + mes + '/' + ano;
 
+                    // 1. PRIORIDADE MÁXIMA: Se a data selecionada coincidir com um dos dias da escala viva (Diaria), retorna os dados ricos e completos ao vivo!
+                    if (this.data && this.data.dias) {
+                        for (const diaNome of Object.keys(this.data.dias)) {
+                            const dInfo = this.data.dias[diaNome];
+                            if (dInfo && dInfo.data) {
+                                const dDataLimpa = String(dInfo.data).trim();
+                                if (dDataLimpa === dataStr || dDataLimpa === (this.currentMonthlyDay + '/' + mes + '/' + ano)) {
+                                    return dInfo;
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. Se for um dia histórico arquivado fora da semana ativa:
                     if (this.monthlyData && this.monthlyData[dataStr]) {
-                        return this.monthlyData[dataStr];
+                        const mDay = this.monthlyData[dataStr];
+                        if (mDay.slots && Array.isArray(mDay.slots)) {
+                            mDay.slots.forEach(slot => {
+                                // Se faltar escala, busca do cadastro de colaboradores
+                                if (!slot.escala && slot.nome && this.data && this.data.colaboradores) {
+                                    const colabObj = this.data.colaboradores.find(c => c.nome && c.nome.toUpperCase() === slot.nome.toUpperCase());
+                                    if (colabObj && colabObj.escala) slot.escala = colabObj.escala;
+                                }
+                            });
+                        }
+                        return mDay;
                     }
 
                     // Se não tiver registro no histórico para essa data do mês, retorna objeto vazio estruturado
