@@ -12614,35 +12614,42 @@
 
                     // Leitura das Folgas da Escala (Linhas 6 a 12 na Planilha / r=3 a 9 no GViz)
                     for (let r = 3; r <= 9; r++) {
-                        const fDept = getCell(r, cfg.colDept);
-                        const fNome = getCell(r, cfg.colNome);
-                        const fSol = getCell(r, cfg.colEsc); // Coluna D/M/V/... é a SOLUÇÃO DA FOLGA
+                        // Novo layout: colDept é NOME e colNome é DEPARTAMENTO
+                        const cell0 = getCell(r, cfg.colDept).trim();
+                        const cell1 = getCell(r, cfg.colNome).trim();
+                        const fSol = getCell(r, cfg.colEsc).trim();
+                        const fNome = cell0;
+                        const fDept = cell1;
                         if (this.isValidPersonName(fNome)) {
                             folgas.push({
-                                linha: r + 3, // Linha 6 a 12 na planilha Google
-                                nome: fNome.trim(),
-                                departamento: fDept.trim() || 'Geral',
-                                solucao: fSol.trim(),
+                                linha: r + 3,
+                                nome: fNome,
+                                departamento: fDept || 'Geral',
+                                solucao: fSol,
                                 tipo: 'folga',
                                 motivo: 'Folga da Escala Diária'
                             });
                         }
                     }
 
-                    // Leitura das Ausências / Atestados / Férias (Linhas 6 a 12 / Colunas E:H)
+                    // Leitura das Ausências / Atestados / Férias (Linhas 6 a 12 / Colunas E:I)
                     const ausenciasCompletas = [];
                     for (let r = 3; r <= 9; r++) {
-                        const aNome = getCell(r, cfg.colDept + 3);
-                        const aDept = getCell(r, cfg.colDept + 4);
-                        const aSol = getCell(r, cfg.colDept + 6);
+                        const aNome = getCell(r, cfg.colDept + 3).trim();
+                        const aDept = getCell(r, cfg.colDept + 4).trim();
+                        const aSit = getCell(r, cfg.colDept + 5).trim();
+                        const aSol = (getCell(r, cfg.colDept + 6) || getCell(r, cfg.colDept + 7) || '').trim();
                         if (this.isValidPersonName(aNome)) {
+                            const isFer = (aSit + ' ' + aDept).toUpperCase().includes('FERIADO');
                             ausenciasCompletas.push({
                                 linha: r + 3,
-                                nome: aNome.trim(),
-                                departamento: aDept.trim() || 'Geral',
-                                solucao: aSol.trim(),
+                                nome: aNome,
+                                departamento: aDept || 'Geral',
+                                situacao: aSit,
+                                solucao: aSol,
                                 tipo: 'ausencia',
-                                motivo: 'Ausência / Atestado / Férias'
+                                isFeriado: isFer,
+                                motivo: aSit || 'Ausência / Atestado / Férias'
                             });
                         }
                     }
@@ -12790,7 +12797,7 @@
                         const needsDetailedAbsences = Object.values(resJson.dias).some(d => !d.folgas || d.folgas.length === 0);
                         if (needsDetailedAbsences && this.webAppUrl) {
                             try {
-                                const fetchCode = 'var ss = SpreadsheetApp.getActiveSpreadsheet(); var s = ss.getSheetByName("Diaria"); var res = {}; var dias = [{ nome: "Segunda", rangeF: "B6:D12", rangeA: "E6:H12", celData: "D3" }, { nome: "Terça", rangeF: "K6:M12", rangeA: "N6:Q12", celData: "M3" }, { nome: "Quarta", rangeF: "T6:V12", rangeA: "W6:Z12", celData: "V3" }, { nome: "Quinta", rangeF: "AC6:AE12", rangeA: "AF6:AI12", celData: "AE3" }, { nome: "Sexta", rangeF: "AL6:AN12", rangeA: "AO6:AR12", celData: "AN3" }, { nome: "Sábado", rangeF: "AU6:AW12", rangeA: "AX6:BA12", celData: "AW3" }, { nome: "Domingo", rangeF: "BD6:BF12", rangeA: "BG6:BJ12", celData: "BF3" }]; for (var i = 0; i < dias.length; i++) { var d = dias[i]; res[d.nome] = { folgas: s.getRange(d.rangeF).getDisplayValues(), ausencias: s.getRange(d.rangeA).getDisplayValues(), dataDia: s.getRange(d.celData).getDisplayValue() }; } var sheets = ss.getSheets(); var finalizedFolgas = []; var meses = { "janeiro": "01", "fevereiro": "02", "março": "03", "marco": "03", "abril": "04", "maio": "05", "junho": "06", "julho": "07", "agosto": "08", "setembro": "09", "outubro": "10", "novembro": "11", "dezembro": "12" }; function normData(val) { if (!val) return ""; var str = String(val).trim().toLowerCase(); var mNum = str.match(/(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?/); if (mNum) return mNum[1].padStart(2, "0") + "/" + mNum[2].padStart(2, "0") + "/" + (mNum[3] ? (mNum[3].length === 2 ? "20" + mNum[3] : mNum[3]) : "2026"); var mExt = str.match(/(\\d{1,2})\\s+de\\s+([a-zçã]+)(?:\\s+de\\s+(\\d{2,4}))?/); if (mExt && meses[mExt[2]]) return mExt[1].padStart(2, "0") + "/" + meses[mExt[2]] + "/" + (mExt[3] || "2026"); return ""; } for (var sh = 0; sh < sheets.length; sh++) { var shName = sheets[sh].getName(); var shUpper = shName.toUpperCase(); // Inclui ORGANIZAÇÃO FOLGAS FERIADO e abas finalizadas if (shUpper.indexOf("FOLGA") !== -1 && shUpper.indexOf("FERIADO") !== -1) { var lR = sheets[sh].getLastRow(); if (lR < 3) continue; var sData = sheets[sh].getRange(1, 1, lR, Math.min(sheets[sh].getLastColumn(), 5)).getDisplayValues(); var cNome = 1, cDia = 2, stR = 2; for (var r = 0; r < Math.min(sData.length, 5); r++) { for (var c = 0; c < sData[r].length; c++) { var cl = sData[r][c].toUpperCase(); if (cl.indexOf("NOME") !== -1) cNome = c; if (cl.indexOf("DIA") !== -1 || cl.indexOf("DATA") !== -1) cDia = c; } if (sData[r][cNome] && sData[r][cNome].toUpperCase().indexOf("NOME") !== -1) { stR = r + 1; break; } } for (var k = stR; k < sData.length; k++) { var n = String(sData[k][cNome] || "").trim(); var dNorm = normData(sData[k][cDia]); if (n && n.toUpperCase() !== "NOME" && dNorm) finalizedFolgas.push({ aba: shName, cracha: String(sData[k][0] || "").trim(), nome: n, dataNorm: dNorm }); } } } ({ dias: res, finalizedFolgas: finalizedFolgas });';
+                                const fetchCode = 'var ss = SpreadsheetApp.getActiveSpreadsheet(); var s = ss.getSheetByName("Diaria"); var res = {}; var dias = [{ nome: "Segunda", rangeF: "B6:D12", rangeA: "E6:I12", celData: "D3" }, { nome: "Terça", rangeF: "K6:M12", rangeA: "N6:R12", celData: "M3" }, { nome: "Quarta", rangeF: "T6:V12", rangeA: "W6:AA12", celData: "V3" }, { nome: "Quinta", rangeF: "AC6:AE12", rangeA: "AF6:AJ12", celData: "AE3" }, { nome: "Sexta", rangeF: "AL6:AN12", rangeA: "AO6:AS12", celData: "AN3" }, { nome: "Sábado", rangeF: "AU6:AW12", rangeA: "AX6:BB12", celData: "AW3" }, { nome: "Domingo", rangeF: "BD6:BF12", rangeA: "BG6:BK12", celData: "BF3" }]; for (var i = 0; i < dias.length; i++) { var d = dias[i]; res[d.nome] = { folgas: s.getRange(d.rangeF).getDisplayValues(), ausencias: s.getRange(d.rangeA).getDisplayValues(), dataDia: s.getRange(d.celData).getDisplayValue() }; } var sheets = ss.getSheets(); var finalizedFolgas = []; var meses = { "janeiro": "01", "fevereiro": "02", "março": "03", "marco": "03", "abril": "04", "maio": "05", "junho": "06", "julho": "07", "agosto": "08", "setembro": "09", "outubro": "10", "novembro": "11", "dezembro": "12" }; function normData(val) { if (!val) return ""; var str = String(val).trim().toLowerCase(); var mNum = str.match(/(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?/); if (mNum) return mNum[1].padStart(2, "0") + "/" + mNum[2].padStart(2, "0") + "/" + (mNum[3] ? (mNum[3].length === 2 ? "20" + mNum[3] : mNum[3]) : "2026"); var mExt = str.match(/(\\d{1,2})\\s+de\\s+([a-zçã]+)(?:\\s+de\\s+(\\d{2,4}))?/); if (mExt && meses[mExt[2]]) return mExt[1].padStart(2, "0") + "/" + meses[mExt[2]] + "/" + (mExt[3] || "2026"); return ""; } for (var sh = 0; sh < sheets.length; sh++) { var shName = sheets[sh].getName(); var shUpper = shName.toUpperCase(); // Inclui ORGANIZAÇÃO FOLGAS FERIADO e abas finalizadas if (shUpper.indexOf("FOLGA") !== -1 && shUpper.indexOf("FERIADO") !== -1) { var lR = sheets[sh].getLastRow(); if (lR < 3) continue; var sData = sheets[sh].getRange(1, 1, lR, Math.min(sheets[sh].getLastColumn(), 5)).getDisplayValues(); var cNome = 1, cDia = 2, stR = 2; for (var r = 0; r < Math.min(sData.length, 5); r++) { for (var c = 0; c < sData[r].length; c++) { var cl = sData[r][c].toUpperCase(); if (cl.indexOf("NOME") !== -1) cNome = c; if (cl.indexOf("DIA") !== -1 || cl.indexOf("DATA") !== -1) cDia = c; } if (sData[r][cNome] && sData[r][cNome].toUpperCase().indexOf("NOME") !== -1) { stR = r + 1; break; } } for (var k = stR; k < sData.length; k++) { var n = String(sData[k][cNome] || "").trim(); var dNorm = normData(sData[k][cDia]); if (n && n.toUpperCase() !== "NOME" && dNorm) finalizedFolgas.push({ aba: shName, cracha: String(sData[k][0] || "").trim(), nome: n, dataNorm: dNorm }); } } } ({ dias: res, finalizedFolgas: finalizedFolgas });';
                                 const fastRes = await fetch(this.webAppUrl, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -12819,10 +12826,13 @@
                                             const dataDoDia = String(resultData[diaName].dataDia || resJson.dias[diaName].data || '').trim();
                                             resJson.dias[diaName].folgas = [];
                                             fRows.forEach((r, idx) => {
-                                                const depto = String(r[0] || '').trim();
-                                                const nome = String(r[1] || '').trim();
+                                                // Novo layout: Col 0 é NOME e Col 1 é DEPARTAMENTO
+                                                const c0 = String(r[0] || '').trim();
+                                                const c1 = String(r[1] || '').trim();
                                                 const sol = String(r[2] || '').trim();
-                                                if (nome && nome.length > 1) {
+                                                const nome = c0;
+                                                const depto = c1;
+                                                if (nome && nome.length > 1 && nome.toUpperCase() !== 'NOME') {
                                                     resJson.dias[diaName].folgas.push({
                                                         linha: 6 + idx,
                                                         departamento: depto || 'Geral',
@@ -12839,17 +12849,20 @@
                                             aRows.forEach((r, idx) => {
                                                 const nome = String(r[0] || '').trim();
                                                 const depto = String(r[1] || '').trim();
-                                                const sol = String(r[3] || '').trim();
-                                                if (nome && nome.length > 1) {
+                                                const situacao = String(r[2] || '').trim();
+                                                // Solução pode vir na col 3 ou col 4 dependendo da mesclagem
+                                                const sol = String(r[3] || r[4] || '').trim();
+                                                if (nome && nome.length > 1 && nome.toUpperCase() !== 'NOME') {
                                                     // Verifica se este colaborador tem folga de feriado confirmada na aba finalizada para este dia
                                                     const ferConfirmado = finalizedFolgas.find(ff => ff.dataNorm === dataDoDia && matchColab(ff.nome, nome));
-                                                    const isFer = !!ferConfirmado || (depto + ' ' + nome + ' ' + sol).toUpperCase().includes('FERIADO');
+                                                    const isFer = !!ferConfirmado || (situacao + ' ' + depto + ' ' + nome + ' ' + sol).toUpperCase().includes('FERIADO');
                                                     if (ferConfirmado) matchedFeriadosNomes.add(ferConfirmado.nome.toUpperCase());
 
                                                     resJson.dias[diaName].ausenciasCompletas.push({
                                                         linha: 6 + idx,
                                                         nome: nome,
                                                         departamento: depto || 'Geral',
+                                                        situacao: situacao || (isFer ? 'FERIADO' : ''),
                                                         solucao: sol,
                                                         tipo: 'ausencia',
                                                         isFeriado: isFer,
