@@ -1394,14 +1394,75 @@
                             <p id="stat-schedule-vagos" class="text-base sm:text-xl font-black text-rose-400">0</p>
                         </div>
                     </div>
-                    <div class="bg-gray-950/90 p-3 sm:p-3.5 rounded-xl border border-gray-800 shadow-md flex items-center gap-3">
-                        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 text-sm sm:text-base">
+                    <div onclick="scheduleApp.openAndFocusAbsences()" class="bg-gray-950/90 hover:bg-gray-900/90 p-3 sm:p-3.5 rounded-xl border border-gray-800 hover:border-amber-500/50 shadow-md flex items-center gap-3 cursor-pointer transition active:scale-95 group" title="Clique para ver o quadro de folgas e ausências">
+                        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/20 text-amber-400 group-hover:bg-amber-500/30 flex items-center justify-center shrink-0 text-sm sm:text-base transition">
                             <i class="fa-solid fa-umbrella-beach"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[10px] sm:text-[11px] text-gray-400 uppercase font-black tracking-wider">Ausências / Folga</p>
+                            <p class="text-[10px] sm:text-[11px] text-gray-400 group-hover:text-amber-200 uppercase font-black tracking-wider transition">Ausências / Folga</p>
                             <p id="stat-schedule-ausencias" class="text-base sm:text-xl font-black text-amber-400">0</p>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Barra de Filtros e Busca de Postos -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button type="button" onclick="scheduleApp.setFilter('all')" id="sched-filter-all" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-teal-600 text-white shadow-sm cursor-pointer">Todos</button>
+                        <button type="button" onclick="scheduleApp.setFilter('vacant')" id="sched-filter-vacant" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-gray-900 text-gray-300 hover:text-white border border-gray-700 cursor-pointer">
+                            <i class="fa-solid fa-circle-exclamation text-rose-400 text-xs"></i> Vagas Abertas
+                        </button>
+                        <button type="button" onclick="scheduleApp.setFilter('assigned')" id="sched-filter-assigned" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-gray-900 text-gray-300 hover:text-white border border-gray-700 cursor-pointer">
+                            <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i> Alocados
+                        </button>
+                        <!-- Alternador de Visualização (Cards Mobile vs Planilha) -->
+                        <div class="inline-flex items-center p-1 rounded-xl bg-gray-900/90 border border-gray-700 shrink-0 shadow-sm" id="sched-view-mode-container" title="Alternar formato de visualização">
+                            <button type="button" onclick="scheduleApp.setViewMode('cards')" id="sched-view-cards" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-teal-600 text-white shadow">
+                                <i class="fa-solid fa-id-card text-xs"></i>
+                                <span>Cards</span>
+                            </button>
+                            <button type="button" onclick="scheduleApp.setViewMode('table')" id="sched-view-table" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer text-gray-400 hover:text-white">
+                                <i class="fa-solid fa-table-cells text-xs"></i>
+                                <span>Planilha</span>
+                            </button>
+                        </div>
+                        <!-- Botão / Painel Rápido de Folgas & Ausências Integrado na Barra da Escala -->
+                        <button type="button" 
+                                id="btn-toggle-absences-view" 
+                                onclick="scheduleApp.toggleAbsencesSection()" 
+                                class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 flex items-center gap-2 cursor-pointer shadow-md shrink-0 active:scale-95" 
+                                title="Ver ou ocultar colaboradores de folga, atestado e feriado hoje">
+                            <i class="fa-solid fa-umbrella-beach text-amber-400"></i>
+                            <span>Folgas & Ausências (<span id="tb-count-abs">0</span>)</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200" id="arrow-toggle-abs"></i>
+                        </button>
+
+                        <!-- Filtro de Departamento / Setor Customizado (100% Dark & Legível em Qualquer Sistema) -->
+                        <div class="relative shrink-0 z-30" id="sched-dept-dropdown-wrapper">
+                            <button type="button" 
+                                    id="sched-dept-dropdown-btn" 
+                                    onclick="scheduleApp.toggleDeptDropdown(event)" 
+                                    class="flex items-center justify-between gap-2 bg-gray-900 hover:bg-gray-850 border border-gray-700 hover:border-teal-400 rounded-xl px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm text-teal-300 font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/30 transition cursor-pointer shadow-md min-w-[190px] sm:min-w-[220px]">
+                                <span id="sched-dept-dropdown-label" class="truncate flex items-center gap-1.5">🏢 Todos os Departamentos</span>
+                                <i class="fa-solid fa-chevron-down text-gray-400 text-xs transition-transform duration-200" id="sched-dept-dropdown-arrow"></i>
+                            </button>
+                            
+                            <!-- Menu Dropdown Customizado 100% Escuro & Legível (Sem Caixa Branca do Windows) -->
+                            <div id="sched-dept-dropdown-menu" 
+                                 class="hidden absolute left-0 top-full mt-1.5 w-72 max-h-72 overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-1.5 z-50 focus:outline-none space-y-0.5 custom-scrollbar">
+                                <!-- Preenchido dinamicamente por scheduleApp.populateDeptFilter() -->
+                            </div>
+
+                            <!-- Select nativo mantido oculto para total compatibilidade -->
+                            <select id="sched-filter-dept" onchange="scheduleApp.setDeptFilter(this.value)" class="hidden">
+                                <option value="all">🏢 Todos os Departamentos</option>
+                                <option value="uncovered">⚠️ Apenas Setores Descobertos</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="relative flex-1 sm:max-w-xs md:max-w-sm">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs md:text-sm"></i>
+                        <input type="text" id="schedule-search-input" oninput="scheduleApp.handleSearch(this.value)" placeholder="Buscar colaborador, horário ou setor..." class="w-full bg-gray-950 border border-gray-700 rounded-xl pl-9 md:pl-10 pr-3.5 py-2 md:py-2.5 text-xs md:text-sm text-white placeholder-gray-400 focus:outline-none focus:border-teal-400 transition shadow-inner">
                     </div>
                 </div>
 
@@ -1457,58 +1518,6 @@
                     <!-- Lista de Cards de Folgas e Ausências -->
                     <div id="schedule-absences-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
                         <!-- Injetado dinamicamente via scheduleApp.renderStatsAndAbsences() -->
-                    </div>
-                </div>
-
-
-
-                <!-- Barra de Filtros e Busca de Postos -->
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <button type="button" onclick="scheduleApp.setFilter('all')" id="sched-filter-all" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-teal-600 text-white shadow-sm cursor-pointer">Todos</button>
-                        <button type="button" onclick="scheduleApp.setFilter('vacant')" id="sched-filter-vacant" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-gray-900 text-gray-300 hover:text-white border border-gray-700 cursor-pointer">
-                            <i class="fa-solid fa-circle-exclamation text-rose-400 text-xs"></i> Vagas Abertas
-                        </button>
-                        <button type="button" onclick="scheduleApp.setFilter('assigned')" id="sched-filter-assigned" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-gray-900 text-gray-300 hover:text-white border border-gray-700 cursor-pointer">
-                            <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i> Alocados
-                        </button>
-                        <!-- Alternador de Visualização (Cards Mobile vs Planilha) -->
-                        <div class="inline-flex items-center p-1 rounded-xl bg-gray-900/90 border border-gray-700 shrink-0 shadow-sm" id="sched-view-mode-container" title="Alternar formato de visualização">
-                            <button type="button" onclick="scheduleApp.setViewMode('cards')" id="sched-view-cards" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-teal-600 text-white shadow">
-                                <i class="fa-solid fa-id-card text-xs"></i>
-                                <span>Cards</span>
-                            </button>
-                            <button type="button" onclick="scheduleApp.setViewMode('table')" id="sched-view-table" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer text-gray-400 hover:text-white">
-                                <i class="fa-solid fa-table-cells text-xs"></i>
-                                <span>Planilha</span>
-                            </button>
-                        </div>
-                        <!-- Filtro de Departamento / Setor Customizado (100% Dark & Legível em Qualquer Sistema) -->
-                        <div class="relative shrink-0 z-30" id="sched-dept-dropdown-wrapper">
-                            <button type="button" 
-                                    id="sched-dept-dropdown-btn" 
-                                    onclick="scheduleApp.toggleDeptDropdown(event)" 
-                                    class="flex items-center justify-between gap-2 bg-gray-900 hover:bg-gray-850 border border-gray-700 hover:border-teal-400 rounded-xl px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs sm:text-sm text-teal-300 font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/30 transition cursor-pointer shadow-md min-w-[190px] sm:min-w-[220px]">
-                                <span id="sched-dept-dropdown-label" class="truncate flex items-center gap-1.5">🏢 Todos os Departamentos</span>
-                                <i class="fa-solid fa-chevron-down text-gray-400 text-xs transition-transform duration-200" id="sched-dept-dropdown-arrow"></i>
-                            </button>
-                            
-                            <!-- Menu Dropdown Customizado 100% Escuro & Legível (Sem Caixa Branca do Windows) -->
-                            <div id="sched-dept-dropdown-menu" 
-                                 class="hidden absolute left-0 top-full mt-1.5 w-72 max-h-72 overflow-y-auto bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-1.5 z-50 focus:outline-none space-y-0.5 custom-scrollbar">
-                                <!-- Preenchido dinamicamente por scheduleApp.populateDeptFilter() -->
-                            </div>
-
-                            <!-- Select nativo mantido oculto para total compatibilidade -->
-                            <select id="sched-filter-dept" onchange="scheduleApp.setDeptFilter(this.value)" class="hidden">
-                                <option value="all">🏢 Todos os Departamentos</option>
-                                <option value="uncovered">⚠️ Apenas Setores Descobertos</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="relative flex-1 sm:max-w-xs md:max-w-sm">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs md:text-sm"></i>
-                        <input type="text" id="schedule-search-input" oninput="scheduleApp.handleSearch(this.value)" placeholder="Buscar colaborador, horário ou setor..." class="w-full bg-gray-950 border border-gray-700 rounded-xl pl-9 md:pl-10 pr-3.5 py-2 md:py-2.5 text-xs md:text-sm text-white placeholder-gray-400 focus:outline-none focus:border-teal-400 transition shadow-inner">
                     </div>
                 </div>
 
@@ -12268,6 +12277,31 @@
                 }
             }
 
+            toggleAbsencesSection() {
+                const card = document.getElementById('schedule-absences-card');
+                const arrow = document.getElementById('arrow-toggle-abs');
+                if (!card) return;
+                const isHidden = card.classList.contains('hidden');
+                if (isHidden) {
+                    card.classList.remove('hidden');
+                    if (arrow) arrow.style.transform = 'rotate(180deg)';
+                    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    card.classList.add('hidden');
+                    if (arrow) arrow.style.transform = 'rotate(0deg)';
+                }
+            }
+
+            openAndFocusAbsences() {
+                const card = document.getElementById('schedule-absences-card');
+                const arrow = document.getElementById('arrow-toggle-abs');
+                if (card) {
+                    card.classList.remove('hidden');
+                    if (arrow) arrow.style.transform = 'rotate(180deg)';
+                    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+
             toggleDeptDropdown(e) {
                 if (e) {
                     e.preventDefault();
@@ -13569,7 +13603,8 @@
                     return combined.includes('FERIADO');
                 };
 
-                const totalUncovered = allItems.filter(isUncovered).length;
+                const vacantSlots = (slots || []).filter(s => s.isVago);
+                const totalUncovered = Math.max(allItems.filter(isUncovered).length, vacantSlots.length);
                 const totalFeriados = allItems.filter(checkFeriado).length;
 
                 if (badgeTotal) {
@@ -13586,6 +13621,8 @@
                 if (cFolgas) cFolgas.innerText = totalFolgas;
                 if (cAus) cAus.innerText = totalAusencias;
                 if (cUnc) cUnc.innerText = totalUncovered;
+                const tbCount = document.getElementById('tb-count-abs');
+                if (tbCount) tbCount.innerText = totalAll;
 
                 // Estilo ativo nos botões de filtro
                 const btnAll = document.getElementById('btn-abs-filter-all');
@@ -13726,60 +13763,12 @@
                     colAusenciasHtml = ausenciasFiltradas.map(renderItemCard).join('');
                 }
 
-                // Seção Integrada de Setores Descobertos da Escala (exibida apenas no filtro 'uncovered')
-                const vacantSlots = (slots || []).filter(s => s.isVago);
-                let vacantSectionHtml = '';
-                if (this.absenceFilter === 'uncovered' && vacantSlots.length > 0) {
-                    const chips = vacantSlots.map(s => {
-                        const deptInfo = this.getSlotDepartmentInfo(s, this.currentDay);
-                        const topTitle = deptInfo.hasRealSector ? deptInfo.sector : (deptInfo.titular ? `POSTO L${s.linha} • ${deptInfo.titular}` : `POSTO L${s.linha}`);
-                        const subTitle = deptInfo.hasRealSector 
-                            ? `L${s.linha} • ${deptInfo.titular ? deptInfo.titular + ' ' : ''}(${deptInfo.reason})` 
-                            : `(Sem setor) • ${deptInfo.reason}`;
-                        return `
-                            <button type="button" onclick="scheduleApp.focusAndEditSlot('${this.currentDay}', ${s.linha}, '${s.colunaLetra}', '${(s.horario || '').replace(/'/g, "\\'")}')" class="group px-3 py-2 rounded-xl text-xs font-bold bg-rose-950/90 border border-rose-500/70 hover:border-rose-400 text-white hover:bg-rose-900 transition flex items-center gap-2.5 shadow-sm active:scale-95 text-left cursor-pointer">
-                                <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0"></span>
-                                <div class="min-w-0">
-                                    <span class="uppercase tracking-wider font-black text-rose-100 group-hover:text-white block truncate text-[11px] leading-tight">${topTitle}</span>
-                                    <span class="text-[10px] text-rose-300 font-medium block truncate mt-0.5">${subTitle}</span>
-                                </div>
-                                <span class="bg-rose-600 text-white text-[9px] px-2 py-0.5 rounded-lg font-black group-hover:bg-rose-500 transition shrink-0 ml-1 shadow-sm">+ Alocar</span>
-                            </button>
-                        `;
-                    }).join('');
+                let contentHtml = '';
 
-                    vacantSectionHtml = `
-                        <div class="col-span-full p-4 rounded-2xl bg-gradient-to-br from-rose-950/80 via-gray-900 to-gray-950 border border-rose-500/70 shadow-xl space-y-3">
-                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-rose-900/60 pb-2.5">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="w-7 h-7 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0 text-xs shadow-md shadow-rose-600/40">
-                                        <i class="fa-solid fa-triangle-exclamation"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="text-xs sm:text-sm font-black text-rose-100 uppercase tracking-wide">
-                                            ${vacantSlots.length} Postos Descobertos na Escala de Hoje (${this.currentDay})
-                                        </h6>
-                                        <p class="text-[10px] text-gray-300">Clique em qualquer setor abaixo para preencher o substituto imediatamente:</p>
-                                    </div>
-                                </div>
-                                <button type="button" onclick="scheduleApp.toggleUncoveredFilter()" class="px-2.5 py-1 rounded-lg bg-rose-800 hover:bg-rose-700 text-white text-[11px] font-bold transition flex items-center gap-1.5 active:scale-95 shadow-sm cursor-pointer whitespace-nowrap self-end sm:self-auto">
-                                    <i class="fa-solid fa-filter text-[10px]"></i>
-                                    <span>${this.currentFilter === 'vacant' ? 'Ver Todos os Postos na Tabela' : 'Filtrar na Tabela Abaixo'}</span>
-                                </button>
-                            </div>
-                            <div class="flex flex-wrap gap-2 pt-1">
-                                ${chips}
-                            </div>
-                        </div>
-                    `;
-                }
-
-                // Renderiza DUAS colunas lado a lado como na Planilha Google
-                absencesList.innerHTML = `
-                    ${vacantSectionHtml}
-                    <div class="col-span-full grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <!-- COLUNA 1: FOLGAS DA ESCALA (COLUNAS B, C, D DA PLANILHA) -->
-                        <div class="bg-gray-900/90 border border-teal-900/60 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-lg flex flex-col justify-between">
+                if (this.absenceFilter === 'folga') {
+                    // Quando clica em Folgas: mostra APENAS o card de Folgas em largura total (sem contêiner vazio de ausências)
+                    contentHtml = `
+                        <div class="col-span-full bg-gray-900/90 border border-teal-900/60 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-lg">
                             <div class="flex items-center justify-between pb-3 border-b border-teal-900/40">
                                 <div class="flex items-center gap-2.5">
                                     <span class="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center text-sm font-bold border border-teal-500/30">
@@ -13790,22 +13779,23 @@
                                             <span>Folgas da Escala</span>
                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-950 text-teal-300 border border-teal-800">${folgas.length}</span>
                                         </h5>
-                                        <span class="text-[10px] text-gray-400 font-mono">Linhas 6 a 12 • Folgas semanais</span>
+                                        <span class="text-[10px] text-gray-400 font-mono">Colaboradores em folga da escala hoje</span>
                                     </div>
                                 </div>
                                 <button type="button" onclick="scheduleApp.openNewAbsenceModal('folga')" class="px-2.5 py-1.5 rounded-xl bg-teal-950 hover:bg-teal-900 text-teal-300 border border-teal-700/60 text-xs font-bold transition flex items-center gap-1 active:scale-95 cursor-pointer">
                                     <i class="fa-solid fa-plus text-[10px]"></i>
-                                    <span>+ Folga</span>
+                                    <span>+ Nova Folga</span>
                                 </button>
                             </div>
-                            
-                            <div class="space-y-2.5 flex-1">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                 ${colFolgasHtml}
                             </div>
                         </div>
-
-                        <!-- COLUNA 2: AUSÊNCIAS, ATESTADOS & FÉRIAS (COLUNAS E, F, H DA PLANILHA) -->
-                        <div class="bg-gray-900/90 border border-indigo-900/60 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-lg flex flex-col justify-between">
+                    `;
+                } else if (this.absenceFilter === 'ausencia') {
+                    // Quando clica em Ausências: mostra APENAS o card de Ausências em largura total (sem contêiner vazio de folgas)
+                    contentHtml = `
+                        <div class="col-span-full bg-gray-900/90 border border-indigo-900/60 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-lg">
                             <div class="flex items-center justify-between pb-3 border-b border-indigo-900/40">
                                 <div class="flex items-center gap-2.5">
                                     <span class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold border border-indigo-500/30">
@@ -13816,21 +13806,151 @@
                                             <span>Ausências, Atestados & Férias</span>
                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-950 text-indigo-300 border border-indigo-800">${effectiveAus.length}</span>
                                         </h5>
-                                        <span class="text-[10px] text-gray-400 font-mono">Linhas 6 a 12 • Atestados, Férias e Feriados</span>
+                                        <span class="text-[10px] text-gray-400 font-mono">Atestados, Férias e Folgas compensatórias de Feriado</span>
                                     </div>
                                 </div>
                                 <button type="button" onclick="scheduleApp.openNewAbsenceModal('ausencia')" class="px-2.5 py-1.5 rounded-xl bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 text-xs font-bold transition flex items-center gap-1 active:scale-95 cursor-pointer">
                                     <i class="fa-solid fa-plus text-[10px]"></i>
-                                    <span>+ Ausência</span>
+                                    <span>+ Nova Ausência</span>
                                 </button>
                             </div>
-
-                            <div class="space-y-2.5 flex-1">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                 ${colAusenciasHtml}
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                } else if (this.absenceFilter === 'uncovered') {
+                    // Quando clica em Descobertos: Mostra os postos da escala sem cobertura + folgas/ausências sem cobertura
+                    let chipsHtml = '';
+                    if (vacantSlots.length > 0) {
+                        chipsHtml = vacantSlots.map(s => {
+                            const deptInfo = this.getSlotDepartmentInfo(s, this.currentDay);
+                            const topTitle = deptInfo.hasRealSector ? deptInfo.sector : (deptInfo.titular ? `POSTO L${s.linha} • ${deptInfo.titular}` : `POSTO L${s.linha}`);
+                            const subTitle = deptInfo.hasRealSector 
+                                ? `L${s.linha} • ${deptInfo.titular ? deptInfo.titular + ' ' : ''}(${deptInfo.reason})` 
+                                : `(Sem setor) • ${deptInfo.reason}`;
+                            return `
+                                <button type="button" onclick="scheduleApp.focusAndEditSlot('${this.currentDay}', ${s.linha}, '${s.colunaLetra}', '${(s.horario || '').replace(/'/g, "\\'")}')" class="group px-3 py-2 rounded-xl text-xs font-bold bg-rose-950/90 border border-rose-500/70 hover:border-rose-400 text-white hover:bg-rose-900 transition flex items-center gap-2.5 shadow-sm active:scale-95 text-left cursor-pointer">
+                                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0"></span>
+                                    <div class="min-w-0">
+                                        <span class="uppercase tracking-wider font-black text-rose-100 group-hover:text-white block truncate text-[11px] leading-tight">${topTitle}</span>
+                                        <span class="text-[10px] text-rose-300 font-medium block truncate mt-0.5">${subTitle}</span>
+                                    </div>
+                                    <span class="bg-rose-600 text-white text-[9px] px-2 py-0.5 rounded-lg font-black group-hover:bg-rose-500 transition shrink-0 ml-1 shadow-sm">+ Alocar</span>
+                                </button>
+                            `;
+                        }).join('');
+                    }
+
+                    contentHtml = `
+                        <div class="col-span-full p-4 rounded-2xl bg-gradient-to-br from-rose-950/80 via-gray-900 to-gray-950 border border-rose-500/70 shadow-xl space-y-3">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-rose-900/60 pb-2.5">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-7 h-7 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0 text-xs shadow-md shadow-rose-600/40">
+                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-xs sm:text-sm font-black text-rose-100 uppercase tracking-wide">
+                                            ${vacantSlots.length} Postos Descobertos na Escala Diária de Hoje (${this.currentDay})
+                                        </h6>
+                                        <p class="text-[10px] text-gray-300">Clique em qualquer setor abaixo para preencher o substituto imediatamente:</p>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="scheduleApp.toggleUncoveredFilter()" class="px-2.5 py-1 rounded-lg bg-rose-800 hover:bg-rose-700 text-white text-[11px] font-bold transition flex items-center gap-1.5 active:scale-95 shadow-sm cursor-pointer whitespace-nowrap self-end sm:self-auto">
+                                    <i class="fa-solid fa-filter text-[10px]"></i>
+                                    <span>${this.currentFilter === 'vacant' ? 'Ver Todos os Postos na Tabela' : 'Filtrar na Tabela Abaixo'}</span>
+                                </button>
+                            </div>
+                            <div class="flex flex-wrap gap-2 pt-1">
+                                ${chipsHtml}
+                            </div>
+                        </div>
+
+                        ${(folgasFiltradas.length > 0 || ausenciasFiltradas.length > 0) ? `
+                            <div class="col-span-full grid grid-cols-1 lg:grid-cols-2 gap-4 mt-2">
+                                ${folgasFiltradas.length > 0 ? `
+                                    <div class="bg-gray-900/90 border border-teal-900/60 rounded-3xl p-4 space-y-3 shadow-lg">
+                                        <h5 class="text-xs font-black text-teal-300 flex items-center gap-2 pb-2 border-b border-teal-900/40">
+                                            <i class="fa-solid fa-umbrella-beach"></i>
+                                            <span>Folgas Sem Cobertura (${folgasFiltradas.length})</span>
+                                        </h5>
+                                        <div class="space-y-2.5">
+                                            ${colFolgasHtml}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                ${ausenciasFiltradas.length > 0 ? `
+                                    <div class="bg-gray-900/90 border border-indigo-900/60 rounded-3xl p-4 space-y-3 shadow-lg">
+                                        <h5 class="text-xs font-black text-indigo-300 flex items-center gap-2 pb-2 border-b border-indigo-900/40">
+                                            <i class="fa-solid fa-notes-medical"></i>
+                                            <span>Ausências Sem Cobertura (${ausenciasFiltradas.length})</span>
+                                        </h5>
+                                        <div class="space-y-2.5">
+                                            ${colAusenciasHtml}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                    `;
+                } else {
+                    // Modo 'all': Mostra as duas colunas lado a lado
+                    contentHtml = `
+                        <div class="col-span-full grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <!-- COLUNA 1: FOLGAS DA ESCALA -->
+                            <div class="bg-gray-900/90 border border-teal-900/60 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-lg flex flex-col justify-between">
+                                <div class="flex items-center justify-between pb-3 border-b border-teal-900/40">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center text-sm font-bold border border-teal-500/30">
+                                            <i class="fa-solid fa-umbrella-beach"></i>
+                                        </span>
+                                        <div>
+                                            <h5 class="text-xs sm:text-sm font-black text-white flex items-center gap-2">
+                                                <span>Folgas da Escala</span>
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-950 text-teal-300 border border-teal-800">${folgas.length}</span>
+                                            </h5>
+                                            <span class="text-[10px] text-gray-400 font-mono">Linhas 6 a 12 • Folgas semanais</span>
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="scheduleApp.openNewAbsenceModal('folga')" class="px-2.5 py-1.5 rounded-xl bg-teal-950 hover:bg-teal-900 text-teal-300 border border-teal-700/60 text-xs font-bold transition flex items-center gap-1 active:scale-95 cursor-pointer">
+                                        <i class="fa-solid fa-plus text-[10px]"></i>
+                                        <span>+ Folga</span>
+                                    </button>
+                                </div>
+                                <div class="space-y-2.5 flex-1">
+                                    ${colFolgasHtml}
+                                </div>
+                            </div>
+
+                            <!-- COLUNA 2: AUSÊNCIAS, ATESTADOS & FÉRIAS -->
+                            <div class="bg-gray-900/90 border border-indigo-900/60 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-lg flex flex-col justify-between">
+                                <div class="flex items-center justify-between pb-3 border-b border-indigo-900/40">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm font-bold border border-indigo-500/30">
+                                            <i class="fa-solid fa-notes-medical"></i>
+                                        </span>
+                                        <div>
+                                            <h5 class="text-xs sm:text-sm font-black text-white flex items-center gap-2">
+                                                <span>Ausências, Atestados & Férias</span>
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-950 text-indigo-300 border border-indigo-800">${effectiveAus.length}</span>
+                                            </h5>
+                                            <span class="text-[10px] text-gray-400 font-mono">Linhas 6 a 12 • Atestados, Férias e Feriados</span>
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="scheduleApp.openNewAbsenceModal('ausencia')" class="px-2.5 py-1.5 rounded-xl bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 text-xs font-bold transition flex items-center gap-1 active:scale-95 cursor-pointer">
+                                        <i class="fa-solid fa-plus text-[10px]"></i>
+                                        <span>+ Ausência</span>
+                                    </button>
+                                </div>
+                                <div class="space-y-2.5 flex-1">
+                                    ${colAusenciasHtml}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                absencesList.innerHTML = contentHtml;
             }
 
             getDayColConfig(dia) {
