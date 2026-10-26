@@ -12825,7 +12825,7 @@
                                                 if (nome && nome.length > 1) {
                                                     resJson.dias[diaName].folgas.push({
                                                         linha: 6 + idx,
-                                                        departamento: finalDepto || 'Geral',
+                                                        departamento: depto || 'Geral',
                                                         nome: nome,
                                                         solucao: sol,
                                                         tipo: 'folga',
@@ -13469,12 +13469,6 @@
             }
 
             renderStatsAndAbsences() {
-                const toggleNewFer = document.getElementById('modal-abs-new-feriado-toggle');
-                const isFerChecked = toggleNewFer ? toggleNewFer.checked : false;
-                let finalDepto = depto;
-                if (isFerChecked && !finalDepto.toUpperCase().includes('FERIADO')) {
-                    finalDepto = (finalDepto ? finalDepto + ' ' : '') + '(FERIADO)';
-                }
                 const diaInfo = (this.data && this.data.dias && this.data.dias[this.currentDay]) ? this.data.dias[this.currentDay] : null;
                 const slots = this.getCleanSlots(this.currentDay);
                 const ausencias = diaInfo ? (diaInfo.ausencias || []) : [];
@@ -14099,9 +14093,14 @@
                 const selColab = document.getElementById('modal-abs-new-colab-select');
                 const inputDepto = document.getElementById('modal-abs-new-depto-input');
                 const inputSol = document.getElementById('modal-abs-new-solucao-input');
+                const toggleNewFer = document.getElementById('modal-abs-new-feriado-toggle');
+                const isFerChecked = toggleNewFer ? toggleNewFer.checked : false;
 
                 const nome = selColab ? selColab.value.trim() : '';
-                const depto = inputDepto ? inputDepto.value.trim() : '';
+                let depto = inputDepto ? inputDepto.value.trim() : '';
+                if (isFerChecked && !depto.toUpperCase().includes('FERIADO')) {
+                    depto = (depto ? depto + ' ' : '') + '(FERIADO)';
+                }
                 const solucao = inputSol ? inputSol.value.trim() : '';
 
                 if (!nome) {
