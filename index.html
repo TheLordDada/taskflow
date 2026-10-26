@@ -1420,7 +1420,11 @@
                             <p class="text-[11px] sm:text-xs text-gray-400 font-medium">Linhas 6 a 12 da planilha • Acompanhe folgas, atestados e substitutos sem alterar a largura das células</p>
                         </div>
                         <!-- Botões de Ação Rápida -->
-                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+                            <button type="button" id="btn-uncovered-badge-pill" onclick="scheduleApp.setAbsenceFilter('uncovered')" class="hidden px-3 py-2 rounded-xl bg-rose-950 hover:bg-rose-900 border border-rose-500/80 text-rose-200 text-xs font-black transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer animate-pulse">
+                                <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                                <span id="label-uncovered-badge-pill">0 Sem Cobertura</span>
+                            </button>
                             <button type="button" onclick="scheduleApp.openNewAbsenceModal('folga')" class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-teal-950 hover:bg-teal-900 border border-teal-600/60 text-teal-200 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer">
                                 <i class="fa-solid fa-umbrella-beach text-teal-400"></i>
                                 <span>+ Nova Folga</span>
@@ -1445,7 +1449,7 @@
                                 🩺 Ausências / Atestados (<span id="count-abs-ausencias">0</span>)
                             </button>
                             <button type="button" onclick="scheduleApp.setAbsenceFilter('uncovered')" id="btn-abs-filter-uncovered" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-rose-300 border border-rose-900/60 cursor-pointer">
-                                ⚠️ Sem Cobertura (<span id="count-abs-uncovered">0</span>)
+                                🚨 Descobertos (<span id="count-abs-uncovered">0</span>)
                             </button>
                         </div>
                     </div>
@@ -1456,33 +1460,7 @@
                     </div>
                 </div>
 
-                <!-- Painel Interativo de Setores Descobertos & Desfalques Críticos -->
-                <div id="schedule-uncovered-alert" class="hidden p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-rose-950/90 via-gray-900 to-gray-950 border border-rose-600/70 shadow-xl space-y-3">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-600/50 text-sm sm:text-base">
-                                <i class="fa-solid fa-triangle-exclamation animate-pulse"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-black text-rose-200 text-xs sm:text-sm md:text-base uppercase tracking-wide" id="schedule-uncovered-alert-title">
-                                    Atenção Líder: Setores Descobertos Hoje
-                                </h4>
-                                <p class="text-[11px] sm:text-xs text-gray-300 mt-0.5" id="schedule-uncovered-alert-desc">
-                                    Os seguintes setores estão com desfalque ou sem substituto. Clique no setor para alocar imediatamente:
-                                </p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 self-end sm:self-auto">
-                            <button type="button" id="btn-toggle-uncovered-filter" onclick="scheduleApp.toggleUncoveredFilter()" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs transition shrink-0 active:scale-95 shadow-md shadow-rose-600/40 flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
-                                <i class="fa-solid fa-filter text-xs"></i> <span id="label-toggle-uncovered-filter">Ver Apenas Descobertos</span>
-                            </button>
-                        </div>
-                    </div>
-                    <!-- Lista de Chips Interativos dos Setores Descobertos -->
-                    <div id="schedule-uncovered-chips-container" class="flex flex-wrap gap-2 pt-2 border-t border-rose-900/60">
-                        <!-- Injetado dinamicamente via scheduleApp.renderStatsAndAbsences() -->
-                    </div>
-                </div>
+
 
                 <!-- Barra de Filtros e Busca de Postos -->
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
@@ -13500,46 +13478,18 @@
                 if (statVagos) statVagos.innerText = vagos;
                 if (statAus) statAus.innerText = ausencias.length;
 
-                // Alerta e Painel de setores sem ninguém / postos descobertos
-                const uncovAlert = document.getElementById('schedule-uncovered-alert');
-                const uncovTitle = document.getElementById('schedule-uncovered-alert-title');
-                const uncovDesc = document.getElementById('schedule-uncovered-alert-desc');
-                const uncovChips = document.getElementById('schedule-uncovered-chips-container');
-                const filterToggleLabel = document.getElementById('label-toggle-uncovered-filter');
-
+                // Atualiza Pill de Alerta Integrado no Topo do Quadro
+                const pillUncov = document.getElementById('btn-uncovered-badge-pill');
+                const labelUncov = document.getElementById('label-uncovered-badge-pill');
                 const vacantSlots = slots.filter(s => s.isVago);
 
                 if (vacantSlots.length > 0) {
-                    if (uncovAlert) uncovAlert.classList.remove('hidden');
-                    if (uncovTitle) uncovTitle.innerText = `🚨 Atenção Líder: ${vacantSlots.length} Setor(es) Sem Cobertura Hoje (${this.currentDay})`;
-                    if (uncovDesc) uncovDesc.innerText = `Os seguintes setores estão com desfalque ou sem substituto alocado. Clique em qualquer setor abaixo para preencher imediatamente:`;
-
-                    if (filterToggleLabel) {
-                        filterToggleLabel.innerText = this.currentFilter === 'vacant' ? 'Ver Todos os Postos' : 'Ver Apenas Descobertos';
-                    }
-
-                    if (uncovChips) {
-                        uncovChips.innerHTML = vacantSlots.map(s => {
-                            const deptInfo = this.getSlotDepartmentInfo(s, this.currentDay);
-                            const topTitle = deptInfo.hasRealSector ? deptInfo.sector : (deptInfo.titular ? `POSTO L${s.linha} • ${deptInfo.titular}` : `POSTO L${s.linha}`);
-                            const subTitle = deptInfo.hasRealSector 
-                                ? `L${s.linha} • ${deptInfo.titular ? deptInfo.titular + ' ' : ''}(${deptInfo.reason})` 
-                                : `(Sem setor na planilha) • ${deptInfo.reason}`;
-                            return `
-                                <button type="button" onclick="scheduleApp.focusAndEditSlot('${this.currentDay}', ${s.linha}, '${s.colunaLetra}', '${(s.horario || '').replace(/'/g, "\\'")}')" class="group px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl text-xs sm:text-sm font-bold bg-rose-950 border border-rose-500/80 hover:border-rose-400 text-white hover:bg-rose-900 transition flex items-center gap-3 shadow-lg shadow-rose-950/60 active:scale-95 text-left cursor-pointer">
-                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping shrink-0"></span>
-                                    <div class="min-w-0">
-                                        <span class="uppercase tracking-wider font-black text-rose-100 group-hover:text-white block truncate leading-tight text-xs sm:text-sm md:text-base">${topTitle}</span>
-                                        <span class="text-xs sm:text-xs text-rose-300 font-semibold block truncate mt-0.5">${subTitle}</span>
-                                    </div>
-                                    <span class="bg-rose-600 text-white text-[10px] sm:text-xs px-2.5 py-1 rounded-xl font-black group-hover:bg-rose-500 transition shrink-0 ml-1.5 shadow-sm">+ Alocar</span>
-                                </button>
-                            `;
-                        }).join('');
+                    if (pillUncov) {
+                        pillUncov.classList.remove('hidden');
+                        if (labelUncov) labelUncov.innerText = `🚨 ${vacantSlots.length} Sem Cobertura`;
                     }
                 } else {
-                    if (uncovAlert) uncovAlert.classList.add('hidden');
-                    if (uncovChips) uncovChips.innerHTML = '';
+                    if (pillUncov) pillUncov.classList.add('hidden');
                 }
 
                 // Atualiza contadores nos botões de filtro
@@ -13776,8 +13726,57 @@
                     colAusenciasHtml = ausenciasFiltradas.map(renderItemCard).join('');
                 }
 
+                // Seção Integrada de Setores Descobertos da Escala (exibida apenas no filtro 'uncovered')
+                const vacantSlots = (slots || []).filter(s => s.isVago);
+                let vacantSectionHtml = '';
+                if (this.absenceFilter === 'uncovered' && vacantSlots.length > 0) {
+                    const chips = vacantSlots.map(s => {
+                        const deptInfo = this.getSlotDepartmentInfo(s, this.currentDay);
+                        const topTitle = deptInfo.hasRealSector ? deptInfo.sector : (deptInfo.titular ? `POSTO L${s.linha} • ${deptInfo.titular}` : `POSTO L${s.linha}`);
+                        const subTitle = deptInfo.hasRealSector 
+                            ? `L${s.linha} • ${deptInfo.titular ? deptInfo.titular + ' ' : ''}(${deptInfo.reason})` 
+                            : `(Sem setor) • ${deptInfo.reason}`;
+                        return `
+                            <button type="button" onclick="scheduleApp.focusAndEditSlot('${this.currentDay}', ${s.linha}, '${s.colunaLetra}', '${(s.horario || '').replace(/'/g, "\\'")}')" class="group px-3 py-2 rounded-xl text-xs font-bold bg-rose-950/90 border border-rose-500/70 hover:border-rose-400 text-white hover:bg-rose-900 transition flex items-center gap-2.5 shadow-sm active:scale-95 text-left cursor-pointer">
+                                <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0"></span>
+                                <div class="min-w-0">
+                                    <span class="uppercase tracking-wider font-black text-rose-100 group-hover:text-white block truncate text-[11px] leading-tight">${topTitle}</span>
+                                    <span class="text-[10px] text-rose-300 font-medium block truncate mt-0.5">${subTitle}</span>
+                                </div>
+                                <span class="bg-rose-600 text-white text-[9px] px-2 py-0.5 rounded-lg font-black group-hover:bg-rose-500 transition shrink-0 ml-1 shadow-sm">+ Alocar</span>
+                            </button>
+                        `;
+                    }).join('');
+
+                    vacantSectionHtml = `
+                        <div class="col-span-full p-4 rounded-2xl bg-gradient-to-br from-rose-950/80 via-gray-900 to-gray-950 border border-rose-500/70 shadow-xl space-y-3">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-rose-900/60 pb-2.5">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-7 h-7 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0 text-xs shadow-md shadow-rose-600/40">
+                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="text-xs sm:text-sm font-black text-rose-100 uppercase tracking-wide">
+                                            ${vacantSlots.length} Postos Descobertos na Escala de Hoje (${this.currentDay})
+                                        </h6>
+                                        <p class="text-[10px] text-gray-300">Clique em qualquer setor abaixo para preencher o substituto imediatamente:</p>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="scheduleApp.toggleUncoveredFilter()" class="px-2.5 py-1 rounded-lg bg-rose-800 hover:bg-rose-700 text-white text-[11px] font-bold transition flex items-center gap-1.5 active:scale-95 shadow-sm cursor-pointer whitespace-nowrap self-end sm:self-auto">
+                                    <i class="fa-solid fa-filter text-[10px]"></i>
+                                    <span>${this.currentFilter === 'vacant' ? 'Ver Todos os Postos na Tabela' : 'Filtrar na Tabela Abaixo'}</span>
+                                </button>
+                            </div>
+                            <div class="flex flex-wrap gap-2 pt-1">
+                                ${chips}
+                            </div>
+                        </div>
+                    `;
+                }
+
                 // Renderiza DUAS colunas lado a lado como na Planilha Google
                 absencesList.innerHTML = `
+                    ${vacantSectionHtml}
                     <div class="col-span-full grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <!-- COLUNA 1: FOLGAS DA ESCALA (COLUNAS B, C, D DA PLANILHA) -->
                         <div class="bg-gray-900/90 border border-teal-900/60 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-lg flex flex-col justify-between">
@@ -13791,7 +13790,7 @@
                                             <span>Folgas da Escala</span>
                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-teal-950 text-teal-300 border border-teal-800">${folgas.length}</span>
                                         </h5>
-                                        <span class="text-[10px] text-gray-400 font-mono">Colunas B, C, D • Linhas 6 a 12</span>
+                                        <span class="text-[10px] text-gray-400 font-mono">Linhas 6 a 12 • Folgas semanais</span>
                                     </div>
                                 </div>
                                 <button type="button" onclick="scheduleApp.openNewAbsenceModal('folga')" class="px-2.5 py-1.5 rounded-xl bg-teal-950 hover:bg-teal-900 text-teal-300 border border-teal-700/60 text-xs font-bold transition flex items-center gap-1 active:scale-95 cursor-pointer">
@@ -13817,7 +13816,7 @@
                                             <span>Ausências, Atestados & Férias</span>
                                             <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-950 text-indigo-300 border border-indigo-800">${effectiveAus.length}</span>
                                         </h5>
-                                        <span class="text-[10px] text-gray-400 font-mono">Colunas E, F, H • Linhas 6 a 12</span>
+                                        <span class="text-[10px] text-gray-400 font-mono">Linhas 6 a 12 • Atestados, Férias e Feriados</span>
                                     </div>
                                 </div>
                                 <button type="button" onclick="scheduleApp.openNewAbsenceModal('ausencia')" class="px-2.5 py-1.5 rounded-xl bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60 text-xs font-bold transition flex items-center gap-1 active:scale-95 cursor-pointer">
