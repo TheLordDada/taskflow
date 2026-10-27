@@ -1483,14 +1483,15 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
   var abaHist = ss.getSheetByName("Historico_Escalas");
   if (!abaDiaria) return { success: false, error: "Aba Diaria não encontrada" };
 
+  // Mapeamento matemático perfeito dos 7 dias com colunas de Folga, Ausência e Slots:
   var diasConfig = {
-    4:  { nome: "Segunda", celData: "D3", colData: 4,  colNome: 3 },
-    13: { nome: "Terça",   celData: "M3", colData: 13, colNome: 12 },
-    22: { nome: "Quarta",  celData: "V3", colData: 22, colNome: 21 },
-    31: { nome: "Quinta",  celData: "AE3",colData: 31, colNome: 30 },
-    40: { nome: "Sexta",   celData: "AN3",colData: 40, colNome: 39 },
-    49: { nome: "Sábado",  celData: "AW3",colData: 49, colNome: 48 },
-    58: { nome: "Domingo", celData: "BF3",colData: 58, colNome: 57 }
+    4:  { k: 0, nome: "Segunda", celData: "D3",  colData: 4,  colFolga: 2,  colAus: 5,  colSlots: 3 },
+    13: { k: 1, nome: "Terça",   celData: "M3",  colData: 13, colFolga: 11, colAus: 14, colSlots: 12 },
+    22: { k: 2, nome: "Quarta",  celData: "V3",  colData: 22, colFolga: 20, colAus: 23, colSlots: 21 },
+    31: { k: 3, nome: "Quinta",  celData: "AE3", colData: 31, colFolga: 29, colAus: 32, colSlots: 30 },
+    40: { k: 4, nome: "Sexta",   celData: "AN3", colData: 40, colFolga: 38, colAus: 41, colSlots: 39 },
+    49: { k: 5, nome: "Sábado",  celData: "AW3", colData: 49, colFolga: 47, colAus: 50, colSlots: 48 },
+    58: { k: 6, nome: "Domingo", celData: "BF3", colData: 58, colFolga: 56, colAus: 59, colSlots: 57 }
   };
 
   var cfg = null;
@@ -1527,10 +1528,9 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
   }
 
   if (diaIrmao) {
-    // Copia EXCLUSIVAMENTE a alocação de pessoas da escala (linhas 20 a 51)
-    // Colunas: Nome (0), Escala (1), Entrada (2), IniAlm (3), RetAlm (4), Saida (5), Banco (6)
-    var dOrigem = abaDiaria.getRange(20, diaIrmao.colNome, 32, 7).getValues();
-    var dDestino = abaDiaria.getRange(20, cfg.colNome, 32, 7).getValues();
+    // 1.1 Copia Escala de Reposição (linhas 20 a 51)
+    var dOrigem = abaDiaria.getRange(20, diaIrmao.colSlots, 32, 7).getValues();
+    var dDestino = abaDiaria.getRange(20, cfg.colSlots, 32, 7).getValues();
 
     for (var idx = 0; idx < 32; idx++) {
       dDestino[idx][0] = dOrigem[idx][0]; // Nome
@@ -1540,11 +1540,19 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
       dDestino[idx][4] = dOrigem[idx][4]; // RetAlm
       dDestino[idx][6] = dOrigem[idx][6]; // Banco
     }
-    abaDiaria.getRange(20, cfg.colNome, 32, 7).setValues(dDestino);
+    abaDiaria.getRange(20, cfg.colSlots, 32, 7).setValues(dDestino);
+
+    // 1.2 Copia Folgas (linhas 6 a 12, 7 linhas x 3 colunas)
+    var fOrigem = abaDiaria.getRange(6, diaIrmao.colFolga, 7, 3).getValues();
+    abaDiaria.getRange(6, cfg.colFolga, 7, 3).setValues(fOrigem);
+
+    // 1.3 Copia Atestados/Férias/Feriados (linhas 6 a 12, 7 linhas x 4 colunas)
+    var aOrigem = abaDiaria.getRange(6, diaIrmao.colAus, 7, 4).getValues();
+    abaDiaria.getRange(6, cfg.colAus, 7, 4).setValues(aOrigem);
 
     SpreadsheetApp.flush();
     try {
-      ss.toast("📥 Escala de " + sData + " copiada de " + diaIrmao.nome + " para " + cfg.nome + "!", "TaskFlow", 5);
+      ss.toast("📥 Escala, Folgas e Atestados de " + sData + " copiados de " + diaIrmao.nome + " para " + cfg.nome + "!", "TaskFlow", 5);
     } catch(e) {}
 
     return {
@@ -1563,6 +1571,8 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
 
   var rows = abaHist.getRange(2, 1, lr - 1, 19).getValues();
   var slotsParaRestaurar = {};
+  var folgasParaRestaurar = [];
+  var ausenciasParaRestaurar = [];
 
   for (var i = 0; i < rows.length; i++) {
     var r = rows[i];
@@ -1589,16 +1599,29 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
         banco: r[12],
         escala: String(r[13] || "").trim()
       };
+    } else if (tipo === "FOLGA_SEMANAL") {
+      folgasParaRestaurar.push([
+        String(r[7] || "").trim(), // Nome
+        String(r[5] || "").trim(), // Depto
+        String(r[15] || "").trim() // Solução
+      ]);
+    } else if (tipo === "AUSENCIA_ATESTADO") {
+      ausenciasParaRestaurar.push([
+        String(r[7] || "").trim(), // Nome
+        String(r[5] || "").trim(), // Depto
+        String(r[14] || "").trim(), // Situação
+        String(r[15] || "").trim()  // Solução
+      ]);
     }
   }
 
   var totalSlots = Object.keys(slotsParaRestaurar).length;
-  if (totalSlots === 0) {
+  if (totalSlots === 0 && folgasParaRestaurar.length === 0 && ausenciasParaRestaurar.length === 0) {
     return { success: false, notFound: true, message: "Nenhum registro encontrado no histórico para a data " + sData };
   }
 
-  // Preenche EXCLUSIVAMENTE os postos de reposição (linhas 20 a 51)
-  var rangeSlots = abaDiaria.getRange(20, cfg.colNome, 32, 7);
+  // 2.1 Preenche Escala de Reposição
+  var rangeSlots = abaDiaria.getRange(20, cfg.colSlots, 32, 7);
   var valoresSlots = rangeSlots.getValues();
 
   for (var rIdx = 0; rIdx < 32; rIdx++) {
@@ -1622,22 +1645,41 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
   }
   rangeSlots.setValues(valoresSlots);
 
+  // 2.2 Preenche Folgas (7 linhas x 3 colunas)
+  var valsFolgas = [
+    ["", "", ""], ["", "", ""], ["", "", ""],
+    ["", "", ""], ["", "", ""], ["", "", ""], ["", "", ""]
+  ];
+  for (var f = 0; f < 7 && f < folgasParaRestaurar.length; f++) {
+    valsFolgas[f] = folgasParaRestaurar[f];
+  }
+  abaDiaria.getRange(6, cfg.colFolga, 7, 3).setValues(valsFolgas);
+
+  // 2.3 Preenche Atestados/Férias/Feriados (7 linhas x 4 colunas)
+  var valsAus = [
+    ["", "", "", ""], ["", "", "", ""], ["", "", "", ""],
+    ["", "", "", ""], ["", "", "", ""], ["", "", "", ""], ["", "", "", ""]
+  ];
+  for (var a = 0; a < 7 && a < ausenciasParaRestaurar.length; a++) {
+    valsAus[a] = ausenciasParaRestaurar[a];
+  }
+  abaDiaria.getRange(6, cfg.colAus, 7, 4).setValues(valsAus);
+
   SpreadsheetApp.flush();
   try {
-    ss.toast("📥 Escala de " + sData + " restaurada com sucesso em " + cfg.nome + "!", "TaskFlow Histórico", 5);
+    ss.toast("📥 Escala, Folgas e Atestados de " + sData + " restaurados com sucesso em " + cfg.nome + "!", "TaskFlow Histórico", 5);
   } catch(e) {}
 
   return {
     success: true,
     dataRestaurada: sData,
     diaDestino: cfg.nome,
-    slotsRestaurados: totalSlots
+    slotsRestaurados: totalSlots,
+    folgasRestauradas: folgasParaRestaurar.length,
+    ausenciasRestauradas: ausenciasParaRestaurar.length
   };
 }
 
-/**
- * Menu interativo no Google Planilhas
- */
 function menuPuxarMemoriaHistorico() {
   var ui = SpreadsheetApp.getUi();
   var resp = ui.prompt("📥 Puxar Memória do Histórico", "Digite a data que deseja puxar (ex: 26/10/2026):", ui.ButtonSet.OK_CANCEL);
