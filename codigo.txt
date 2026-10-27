@@ -1565,7 +1565,7 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
     return letter;
   }
 
-  // Mapeamento matemático perfeito dos 7 dias:
+  // Mapeamento matemático com colunas perfeitas dos 7 dias:
   var diasConfig = {
     4:  { k: 0, nome: "Segunda", celData: "D3",  celDataRef: "$D$3",  colData: 4,  colFolga: 2,  colAus: 5,  colSlots: 3 },
     13: { k: 1, nome: "Terça",   celData: "M3",  celDataRef: "$M$3",  colData: 13, colFolga: 11, colAus: 14, colSlots: 12 },
@@ -1589,13 +1589,14 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
   }
   if (!cfg) cfg = diasConfig[4]; // Default: Segunda
 
-  // Letras das colunas de horário para a fórmula automática de saída
-  var colEnt = getColLetter(cfg.colSlots + 2);
-  var colIni = getColLetter(cfg.colSlots + 3);
-  var colRet = getColLetter(cfg.colSlots + 4);
-  var colSai = getColLetter(cfg.colSlots + 5);
-  var colEsc = getColLetter(cfg.colSlots + 1);
-  var colBnc = getColLetter(cfg.colSlots + 6);
+  // Letras das colunas para fórmulas de Escala e Saída
+  var colNomeLetra = getColLetter(cfg.colSlots);     // Coluna Nome (ex: C)
+  var colEscLetra  = getColLetter(cfg.colSlots + 1); // Coluna Escala (ex: D)
+  var colEntLetra  = getColLetter(cfg.colSlots + 2); // Coluna Entrada (ex: E)
+  var colIniLetra  = getColLetter(cfg.colSlots + 3); // Coluna IniAlm (ex: F)
+  var colRetLetra  = getColLetter(cfg.colSlots + 4); // Coluna RetAlm (ex: G)
+  var colSaiLetra  = getColLetter(cfg.colSlots + 5); // Coluna Saída (ex: H)
+  var colBncLetra  = getColLetter(cfg.colSlots + 6); // Coluna Banco (ex: I)
 
   // Normaliza dataAlvo em string dd/MM/yyyy
   var sData = String(dataAlvo || "").trim();
@@ -1618,48 +1619,49 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
   }
 
   if (diaIrmao) {
-    // 1.1 Copia Dados dos Postos (Nome, Escala, Entrada, IniAlm, RetAlm)
-    var dOrigem = abaDiaria.getRange(20, diaIrmao.colSlots, 32, 7).getValues();
-    var dDestino5Cols = abaDiaria.getRange(20, cfg.colSlots, 32, 5).getValues();
-    var dBanco = abaDiaria.getRange(20, cfg.colSlots + 6, 32, 1).getValues();
+    // 1.1 Copia Nome (Coluna 1)
+    var nomesOrigem = abaDiaria.getRange(20, diaIrmao.colSlots, 32, 1).getValues();
+    abaDiaria.getRange(20, cfg.colSlots, 32, 1).setValues(nomesOrigem);
 
+    // 1.2 Copia Horários: Entrada, IniAlm, RetAlm (Colunas 3, 4, 5)
+    var horasOrigem = abaDiaria.getRange(20, diaIrmao.colSlots + 2, 32, 3).getValues();
+    abaDiaria.getRange(20, cfg.colSlots + 2, 32, 3).setValues(horasOrigem);
+    abaDiaria.getRange(20, cfg.colSlots + 2, 32, 3).setNumberFormat("hh:mm");
+
+    // 1.3 Copia Banco de Horas (Coluna 7)
+    var bancoOrigem = abaDiaria.getRange(20, diaIrmao.colSlots + 6, 32, 1).getValues();
+    abaDiaria.getRange(20, cfg.colSlots + 6, 32, 1).setValues(bancoOrigem);
+    abaDiaria.getRange(20, cfg.colSlots + 6, 32, 1).setNumberFormat("[hh]:mm");
+
+    // 1.4 Preserva/Restaura Fórmulas de Escala (AZUL / VERMELHA / SEM ESCALA)
+    var formulasEscala = [];
     for (var idx = 0; idx < 32; idx++) {
-      dDestino5Cols[idx][0] = dOrigem[idx][0]; // Nome
-      dDestino5Cols[idx][1] = dOrigem[idx][1]; // Escala
-      dDestino5Cols[idx][2] = dOrigem[idx][2]; // Entrada
-      dDestino5Cols[idx][3] = dOrigem[idx][3]; // IniAlm
-      dDestino5Cols[idx][4] = dOrigem[idx][4]; // RetAlm
-      dBanco[idx][0] = dOrigem[idx][6];        // Banco
+      var lin = 20 + idx;
+      formulasEscala.push(['=IF(' + colNomeLetra + lin + '=""; "X"; IF(' + colNomeLetra + lin + '="X"; "X"; IF(ISNUMBER(SEARCH("AZUL"; ' + colNomeLetra + lin + ')); "AZUL"; IF(ISNUMBER(SEARCH("VERMELHA"; ' + colNomeLetra + lin + ')); "VERMELHA"; IF(ISNUMBER(SEARCH("SEM ESCALA"; ' + colNomeLetra + lin + ')); "SEM ESCALA"; IFERROR(VLOOKUP(' + colNomeLetra + lin + '; $B$101:$C$200; 2; FALSE); "X"))))))']);
     }
-    abaDiaria.getRange(20, cfg.colSlots, 32, 5).setValues(dDestino5Cols);
-    abaDiaria.getRange(20, cfg.colSlots + 6, 32, 1).setValues(dBanco);
+    abaDiaria.getRange(20, cfg.colSlots + 1, 32, 1).setFormulas(formulasEscala);
 
-    // 1.2 Restaura Fórmulas de Saída e Formatação HH:MM
+    // 1.5 Preserva/Restaura Fórmulas de Saída Automática
     var formulasSaida = [];
-    for (var rIdx = 0; rIdx < 32; rIdx++) {
-      var lin = 20 + rIdx;
-      var f = '=IF(' + colEnt + lin + '=""; ""; ' + colEnt + lin + ' + (' + colRet + lin + ' - ' + colIni + lin + ') + IF(' + colEsc + lin + '="Sem Escala"; TIME(7;20;0); IF(MOD(WEEKNUM(' + cfg.celDataRef + '); 2) = 0; IF(' + colEsc + lin + '="Azul"; TIME(8;0;0); TIME(7;36;0)); IF(' + colEsc + lin + '="Azul"; TIME(7;36;0); TIME(8;0;0)))) + ' + colBnc + lin + ')';
-      formulasSaida.push([f]);
+    for (var idx2 = 0; idx2 < 32; idx2++) {
+      var lin2 = 20 + idx2;
+      formulasSaida.push(['=IF(' + colEntLetra + lin2 + '=""; ""; ' + colEntLetra + lin2 + ' + (' + colRetLetra + lin2 + ' - ' + colIniLetra + lin2 + ') + IF(' + colEscLetra + lin2 + '="Sem Escala"; TIME(7;20;0); IF(MOD(WEEKNUM(' + cfg.celDataRef + '); 2) = 0; IF(' + colEscLetra + lin2 + '="Azul"; TIME(8;0;0); TIME(7;36;0)); IF(' + colEscLetra + lin2 + '="Azul"; TIME(7;36;0); TIME(8;0;0)))) + ' + colBncLetra + lin2 + ')']);
     }
     var rangeSai = abaDiaria.getRange(20, cfg.colSlots + 5, 32, 1);
     rangeSai.setFormulas(formulasSaida);
     rangeSai.setNumberFormat("hh:mm");
 
-    // Formata horários de Entrada, Almoço e Banco como hora
-    abaDiaria.getRange(20, cfg.colSlots + 2, 32, 3).setNumberFormat("hh:mm");
-    abaDiaria.getRange(20, cfg.colSlots + 6, 32, 1).setNumberFormat("[hh]:mm");
-
-    // 1.3 Copia Folgas (linhas 6 a 12, 7 linhas x 3 colunas)
+    // 1.6 Copia Folgas (linhas 6 a 12, 7 linhas x 3 colunas)
     var fOrigem = abaDiaria.getRange(6, diaIrmao.colFolga, 7, 3).getValues();
     abaDiaria.getRange(6, cfg.colFolga, 7, 3).setValues(fOrigem);
 
-    // 1.4 Copia Atestados/Férias/Feriados (linhas 6 a 12, 7 linhas x 4 colunas)
+    // 1.7 Copia Atestados/Férias/Feriados (linhas 6 a 12, 7 linhas x 4 colunas)
     var aOrigem = abaDiaria.getRange(6, diaIrmao.colAus, 7, 4).getValues();
     abaDiaria.getRange(6, cfg.colAus, 7, 4).setValues(aOrigem);
 
     SpreadsheetApp.flush();
     try {
-      ss.toast("📥 Escala, Folgas e Atestados de " + sData + " copiados de " + diaIrmao.nome + " para " + cfg.nome + "!", "TaskFlow", 5);
+      ss.toast("📥 Escala de " + sData + " copiada com fórmulas ativas de " + diaIrmao.nome + " para " + cfg.nome + "!", "TaskFlow", 5);
     } catch(e) {}
 
     return {
@@ -1671,7 +1673,7 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
     };
   }
 
-  // 2. SE NÃO FOR OUTRO DIA DA SEMANA, BUSCA NO HISTÓRICO MENSAL
+  // 2. BUSCA NO HISTÓRICO MENSAL (Historico_Escalas)
   if (!abaHist) return { success: false, error: "Aba Historico_Escalas não encontrada" };
   var lr = abaHist.getLastRow();
   if (lr <= 1) return { success: false, error: "Histórico vazio" };
@@ -1702,8 +1704,7 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
         entrada: r[8],
         inicioAlmoco: r[9],
         retornoAlmoco: r[10],
-        banco: r[12],
-        escala: String(r[13] || "").trim()
+        banco: r[12]
       };
     } else if (tipo === "FOLGA_SEMANAL") {
       folgasParaRestaurar.push([
@@ -1726,50 +1727,61 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
     return { success: false, notFound: true, message: "Nenhum registro encontrado no histórico para a data " + sData };
   }
 
-  // 2.1 Preenche Dados dos Postos (5 colunas: Nome, Escala, Entrada, IniAlm, RetAlm)
-  var range5Cols = abaDiaria.getRange(20, cfg.colSlots, 32, 5);
-  var valores5Cols = range5Cols.getValues();
+  // 2.1 Restaura Nome (Coluna 1)
+  var rangeNomes = abaDiaria.getRange(20, cfg.colSlots, 32, 1);
+  var valsNomes = rangeNomes.getValues();
+
+  // 2.2 Restaura Horários: Entrada, IniAlm, RetAlm (Colunas 3, 4, 5)
+  var rangeHoras = abaDiaria.getRange(20, cfg.colSlots + 2, 32, 3);
+  var valsHoras = rangeHoras.getValues();
+
+  // 2.3 Restaura Banco de Horas (Coluna 7)
   var rangeBanco = abaDiaria.getRange(20, cfg.colSlots + 6, 32, 1);
-  var valoresBanco = rangeBanco.getValues();
+  var valsBanco = rangeBanco.getValues();
 
   for (var rIdx = 0; rIdx < 32; rIdx++) {
     var l = 20 + rIdx;
     if (slotsParaRestaurar[l]) {
       var s = slotsParaRestaurar[l];
-      valores5Cols[rIdx][0] = s.nome;
-      valores5Cols[rIdx][1] = s.escala;
-      valores5Cols[rIdx][2] = s.entrada;
-      valores5Cols[rIdx][3] = s.inicioAlmoco;
-      valores5Cols[rIdx][4] = s.retornoAlmoco;
-      valoresBanco[rIdx][0] = s.banco;
+      valsNomes[rIdx][0] = s.nome;
+      valsHoras[rIdx][0] = s.entrada;
+      valsHoras[rIdx][1] = s.inicioAlmoco;
+      valsHoras[rIdx][2] = s.retornoAlmoco;
+      valsBanco[rIdx][0] = s.banco;
     } else {
-      valores5Cols[rIdx][0] = "";
-      valores5Cols[rIdx][1] = "";
-      valores5Cols[rIdx][2] = "";
-      valores5Cols[rIdx][3] = "";
-      valores5Cols[rIdx][4] = "";
-      valoresBanco[rIdx][0] = "";
+      valsNomes[rIdx][0] = "";
+      valsHoras[rIdx][0] = "";
+      valsHoras[rIdx][1] = "";
+      valsHoras[rIdx][2] = "";
+      valsBanco[rIdx][0] = "";
     }
   }
-  range5Cols.setValues(valores5Cols);
-  rangeBanco.setValues(valoresBanco);
 
-  // 2.2 Aplica Fórmulas de Saída Automática e Formato HH:MM
+  rangeNomes.setValues(valsNomes);
+  rangeHoras.setValues(valsHoras);
+  rangeHoras.setNumberFormat("hh:mm");
+  rangeBanco.setValues(valsBanco);
+  rangeBanco.setNumberFormat("[hh]:mm");
+
+  // 2.4 Restaura Fórmulas de Escala (AZUL / VERMELHA / SEM ESCALA)
+  var formulasEscalaHist = [];
+  for (var fIdx = 0; fIdx < 32; fIdx++) {
+    var linF = 20 + fIdx;
+    formulasEscalaHist.push(['=IF(' + colNomeLetra + linF + '=""; "X"; IF(' + colNomeLetra + linF + '="X"; "X"; IF(ISNUMBER(SEARCH("AZUL"; ' + colNomeLetra + linF + ')); "AZUL"; IF(ISNUMBER(SEARCH("VERMELHA"; ' + colNomeLetra + linF + ')); "VERMELHA"; IF(ISNUMBER(SEARCH("SEM ESCALA"; ' + colNomeLetra + linF + ')); "SEM ESCALA"; IFERROR(VLOOKUP(' + colNomeLetra + linF + '; $B$101:$C$200; 2; FALSE); "X"))))))']);
+  }
+  abaDiaria.getRange(20, cfg.colSlots + 1, 32, 1).setFormulas(formulasEscalaHist);
+
+  // 2.5 Restaura Fórmulas de Saída Automática
   var formulasSaidaHist = [];
-  for (var rIdx2 = 0; rIdx2 < 32; rIdx2++) {
-    var lin2 = 20 + rIdx2;
-    var f2 = '=IF(' + colEnt + lin2 + '=""; ""; ' + colEnt + lin2 + ' + (' + colRet + lin2 + ' - ' + colIni + lin2 + ') + IF(' + colEsc + lin2 + '="Sem Escala"; TIME(7;20;0); IF(MOD(WEEKNUM(' + cfg.celDataRef + '); 2) = 0; IF(' + colEsc + lin2 + '="Azul"; TIME(8;0;0); TIME(7;36;0)); IF(' + colEsc + lin2 + '="Azul"; TIME(7;36;0); TIME(8;0;0)))) + ' + colBnc + lin2 + ')';
-    formulasSaidaHist.push([f2]);
+  for (var sIdx2 = 0; sIdx2 < 32; sIdx2++) {
+    var linS = 20 + sIdx2;
+    formulasSaidaHist.push(['=IF(' + colEntLetra + linS + '=""; ""; ' + colEntLetra + linS + ' + (' + colRetLetra + linS + ' - ' + colIniLetra + linS + ') + IF(' + colEscLetra + linS + '="Sem Escala"; TIME(7;20;0); IF(MOD(WEEKNUM(' + cfg.celDataRef + '); 2) = 0; IF(' + colEscLetra + linS + '="Azul"; TIME(8;0;0); TIME(7;36;0)); IF(' + colEscLetra + linS + '="Azul"; TIME(7;36;0); TIME(8;0;0)))) + ' + colBncLetra + linS + ')']);
   }
   var rangeSaiHist = abaDiaria.getRange(20, cfg.colSlots + 5, 32, 1);
   rangeSaiHist.setFormulas(formulasSaidaHist);
   rangeSaiHist.setNumberFormat("hh:mm");
 
-  // Formata colunas de Entrada, Almoço e Banco como hora
-  abaDiaria.getRange(20, cfg.colSlots + 2, 32, 3).setNumberFormat("hh:mm");
-  abaDiaria.getRange(20, cfg.colSlots + 6, 32, 1).setNumberFormat("[hh]:mm");
-
-  // 2.3 Preenche Folgas (7 linhas x 3 colunas)
+  // 2.6 Preenche Folgas (7 linhas x 3 colunas)
   var valsFolgas = [
     ["", "", ""], ["", "", ""], ["", "", ""],
     ["", "", ""], ["", "", ""], ["", "", ""], ["", "", ""]
@@ -1779,7 +1791,7 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
   }
   abaDiaria.getRange(6, cfg.colFolga, 7, 3).setValues(valsFolgas);
 
-  // 2.4 Preenche Atestados/Férias/Feriados (7 linhas x 4 colunas)
+  // 2.7 Preenche Atestados/Férias/Feriados (7 linhas x 4 colunas)
   var valsAus = [
     ["", "", "", ""], ["", "", "", ""], ["", "", "", ""],
     ["", "", "", ""], ["", "", "", ""], ["", "", "", ""], ["", "", "", ""]
@@ -1791,7 +1803,7 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
 
   SpreadsheetApp.flush();
   try {
-    ss.toast("📥 Escala, Folgas e Atestados de " + sData + " restaurados com sucesso em " + cfg.nome + "!", "TaskFlow Histórico", 5);
+    ss.toast("📥 Escala de " + sData + " restaurada com fórmulas ativas em " + cfg.nome + "!", "TaskFlow Histórico", 5);
   } catch(e) {}
 
   return {
