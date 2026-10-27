@@ -1189,11 +1189,10 @@ function salvarSemanaNoHistorico() {
   if (!abaDiaria) return { success: false, error: "Aba Diaria não encontrada" };
 
   var abaHist = obterOuCriarAbaHistorico(ss);
-  var dias = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
   var registros = [];
   var agora = new Date().toISOString();
 
-  // Lê todas as linhas do histórico para evitar duplicatas exatas (Data + Linha + Tipo)
+  // Lê todas as chaves existentes para atualizar ou inserir
   var lastRow = abaHist.getLastRow();
   var chavesExistentes = {};
   if (lastRow > 1) {
@@ -1203,14 +1202,15 @@ function salvarSemanaNoHistorico() {
     }
   }
 
+  // Mapeamento matemático com colunas perfeitas de cada dia:
   var diasConfig = [
-    { nome: "Segunda", celData: "D3", colDepto: 2, colNome: 3, colAusNome: 6, colAusDepto: 7, colAusSit: 8, colAusSol: 9 },
-    { nome: "Terça",   celData: "M3", colDepto: 11, colNome: 12, colAusNome: 15, colAusDepto: 16, colAusSit: 17, colAusSol: 18 },
-    { nome: "Quarta",  celData: "V3", colDepto: 20, colNome: 21, colAusNome: 24, colAusDepto: 25, colAusSit: 26, colAusSol: 27 },
-    { nome: "Quinta",  celData: "AE3", colDepto: 29, colNome: 30, colAusNome: 33, colAusDepto: 34, colAusSit: 35, colAusSol: 36 },
-    { nome: "Sexta",   celData: "AN3", colDepto: 38, colNome: 39, colAusNome: 42, colAusDepto: 43, colAusSit: 44, colAusSol: 45 },
-    { nome: "Sábado",  celData: "AW3", colDepto: 47, colNome: 48, colAusNome: 51, colAusDepto: 52, colAusSit: 53, colAusSol: 54 },
-    { nome: "Domingo", celData: "BF3", colDepto: 56, colNome: 57, colAusNome: 60, colAusDepto: 61, colAusSit: 62, colAusSol: 63 }
+    { k: 0, nome: "Segunda", celData: "D3",  colFolga: 2,  colAus: 5,  colSlots: 3,  colDepto: 2 },
+    { k: 1, nome: "Terça",   celData: "M3",  colFolga: 11, colAus: 14, colSlots: 12, colDepto: 11 },
+    { k: 2, nome: "Quarta",  celData: "V3",  colFolga: 20, colAus: 23, colSlots: 21, colDepto: 20 },
+    { k: 3, nome: "Quinta",  celData: "AE3", colFolga: 29, colAus: 32, colSlots: 30, colDepto: 29 },
+    { k: 4, nome: "Sexta",   celData: "AN3", colFolga: 38, colAus: 41, colSlots: 39, colDepto: 38 },
+    { k: 5, nome: "Sábado",  celData: "AW3", colFolga: 47, colAus: 50, colSlots: 48, colDepto: 47 },
+    { k: 6, nome: "Domingo", celData: "BF3", colFolga: 56, colAus: 59, colSlots: 57, colDepto: 56 }
   ];
 
   for (var d = 0; d < diasConfig.length; d++) {
@@ -1222,14 +1222,19 @@ function salvarSemanaNoHistorico() {
     var partes = dataNorm.split('/');
     var mesAno = partes.length === 3 ? (partes[1] + '/' + partes[2]) : "";
 
-    // 1. Postos da Escala (Linhas 20 a 51)
+    // 1. Postos da Escala (Linhas 20 a 51, 32 postos)
+    // Lê 8 colunas: Depto (0), Nome (1), Escala (2), Entrada (3), IniAlm (4), RetAlm (5), Saida (6), Banco (7)
     var rangeSlots = abaDiaria.getRange(20, cfg.colDepto, 32, 8).getDisplayValues();
     for (var r = 0; r < rangeSlots.length; r++) {
       var numLinha = 20 + r;
       var depto = String(rangeSlots[r][0] || "").trim();
       var nome = String(rangeSlots[r][1] || "").trim();
+      var escala = String(rangeSlots[r][2] || "").trim();
       var entrada = String(rangeSlots[r][3] || "").trim();
-      var saida = String(rangeSlots[r][7] || "").trim();
+      var iniAlm = String(rangeSlots[r][4] || "").trim();
+      var retAlm = String(rangeSlots[r][5] || "").trim();
+      var saida = String(rangeSlots[r][6] || "").trim();
+      var banco = String(rangeSlots[r][7] || "").trim();
 
       if (!depto && !nome) continue;
 
@@ -1237,14 +1242,49 @@ function salvarSemanaNoHistorico() {
       var status = isVago ? "VAGO" : "CONFIRMADO";
       var idChave = dataNorm + "_SLOT_" + numLinha;
 
+      var slotObj = {
+        linha: numLinha,
+        nome: nome,
+        departamento: depto,
+        depto: depto,
+        escala: escala,
+        horario: escala,
+        entrada: entrada,
+        inicioAlmoco: iniAlm,
+        retornoAlmoco: retAlm,
+        saida: saida,
+        banco: banco,
+        isVago: isVago,
+        status: status,
+        grupo: "reposicao"
+      };
+
       registros.push([
-        idChave, dataNorm, cfg.nome, mesAno, numLinha,
-        depto, depto, nome, entrada, saida, status, "", "ESCALA_POSTO", agora
+        idChave,              // 0: ID
+        dataNorm,             // 1: Data
+        cfg.nome,             // 2: DiaSemana
+        mesAno,               // 3: Mês/Ano
+        numLinha,             // 4: Linha
+        depto,                // 5: Departamento
+        depto,                // 6: Titular_Ou_Posto
+        nome,                 // 7: Colaborador
+        entrada,              // 8: Horario_Entrada
+        iniAlm,               // 9: Inicio_Almoco
+        retAlm,               // 10: Retorno_Almoco
+        saida,                // 11: Horario_Saida
+        banco,                // 12: Banco_Horas
+        escala,               // 13: Escala
+        status,               // 14: Status
+        "",                   // 15: Solucao_Ou_Substituto
+        "ESCALA_POSTO",       // 16: TipoRegistro
+        JSON.stringify(slotObj), // 17: JSON_Slot
+        agora                 // 18: DataHoraRegistro
       ]);
     }
 
-    // 2. Folgas Semanais (Linhas 6 a 12, Cols Folga)
-    var rangeFolgas = abaDiaria.getRange(6, cfg.colNome, 7, 3).getDisplayValues();
+    // 2. Folgas Semanais (Linhas 6 a 12, 7 linhas)
+    // Lê 3 colunas: Nome (0), Depto (1), Solução (2)
+    var rangeFolgas = abaDiaria.getRange(6, cfg.colFolga, 7, 3).getDisplayValues();
     for (var f = 0; f < rangeFolgas.length; f++) {
       var numLinhaF = 6 + f;
       var fNome = String(rangeFolgas[f][0] || "").trim();
@@ -1253,15 +1293,34 @@ function salvarSemanaNoHistorico() {
 
       if (fNome && fNome !== "-") {
         var idChaveF = dataNorm + "_FOLGA_" + numLinhaF;
+        var jsonFolga = JSON.stringify({ linha: numLinhaF, nome: fNome, departamento: fDepto, solucao: fSol, tipo: "folga" });
         registros.push([
-          idChaveF, dataNorm, cfg.nome, mesAno, numLinhaF,
-          fDepto, "Folga Semanal", fNome, "", "", "FOLGA", fSol, "FOLGA_SEMANAL", agora
+          idChaveF,             // 0: ID
+          dataNorm,             // 1: Data
+          cfg.nome,             // 2: DiaSemana
+          mesAno,               // 3: Mês/Ano
+          numLinhaF,            // 4: Linha
+          fDepto,               // 5: Departamento
+          "Folga Semanal",      // 6: Titular_Ou_Posto
+          fNome,                // 7: Colaborador
+          "",                   // 8: Horario_Entrada
+          "",                   // 9: Inicio_Almoco
+          "",                   // 10: Retorno_Almoco
+          "",                   // 11: Horario_Saida
+          "",                   // 12: Banco_Horas
+          "",                   // 13: Escala
+          "FOLGA",              // 14: Status
+          fSol,                 // 15: Solucao_Ou_Substituto (ÚLTIMA COLUNA DA FOLGA)
+          "FOLGA_SEMANAL",      // 16: TipoRegistro
+          jsonFolga,            // 17: JSON_Slot
+          agora                 // 18: DataHoraRegistro
         ]);
       }
     }
 
-    // 3. Ausências / Atestados / Feriados (Linhas 6 a 12, Cols Ausência)
-    var rangeAus = abaDiaria.getRange(6, cfg.colAusNome, 7, 4).getDisplayValues();
+    // 3. Ausências / Atestados / Férias / Feriados (Linhas 6 a 12, 7 linhas)
+    // Lê 4 colunas: Nome (0), Depto (1), Situação (2), Solução (3)
+    var rangeAus = abaDiaria.getRange(6, cfg.colAus, 7, 4).getDisplayValues();
     for (var a = 0; a < rangeAus.length; a++) {
       var numLinhaA = 6 + a;
       var aNome = String(rangeAus[a][0] || "").trim();
@@ -1271,21 +1330,38 @@ function salvarSemanaNoHistorico() {
 
       if (aNome && aNome !== "-") {
         var idChaveA = dataNorm + "_AUSENCIA_" + numLinhaA;
+        var jsonAus = JSON.stringify({ linha: numLinhaA, nome: aNome, departamento: aDepto, situacao: aSit, solucao: aSol, tipo: "ausencia" });
         registros.push([
-          idChaveA, dataNorm, cfg.nome, mesAno, numLinhaA,
-          aDepto, aSit || "Ausência", aNome, "", "", aSit || "AUSENCIA", aSol, "AUSENCIA_ATESTADO", agora
+          idChaveA,             // 0: ID
+          dataNorm,             // 1: Data
+          cfg.nome,             // 2: DiaSemana
+          mesAno,               // 3: Mês/Ano
+          numLinhaA,            // 4: Linha
+          aDepto,               // 5: Departamento
+          aSit || "Ausência",   // 6: Titular_Ou_Posto
+          aNome,                // 7: Colaborador
+          "",                   // 8: Horario_Entrada
+          "",                   // 9: Inicio_Almoco
+          "",                   // 10: Retorno_Almoco
+          "",                   // 11: Horario_Saida
+          "",                   // 12: Banco_Horas
+          "",                   // 13: Escala
+          aSit || "AUSENCIA",   // 14: Status
+          aSol,                 // 15: Solucao_Ou_Substituto (ÚLTIMA COLUNA DE AUSÊNCIA)
+          "AUSENCIA_ATESTADO",  // 16: TipoRegistro
+          jsonAus,              // 17: JSON_Slot
+          agora                 // 18: DataHoraRegistro
         ]);
       }
     }
   }
 
-  // Grava novos registros ou atualiza existentes em lote
+  // Grava registros (atualiza existentes ou adiciona novos)
   var novosParaInserir = [];
   for (var k = 0; k < registros.length; k++) {
     var reg = registros[k];
     var chave = reg[0];
     if (chavesExistentes[chave]) {
-      // Atualiza linha existente
       var linhaExistente = chavesExistentes[chave];
       abaHist.getRange(linhaExistente, 1, 1, reg.length).setValues([reg]);
     } else {
@@ -1294,22 +1370,18 @@ function salvarSemanaNoHistorico() {
   }
 
   if (novosParaInserir.length > 0) {
-    var nextRow = abaHist.getLastRow() + 1;
-    abaHist.getRange(nextRow, 1, novosParaInserir.length, novosParaInserir[0].length).setValues(novosParaInserir);
+    abaHist.getRange(abaHist.getLastRow() + 1, 1, novosParaInserir.length, 19).setValues(novosParaInserir);
   }
 
   SpreadsheetApp.flush();
   return {
     success: true,
-    totalSalvos: registros.length,
+    totalRegistros: registros.length,
     novos: novosParaInserir.length,
     atualizados: registros.length - novosParaInserir.length
   };
 }
 
-/**
- * Consulta o Histórico por Mês/Ano (ex: '11/2026')
- */
 function handleGetMonthlyHistory(params) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var abaHist = ss.getSheetByName("Historico_Escalas");
