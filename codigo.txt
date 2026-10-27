@@ -1555,15 +1555,25 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
   var abaHist = ss.getSheetByName("Historico_Escalas");
   if (!abaDiaria) return { success: false, error: "Aba Diaria não encontrada" };
 
-  // Mapeamento matemático perfeito dos 7 dias com colunas de Folga, Ausência e Slots:
+  function getColLetter(col) {
+    var temp, letter = '';
+    while (col > 0) {
+      temp = (col - 1) % 26;
+      letter = String.fromCharCode(temp + 65) + letter;
+      col = Math.floor((col - temp - 1) / 26);
+    }
+    return letter;
+  }
+
+  // Mapeamento matemático perfeito dos 7 dias:
   var diasConfig = {
-    4:  { k: 0, nome: "Segunda", celData: "D3",  colData: 4,  colFolga: 2,  colAus: 5,  colSlots: 3 },
-    13: { k: 1, nome: "Terça",   celData: "M3",  colData: 13, colFolga: 11, colAus: 14, colSlots: 12 },
-    22: { k: 2, nome: "Quarta",  celData: "V3",  colData: 22, colFolga: 20, colAus: 23, colSlots: 21 },
-    31: { k: 3, nome: "Quinta",  celData: "AE3", colData: 31, colFolga: 29, colAus: 32, colSlots: 30 },
-    40: { k: 4, nome: "Sexta",   celData: "AN3", colData: 40, colFolga: 38, colAus: 41, colSlots: 39 },
-    49: { k: 5, nome: "Sábado",  celData: "AW3", colData: 49, colFolga: 47, colAus: 50, colSlots: 48 },
-    58: { k: 6, nome: "Domingo", celData: "BF3", colData: 58, colFolga: 56, colAus: 59, colSlots: 57 }
+    4:  { k: 0, nome: "Segunda", celData: "D3",  celDataRef: "$D$3",  colData: 4,  colFolga: 2,  colAus: 5,  colSlots: 3 },
+    13: { k: 1, nome: "Terça",   celData: "M3",  celDataRef: "$M$3",  colData: 13, colFolga: 11, colAus: 14, colSlots: 12 },
+    22: { k: 2, nome: "Quarta",  celData: "V3",  celDataRef: "$V$3",  colData: 22, colFolga: 20, colAus: 23, colSlots: 21 },
+    31: { k: 3, nome: "Quinta",  celData: "AE3", celDataRef: "$AE$3", colData: 31, colFolga: 29, colAus: 32, colSlots: 30 },
+    40: { k: 4, nome: "Sexta",   celData: "AN3", celDataRef: "$AN$3", colData: 40, colFolga: 38, colAus: 41, colSlots: 39 },
+    49: { k: 5, nome: "Sábado",  celData: "AW3", celDataRef: "$AW$3", colData: 49, colFolga: 47, colAus: 50, colSlots: 48 },
+    58: { k: 6, nome: "Domingo", celData: "BF3", celDataRef: "$BF$3", colData: 58, colFolga: 56, colAus: 59, colSlots: 57 }
   };
 
   var cfg = null;
@@ -1578,6 +1588,14 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
     }
   }
   if (!cfg) cfg = diasConfig[4]; // Default: Segunda
+
+  // Letras das colunas de horário para a fórmula automática de saída
+  var colEnt = getColLetter(cfg.colSlots + 2);
+  var colIni = getColLetter(cfg.colSlots + 3);
+  var colRet = getColLetter(cfg.colSlots + 4);
+  var colSai = getColLetter(cfg.colSlots + 5);
+  var colEsc = getColLetter(cfg.colSlots + 1);
+  var colBnc = getColLetter(cfg.colSlots + 6);
 
   // Normaliza dataAlvo em string dd/MM/yyyy
   var sData = String(dataAlvo || "").trim();
@@ -1600,25 +1618,42 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
   }
 
   if (diaIrmao) {
-    // 1.1 Copia Escala de Reposição (linhas 20 a 51)
+    // 1.1 Copia Dados dos Postos (Nome, Escala, Entrada, IniAlm, RetAlm)
     var dOrigem = abaDiaria.getRange(20, diaIrmao.colSlots, 32, 7).getValues();
-    var dDestino = abaDiaria.getRange(20, cfg.colSlots, 32, 7).getValues();
+    var dDestino5Cols = abaDiaria.getRange(20, cfg.colSlots, 32, 5).getValues();
+    var dBanco = abaDiaria.getRange(20, cfg.colSlots + 6, 32, 1).getValues();
 
     for (var idx = 0; idx < 32; idx++) {
-      dDestino[idx][0] = dOrigem[idx][0]; // Nome
-      dDestino[idx][1] = dOrigem[idx][1]; // Escala
-      dDestino[idx][2] = dOrigem[idx][2]; // Entrada
-      dDestino[idx][3] = dOrigem[idx][3]; // IniAlm
-      dDestino[idx][4] = dOrigem[idx][4]; // RetAlm
-      dDestino[idx][6] = dOrigem[idx][6]; // Banco
+      dDestino5Cols[idx][0] = dOrigem[idx][0]; // Nome
+      dDestino5Cols[idx][1] = dOrigem[idx][1]; // Escala
+      dDestino5Cols[idx][2] = dOrigem[idx][2]; // Entrada
+      dDestino5Cols[idx][3] = dOrigem[idx][3]; // IniAlm
+      dDestino5Cols[idx][4] = dOrigem[idx][4]; // RetAlm
+      dBanco[idx][0] = dOrigem[idx][6];        // Banco
     }
-    abaDiaria.getRange(20, cfg.colSlots, 32, 7).setValues(dDestino);
+    abaDiaria.getRange(20, cfg.colSlots, 32, 5).setValues(dDestino5Cols);
+    abaDiaria.getRange(20, cfg.colSlots + 6, 32, 1).setValues(dBanco);
 
-    // 1.2 Copia Folgas (linhas 6 a 12, 7 linhas x 3 colunas)
+    // 1.2 Restaura Fórmulas de Saída e Formatação HH:MM
+    var formulasSaida = [];
+    for (var rIdx = 0; rIdx < 32; rIdx++) {
+      var lin = 20 + rIdx;
+      var f = '=IF(' + colEnt + lin + '=""; ""; ' + colEnt + lin + ' + (' + colRet + lin + ' - ' + colIni + lin + ') + IF(' + colEsc + lin + '="Sem Escala"; TIME(7;20;0); IF(MOD(WEEKNUM(' + cfg.celDataRef + '); 2) = 0; IF(' + colEsc + lin + '="Azul"; TIME(8;0;0); TIME(7;36;0)); IF(' + colEsc + lin + '="Azul"; TIME(7;36;0); TIME(8;0;0)))) + ' + colBnc + lin + ')';
+      formulasSaida.push([f]);
+    }
+    var rangeSai = abaDiaria.getRange(20, cfg.colSlots + 5, 32, 1);
+    rangeSai.setFormulas(formulasSaida);
+    rangeSai.setNumberFormat("hh:mm");
+
+    // Formata horários de Entrada, Almoço e Banco como hora
+    abaDiaria.getRange(20, cfg.colSlots + 2, 32, 3).setNumberFormat("hh:mm");
+    abaDiaria.getRange(20, cfg.colSlots + 6, 32, 1).setNumberFormat("[hh]:mm");
+
+    // 1.3 Copia Folgas (linhas 6 a 12, 7 linhas x 3 colunas)
     var fOrigem = abaDiaria.getRange(6, diaIrmao.colFolga, 7, 3).getValues();
     abaDiaria.getRange(6, cfg.colFolga, 7, 3).setValues(fOrigem);
 
-    // 1.3 Copia Atestados/Férias/Feriados (linhas 6 a 12, 7 linhas x 4 colunas)
+    // 1.4 Copia Atestados/Férias/Feriados (linhas 6 a 12, 7 linhas x 4 colunas)
     var aOrigem = abaDiaria.getRange(6, diaIrmao.colAus, 7, 4).getValues();
     abaDiaria.getRange(6, cfg.colAus, 7, 4).setValues(aOrigem);
 
@@ -1667,7 +1702,6 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
         entrada: r[8],
         inicioAlmoco: r[9],
         retornoAlmoco: r[10],
-        saida: r[11],
         banco: r[12],
         escala: String(r[13] || "").trim()
       };
@@ -1692,32 +1726,50 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
     return { success: false, notFound: true, message: "Nenhum registro encontrado no histórico para a data " + sData };
   }
 
-  // 2.1 Preenche Escala de Reposição
-  var rangeSlots = abaDiaria.getRange(20, cfg.colSlots, 32, 7);
-  var valoresSlots = rangeSlots.getValues();
+  // 2.1 Preenche Dados dos Postos (5 colunas: Nome, Escala, Entrada, IniAlm, RetAlm)
+  var range5Cols = abaDiaria.getRange(20, cfg.colSlots, 32, 5);
+  var valores5Cols = range5Cols.getValues();
+  var rangeBanco = abaDiaria.getRange(20, cfg.colSlots + 6, 32, 1);
+  var valoresBanco = rangeBanco.getValues();
 
   for (var rIdx = 0; rIdx < 32; rIdx++) {
     var l = 20 + rIdx;
     if (slotsParaRestaurar[l]) {
       var s = slotsParaRestaurar[l];
-      valoresSlots[rIdx][0] = s.nome;
-      valoresSlots[rIdx][1] = s.escala;
-      valoresSlots[rIdx][2] = s.entrada;
-      valoresSlots[rIdx][3] = s.inicioAlmoco;
-      valoresSlots[rIdx][4] = s.retornoAlmoco;
-      valoresSlots[rIdx][6] = s.banco;
+      valores5Cols[rIdx][0] = s.nome;
+      valores5Cols[rIdx][1] = s.escala;
+      valores5Cols[rIdx][2] = s.entrada;
+      valores5Cols[rIdx][3] = s.inicioAlmoco;
+      valores5Cols[rIdx][4] = s.retornoAlmoco;
+      valoresBanco[rIdx][0] = s.banco;
     } else {
-      valoresSlots[rIdx][0] = "";
-      valoresSlots[rIdx][1] = "";
-      valoresSlots[rIdx][2] = "";
-      valoresSlots[rIdx][3] = "";
-      valoresSlots[rIdx][4] = "";
-      valoresSlots[rIdx][6] = "";
+      valores5Cols[rIdx][0] = "";
+      valores5Cols[rIdx][1] = "";
+      valores5Cols[rIdx][2] = "";
+      valores5Cols[rIdx][3] = "";
+      valores5Cols[rIdx][4] = "";
+      valoresBanco[rIdx][0] = "";
     }
   }
-  rangeSlots.setValues(valoresSlots);
+  range5Cols.setValues(valores5Cols);
+  rangeBanco.setValues(valoresBanco);
 
-  // 2.2 Preenche Folgas (7 linhas x 3 colunas)
+  // 2.2 Aplica Fórmulas de Saída Automática e Formato HH:MM
+  var formulasSaidaHist = [];
+  for (var rIdx2 = 0; rIdx2 < 32; rIdx2++) {
+    var lin2 = 20 + rIdx2;
+    var f2 = '=IF(' + colEnt + lin2 + '=""; ""; ' + colEnt + lin2 + ' + (' + colRet + lin2 + ' - ' + colIni + lin2 + ') + IF(' + colEsc + lin2 + '="Sem Escala"; TIME(7;20;0); IF(MOD(WEEKNUM(' + cfg.celDataRef + '); 2) = 0; IF(' + colEsc + lin2 + '="Azul"; TIME(8;0;0); TIME(7;36;0)); IF(' + colEsc + lin2 + '="Azul"; TIME(7;36;0); TIME(8;0;0)))) + ' + colBnc + lin2 + ')';
+    formulasSaidaHist.push([f2]);
+  }
+  var rangeSaiHist = abaDiaria.getRange(20, cfg.colSlots + 5, 32, 1);
+  rangeSaiHist.setFormulas(formulasSaidaHist);
+  rangeSaiHist.setNumberFormat("hh:mm");
+
+  // Formata colunas de Entrada, Almoço e Banco como hora
+  abaDiaria.getRange(20, cfg.colSlots + 2, 32, 3).setNumberFormat("hh:mm");
+  abaDiaria.getRange(20, cfg.colSlots + 6, 32, 1).setNumberFormat("[hh]:mm");
+
+  // 2.3 Preenche Folgas (7 linhas x 3 colunas)
   var valsFolgas = [
     ["", "", ""], ["", "", ""], ["", "", ""],
     ["", "", ""], ["", "", ""], ["", "", ""], ["", "", ""]
@@ -1727,7 +1779,7 @@ function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
   }
   abaDiaria.getRange(6, cfg.colFolga, 7, 3).setValues(valsFolgas);
 
-  // 2.3 Preenche Atestados/Férias/Feriados (7 linhas x 4 colunas)
+  // 2.4 Preenche Atestados/Férias/Feriados (7 linhas x 4 colunas)
   var valsAus = [
     ["", "", "", ""], ["", "", "", ""], ["", "", "", ""],
     ["", "", "", ""], ["", "", "", ""], ["", "", "", ""], ["", "", "", ""]
