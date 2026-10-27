@@ -1,0 +1,1660 @@
+/**
+ * =========================================================================
+ * TASKFLOW - CONTROLE REMOTO TOTAL DEFINITIVO (v3.2 MASTER)
+ * =========================================================================
+ * Este script dá ao assistente acesso remoto contínuo para alterar qualquer
+ * aba, célula, fórmula ou formatação na planilha sem que você precise
+ * abrir o editor de código novamente no futuro.
+ * =========================================================================
+ */
+
+var TF_CONFIG = {
+  versao: 3.3,
+  nomeApp: "TaskFlow Super Conector v3.3 (Histórico Mensal & Janela Deslizante)"
+};
+
+var TF_DIAS = {
+  "Segunda": { colDepto: 2,  celulaData: "D3",  colunaAusencia: "E",  blocos: [{ ini: 20, fim: 51, grupo: "reposicao" }, { ini: 55, fim: 57, grupo: "lideranca" }] },
+  "Terça":   { colDepto: 11, celulaData: "M3",  colunaAusencia: "N",  blocos: [{ ini: 20, fim: 51, grupo: "reposicao" }, { ini: 55, fim: 57, grupo: "lideranca" }] },
+  "Quarta":  { colDepto: 20, celulaData: "V3",  colunaAusencia: "W",  blocos: [{ ini: 20, fim: 51, grupo: "reposicao" }, { ini: 55, fim: 57, grupo: "lideranca" }] },
+  "Quinta":  { colDepto: 29, celulaData: "AE3", colunaAusencia: "AF", blocos: [{ ini: 20, fim: 51, grupo: "reposicao" }, { ini: 55, fim: 57, grupo: "lideranca" }] },
+  "Sexta":   { colDepto: 38, celulaData: "AN3", colunaAusencia: "AO", blocos: [{ ini: 20, fim: 51, grupo: "reposicao" }, { ini: 55, fim: 57, grupo: "lideranca" }] },
+  "Sábado":  { colDepto: 47, celulaData: "AW3", colunaAusencia: "AX", blocos: [{ ini: 20, fim: 51, grupo: "reposicao" }, { ini: 55, fim: 57, grupo: "lideranca" }] },
+  "Domingo": { colDepto: 56, celulaData: "BF3", colunaAusencia: "BG", blocos: [{ ini: 19, fim: 33, grupo: "reposicao" }, { ini: 37, fim: 37, grupo: "lideranca" }, { ini: 41, fim: 42, grupo: "reposicao" }] }
+};
+
+var TF_CAMPOS = { nome: 1, entrada: 3, inicioAlmoco: 4, retornoAlmoco: 5, banco: 7 };
+
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu("⚡ TaskFlow")
+    .addItem("🔄 Reestruturar Aba 'ESCALA NOVA MODELO 5X2'", "menuAtualizarEscala5x2")
+    .addSeparator()
+    .addItem("🎆 Sincronizar Folgas de Feriado da Semana", "menuSincronizarFolgasFeriado")
+    .addItem("🔍 Auditar Escala Diária (Conflitos e Folgas)", "menuAuditarHoje")
+    .addItem("🟥 Destacar e Contar Postos Vagos", "menuDestacarVagas")
+    .addItem("🛡️ Restaurar Fórmulas de Saída", "menuRestaurarFormulas")
+    .addSeparator()
+    .addItem("📊 Criar / Inicializar Aba 'Senior_BH'", "menuInicializarSeniorBH")
+    .addSeparator()
+    .addSeparator()
+    .addItem("📥 Puxar Memória do Histórico por Data...", "menuPuxarMemoriaHistorico")
+    .addItem("📅 Salvar Escala da Semana no Histórico Mensal", "menuSalvarHistoricoSemana")
+    .addItem("⏰ Configurar Virada Automática da Meia-Noite (Gatilho)", "configurarGatilhoMeiaNoite")
+    .addItem("🔄 Executar Virada Diária Agora (Avançar 1 Dia)", "rotinaViradaDiaria")
+    .addSeparator()
+    .addItem("ℹ️ Sobre o TaskFlow v3.3", "menuSobre")
+    .addToUi();
+}
+
+function doGet(e) {
+  try {
+    var params = e ? e.parameter : {};
+    var action = params.action || "get_schedule";
+    if (action === "execute_command" || action === "run_code") return handleExecuteCommand(params);
+    if (action === "atualizar_escala_5x2") return atualizarAbaEscala5x2();
+    if (action === "update_slot") return handleUpdateSlot(params);
+    if (action === "update_cell") return handleUpdateCell(params);
+    if (action === "update_folga") return handleUpdateFolga(params);
+    if (action === "update_ausencia") return handleUpdateAusencia(params);
+    if (action === "sincronizar_folgas_feriado") return handleSincronizarFolgasFeriado(params);
+    if (action === "batch_update") return handleBatchUpdate(params);
+    if (action === "sync_senior_bh") return handleSyncSeniorBh(params);
+    if (action === "audit_sheet") return handleAuditSheet(params);
+    if (action === "restore_formulas") return handleRestoreSaidaFormulas(params);
+    if (action === "get_monthly_history") return handleGetMonthlyHistory(params);
+    if (action === "save_daily_to_history") return handleSaveDailyToHistory(params);
+    if (action === "rotina_virada_diaria") return handleRotinaViradaDiaria(params);
+    return handleGetSchedule(params);
+  } catch (err) {
+    return jsonResponse({ success: false, error: err.toString() });
+  }
+}
+
+function doPost(e) {
+  try {
+    var data = {};
+    if (e && e.postData && e.postData.contents) {
+      try { data = JSON.parse(e.postData.contents); } catch (errJson) { data = e.parameter || {}; }
+    } else if (e && e.parameter) {
+      data = e.parameter;
+    }
+    var action = data.action || "get_schedule";
+    if (action === "execute_command" || action === "run_code") return handleExecuteCommand(data);
+    if (action === "atualizar_escala_5x2") return atualizarAbaEscala5x2();
+    if (action === "update_slot") return handleUpdateSlot(data);
+    if (action === "update_cell") return handleUpdateCell(data);
+    if (action === "update_folga") return handleUpdateFolga(data);
+    if (action === "update_ausencia") return handleUpdateAusencia(data);
+    if (action === "sincronizar_folgas_feriado") return handleSincronizarFolgasFeriado(data);
+    if (action === "batch_update") return handleBatchUpdate(data);
+    if (action === "sync_senior_bh") return handleSyncSeniorBh(data);
+    if (action === "audit_sheet") return handleAuditSheet(data);
+    if (action === "restore_formulas") return handleRestoreSaidaFormulas(data);
+    if (action === "get_schedule") return handleGetSchedule(data);
+    return jsonResponse({ success: false, error: "Ação não reconhecida: " + action });
+  } catch (err) {
+    return jsonResponse({ success: false, error: err.toString() });
+  }
+}
+
+// =========================================================================
+// RECEPTOR DE CONTROLE REMOTO TOTAL (Permite ao Assistente editar qualquer aba)
+// =========================================================================
+function handleExecuteCommand(data) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(30000);
+  try {
+    var code = data.code || data.command;
+    if (!code) return jsonResponse({ success: false, error: "Nenhum código fornecido para execução." });
+    
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    // Executa dinamicamente o comando enviado remotamente pelo assistente
+    var resultado = eval(code);
+    SpreadsheetApp.flush();
+    return jsonResponse({ success: true, message: "Comando executado com sucesso!", result: resultado });
+  } catch (err) {
+    return jsonResponse({ success: false, error: err.toString() });
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+function colLetter(col) {
+  var s = "";
+  while (col > 0) {
+    var m = (col - 1) % 26;
+    s = String.fromCharCode(65 + m) + s;
+    col = Math.floor((col - 1) / 26);
+  }
+  return s;
+}
+
+function limparHora(v) {
+  var s = String(v || "").trim();
+  var m = s.match(/^([+-])?(\d{1,3}):(\d{2})(?::\d{2})?$/);
+  if (m) {
+    var h = m[2].length < 2 ? "0" + m[2] : m[2];
+    return (m[1] === "-" ? "-" : "") + h + ":" + m[3];
+  }
+  return s;
+}
+
+function horaParaFracao(txt, permitirNegativo) {
+  var s = String(txt || "").trim().replace(",", ":").replace(/h$/i, "");
+  var m = s.match(/^([+-])?(\d{1,2})(?::(\d{1,2}))?$/);
+  if (!m) return null;
+  if (m[1] === "-" && !permitirNegativo) return null;
+  var h = parseInt(m[2], 10);
+  var min = m[3] ? parseInt(m[3], 10) : 0;
+  if (min > 59) return null;
+  if (!permitirNegativo && h > 23) return null;
+  var total = (h * 60 + min) / 1440;
+  return m[1] === "-" ? -total : total;
+}
+
+function linhaValida(cfg, linha) {
+  for (var b = 0; b < cfg.blocos.length; b++) {
+    if (linha >= cfg.blocos[b].ini && linha <= cfg.blocos[b].fim) return true;
+  }
+  return false;
+}
+
+function lerLinha(abaDiaria, cfg, linha) {
+  var r = abaDiaria.getRange(linha, cfg.colDepto, 1, 8).getDisplayValues()[0];
+  return {
+    departamento: String(r[0] || "").trim(),
+    nome: String(r[1] || "").trim(),
+    escala: String(r[2] || "").trim(),
+    entrada: limparHora(r[3]),
+    inicioAlmoco: limparHora(r[4]),
+    retornoAlmoco: limparHora(r[5]),
+    saida: limparHora(r[6]),
+    banco: limparHora(r[7])
+  };
+}
+
+function menuAtualizarEscala5x2() {
+  var res = atualizarAbaEscala5x2();
+  var data = JSON.parse(res.getContent());
+  SpreadsheetApp.getUi().alert("Escala 5x2 Atualizada!", data.message, SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+function atualizarAbaEscala5x2() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var aba = ss.getSheetByName("ESCALA NOVA MODELO 5X2") || ss.getSheetByName("ESCALA 5X2") || ss.getSheetByName("5X2");
+  if (!aba) aba = ss.insertSheet("ESCALA NOVA MODELO 5X2");
+
+  aba.clear();
+
+  // Título Geral
+  aba.getRange("A1:S1").merge()
+    .setValue("ESCALA GERAL DE TRABALHO 5X2 - REPOSIÇÃO & OPERAÇÃO LOJA")
+    .setFontWeight("bold").setFontSize(14).setFontColor("#ffffff")
+    .setBackground("#0f172a").setHorizontalAlignment("center").setVerticalAlignment("middle");
+  aba.setRowHeight(1, 38);
+
+  aba.getRange("A2:S2").merge()
+    .setValue("JORNADA 5X2 (08h00 Diárias / 40h semanais) • INTERMEDIÁRIO ÀS 09:00H • RODÍZIO SEMANA AZUL E SEMANA VERMELHA")
+    .setFontWeight("bold").setFontSize(10).setFontColor("#94a3b8")
+    .setBackground("#1e293b").setHorizontalAlignment("center").setVerticalAlignment("middle");
+  aba.setRowHeight(2, 24);
+
+  // Cabeçalhos
+  aba.getRange("A3:I3").merge()
+    .setValue("🔷 SEMANA AZUL (ESCALA REGULAR)")
+    .setFontWeight("bold").setFontSize(11).setFontColor("#ffffff")
+    .setBackground("#1d4ed8").setHorizontalAlignment("center").setVerticalAlignment("middle");
+
+  aba.getRange("J3").setValue("").setBackground("#0f172a");
+
+  aba.getRange("K3:S3").merge()
+    .setValue("🔴 SEMANA VERMELHA (INVERSÃO DAS FOLGAS)")
+    .setFontWeight("bold").setFontSize(11).setFontColor("#ffffff")
+    .setBackground("#b91c1c").setHorizontalAlignment("center").setVerticalAlignment("middle");
+
+  var cabecalhoColunas = ["CRACHÁ", "COLABORADOR", "TURNO / HORÁRIO", "FOLGA FIXA", "FOLGA ALT.", "DOMINGO", "SETOR", "TURMA", "COBERTURA"];
+  aba.getRange("A4:I4").setValues([cabecalhoColunas])
+    .setFontWeight("bold").setFontSize(9).setFontColor("#ffffff")
+    .setBackground("#1e40af").setHorizontalAlignment("center").setVerticalAlignment("middle");
+
+  aba.getRange("J4").setValue("").setBackground("#0f172a");
+
+  aba.getRange("K4:S4").setValues([cabecalhoColunas])
+    .setFontWeight("bold").setFontSize(9).setFontColor("#ffffff")
+    .setBackground("#991b1b").setHorizontalAlignment("center").setVerticalAlignment("middle");
+
+  aba.setRowHeight(3, 26);
+  aba.setRowHeight(4, 24);
+
+  // Dados dos colaboradores
+  var dados = [
+    // Leite Condensado
+    ["13381", "ALDO TAVARES", "06:00 - 12:00/14:00 - 16:00", "2ª FEIRA", "3ª FEIRA", "DOM", "LEITE CONDENSADO", "AZUL", "Abertura", "5ª FEIRA", "6ª FEIRA"],
+    ["1621",  "THAIS REGINA", "11:30 - 14:30/16:30 - 21:30", "4ª FEIRA", "5ª FEIRA", "DOM", "LEITE CONDENSADO", "VERMELHA", "Fechamento", "2ª FEIRA", "3ª FEIRA"],
+    
+    // Farináceo
+    ["14188", "ROBERTO APARECIDO", "11:30 - 14:30/16:30 - 21:30", "2ª FEIRA", "3ª FEIRA", "DOM", "FARINACEO", "AZUL", "Fechamento", "5ª FEIRA", "6ª FEIRA"],
+    ["673",   "NIVALDO FERREIRA",  "07:00 - 12:00/14:00 - 17:00", "6ª FEIRA", "SÁBADO",   "DOM", "FARINACEO", "VERMELHA", "Abertura", "3ª FEIRA", "4ª FEIRA"],
+
+    // Molho / Macarrão
+    ["1618",  "TAISA DE PAULA", "07:00 - 12:00/14:00 - 17:00", "2ª FEIRA", "3ª FEIRA", "DOM", "MOLHO/MACARRÃO", "AZUL", "Abertura", "5ª FEIRA", "6ª FEIRA"],
+    ["12843", "PIETRA",         "11:30 - 14:30/16:30 - 21:30", "4ª FEIRA", "5ª FEIRA", "DOM", "MOLHO/MACARRÃO", "VERMELHA", "Fechamento", "2ª FEIRA", "3ª FEIRA"],
+
+    // Leite
+    ["3457",  "DANILO GOMES",   "07:00 - 12:00/14:00 - 17:00", "4ª FEIRA", "5ª FEIRA", "DOM", "LEITE", "AZUL", "Abertura", "2ª FEIRA", "3ª FEIRA"],
+    ["15464", "PAULO HENRIQUE", "11:30 - 14:30/16:30 - 21:30", "2ª FEIRA", "3ª FEIRA", "DOM", "LEITE", "VERMELHA", "Fechamento", "5ª FEIRA", "6ª FEIRA"],
+
+    // Arroz
+    ["11235", "INACIO FRANCISCO", "07:00 - 12:00/14:00 - 17:00", "4ª FEIRA", "5ª FEIRA", "DOM", "ARROZ", "AZUL", "Abertura", "2ª FEIRA", "3ª FEIRA"],
+    ["14884", "JOÃO VITOR LUIZ",  "11:30 - 14:30/16:30 - 21:30", "6ª FEIRA", "SÁBADO",   "DOM", "ARROZ", "VERMELHA", "Fechamento", "4ª FEIRA", "5ª FEIRA"],
+
+    // Ração / Vinagre / Papel
+    ["3434",  "MACIEL DA ROCHA", "07:00 - 12:00/14:00 - 17:00", "2ª FEIRA", "3ª FEIRA", "DOM", "RAÇÃO/VINAGRE/PAPEL", "AZUL", "Abertura", "4ª FEIRA", "5ª FEIRA"],
+    ["14089", "JOSE JORGE",      "11:30 - 14:30/16:30 - 21:30", "4ª FEIRA", "5ª FEIRA", "DOM", "RAÇÃO/VINAGRE/PAPEL", "VERMELHA", "Fechamento", "6ª FEIRA", "SÁBADO"],
+
+    // Café / Salgados / Choc
+    ["2600",  "EDUARDO LUIS",   "06:00 - 12:00/14:00 - 16:00", "2ª FEIRA", "3ª FEIRA", "DOM", "CAFÉ/SALGADOS", "AZUL", "Abertura", "5ª FEIRA", "6ª FEIRA"],
+    ["13856", "EVELYN DANIELE", "11:30 - 14:30/16:30 - 21:30", "6ª FEIRA", "SÁBADO",   "DOM", "CAFÉ/CHOC",     "VERMELHA", "Fechamento", "3ª FEIRA", "4ª FEIRA"],
+
+    // Bazar / Utilidades
+    ["2938", "LILIAN",        "07:00 - 12:00/14:00 - 17:00", "6ª FEIRA", "SÁBADO",   "DOM", "BAZAR/UTILIDADES", "AZUL", "Abertura", "3ª FEIRA", "4ª FEIRA"],
+    ["536",  "SUELI MODESTO", "11:30 - 14:30/16:30 - 21:30", "2ª FEIRA", "3ª FEIRA", "DOM", "BAZAR/UTILIDADES", "VERMELHA", "Fechamento", "5ª FEIRA", "6ª FEIRA"],
+
+    // Biscoito / Matinais & Naturais
+    ["789",   "SUELI DE FATIMA", "07:00 - 12:00/14:00 - 17:00", "6ª FEIRA", "SÁBADO",   "DOM", "NATURAIS/MATINAIS", "AZUL", "Abertura", "3ª FEIRA", "4ª FEIRA"],
+    ["14601", "PEDRINA MANZANI", "11:30 - 14:30/16:30 - 21:30", "2ª FEIRA", "3ª FEIRA", "DOM", "BISC/MATINAIS",     "VERMELHA", "Fechamento", "5ª FEIRA", "6ª FEIRA"],
+
+    // Suporte / Básico
+    ["567",   "WILLIAN DOS SANTOS", "07:00 - 12:00/14:00 - 17:00", "4ª FEIRA", "5ª FEIRA", "DOM", "SUPORTE/BASICO", "AZUL", "Abertura", "6ª FEIRA", "SÁBADO"],
+    ["15475", "JOÃO CARVALHO",      "11:30 - 14:30/16:30 - 21:30", "2ª FEIRA", "3ª FEIRA", "DOM", "SUPORTE/BASICO", "VERMELHA", "Fechamento", "5ª FEIRA", "6ª FEIRA"],
+
+    // Perfumaria
+    ["1982",  "DAIANE PATRICIA", "06:00 - 12:00/14:00 - 16:00", "6ª FEIRA", "SÁBADO",   "DOM", "PERFUMARIA", "AZUL", "Abertura", "3ª FEIRA", "4ª FEIRA"],
+    ["7176",  "ANA LAURA",       "09:00 - 13:00/15:00 - 19:00", "4ª FEIRA", "5ª FEIRA", "DOM", "PERFUMARIA", "AZUL", "INTERMEDIÁRIO 09H", "6ª FEIRA", "SÁBADO"],
+    ["13704", "JUCELINA CORASSA", "11:30 - 14:30/16:30 - 21:30", "2ª FEIRA", "3ª FEIRA", "DOM", "PERFUMARIA", "VERMELHA", "Fechamento", "4ª FEIRA", "5ª FEIRA"],
+
+    // Bebidas (4 Pessoas - 3 sempre presentes)
+    ["3341",  "GUILHERME PRADO",   "06:00 - 12:00/14:00 - 16:00", "2ª FEIRA", "3ª FEIRA", "DOM", "BEBIDAS", "AZUL 1", "Abertura", "3ª FEIRA", "4ª FEIRA"],
+    ["12121", "JHONATAN DA SILVA", "07:00 - 12:00/14:00 - 17:00", "4ª FEIRA", "5ª FEIRA", "DOM", "BEBIDAS", "AZUL 2", "Manhã", "2ª FEIRA", "3ª FEIRA"],
+    ["13425", "MARIA GABRIELA",    "09:00 - 13:00/15:00 - 19:00", "5ª FEIRA", "6ª FEIRA", "DOM", "BEBIDAS", "VERMELHA 1", "INTERMEDIÁRIO 09H", "6ª FEIRA", "SÁBADO"],
+    ["13858", "LUIS CARLOS EVANG.", "11:30 - 14:30/16:30 - 21:30", "6ª FEIRA", "SÁBADO",   "DOM", "BEBIDAS", "VERMELHA 2", "Fechamento", "5ª FEIRA", "6ª FEIRA"],
+
+    // Limpeza (5 Pessoas)
+    ["10606", "JOÃO VICTOR",    "06:00 - 12:00/14:00 - 16:00", "2ª FEIRA", "3ª FEIRA", "DOM", "LIMPEZA", "AZUL 1", "Abertura", "3ª FEIRA", "4ª FEIRA"],
+    ["11555", "MARCOS AURELIO", "07:00 - 12:00/14:00 - 17:00", "4ª FEIRA", "5ª FEIRA", "DOM", "LIMPEZA", "AZUL 2", "Manhã", "2ª FEIRA", "3ª FEIRA"],
+    ["11702", "DEISNER",        "09:00 - 13:00/15:00 - 19:00", "3ª FEIRA", "4ª FEIRA", "DOM", "LIMPEZA", "AZUL 3", "INTERMEDIÁRIO 09H", "5ª FEIRA", "6ª FEIRA"],
+    ["15034", "JOÃO PAULO",     "11:30 - 14:30/16:30 - 21:30", "6ª FEIRA", "SÁBADO",   "DOM", "LIMPEZA", "VERMELHA 1", "Fechamento", "4ª FEIRA", "5ª FEIRA"],
+    ["15253", "EVANDRO RODNEY", "11:30 - 14:30/16:30 - 21:30", "2ª FEIRA", "3ª FEIRA", "DOM", "LIMPEZA", "VERMELHA 2", "Fechamento", "6ª FEIRA", "SÁBADO"],
+
+    // Liderança
+    ["11561", "MARCOS VINICIUS", "06:00 - 12:00/14:00 - 16:00", "2ª FEIRA", "3ª FEIRA", "DOM", "GERENTE LOJA", "LIDERANÇA", "Abertura Geral", "2ª FEIRA", "3ª FEIRA"],
+    ["12734", "JOÃO GUILHERME",  "06:00 - 12:00/14:00 - 16:00", "4ª FEIRA", "3ª FEIRA", "DOM", "LIDER REPOSIÇÃO", "LIDERANÇA", "Abertura Reposição", "4ª FEIRA", "3ª FEIRA"],
+    ["",      "BRUNO",           "11:30 - 14:30/16:30 - 21:30", "5ª FEIRA", "6ª FEIRA", "DOM", "MONITOR LOJA", "LIDERANÇA", "Fechamento Geral", "5ª FEIRA", "6ª FEIRA"],
+    ["9727",  "EMERSON DINIZ",   "11:30 - 14:30/16:30 - 21:30", "SÁBADO",   "6ª FEIRA", "DOM", "LIDER LOJA", "LIDERANÇA", "Fechamento Loja", "SÁBADO", "6ª FEIRA"]
+  ];
+
+  var rowsAzul = [];
+  var rowsVerm = [];
+  for (var i = 0; i < dados.length; i++) {
+    var d = dados[i];
+    rowsAzul.push([d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7], d[8]]);
+    rowsVerm.push([d[0], d[1], d[2], d[9], d[10], d[5], d[6], d[7], d[8]]);
+  }
+
+  var numLinhas = dados.length;
+  aba.getRange(5, 1, numLinhas, 9).setValues(rowsAzul);
+  aba.getRange(5, 11, numLinhas, 9).setValues(rowsVerm);
+
+  var rangeAzul = aba.getRange(5, 1, numLinhas, 9);
+  var rangeVerm = aba.getRange(5, 11, numLinhas, 9);
+  rangeAzul.setFontSize(9).setVerticalAlignment("middle");
+  rangeVerm.setFontSize(9).setVerticalAlignment("middle");
+
+  for (var r = 0; r < numLinhas; r++) {
+    var linPlanilha = 5 + r;
+    var bgAzul = (r % 2 === 0) ? "#f8fafc" : "#eff6ff";
+    var bgVerm = (r % 2 === 0) ? "#f8fafc" : "#fef2f2";
+    var isInterm = String(dados[r][8]).indexOf("INTERMEDIÁRIO") !== -1;
+    var isLider = String(dados[r][7]) === "LIDERANÇA";
+
+    if (isInterm) {
+      bgAzul = "#fef9c3";
+      bgVerm = "#fef9c3";
+    } else if (isLider) {
+      bgAzul = "#f1f5f9";
+      bgVerm = "#f1f5f9";
+    }
+
+    aba.getRange(linPlanilha, 1, 1, 9).setBackground(bgAzul);
+    aba.getRange(linPlanilha, 11, 1, 9).setBackground(bgVerm);
+    aba.setRowHeight(linPlanilha, 22);
+  }
+
+  aba.getRange(5, 10, numLinhas + 10, 1).setBackground("#0f172a");
+  aba.setColumnWidth(10, 20);
+
+  rangeAzul.setBorder(true, true, true, true, true, true, "#cbd5e1", SpreadsheetApp.BorderStyle.SOLID);
+  rangeVerm.setBorder(true, true, true, true, true, true, "#cbd5e1", SpreadsheetApp.BorderStyle.SOLID);
+
+  var linRodape = 5 + numLinhas + 2;
+  aba.getRange(linRodape, 1, 1, 9).merge()
+    .setValue("📌 REGRAS OPERACIONAIS OFICIAIS DA ESCALA 5X2")
+    .setFontWeight("bold").setFontSize(10).setBackground("#1e293b").setFontColor("#38bdf8").setHorizontalAlignment("center");
+
+  var regrasTexto = [
+    ["1. JORNADA DE TRABALHO: 08h00 trabalhadas por dia + 2h de intervalo de almoço = 10h de permanência (Carga semanal: 40h)."],
+    ["2. TURNO INTERMEDIÁRIO (09:00H ÀS 19:00H): Cobre o pico da loja e faz a transição entre abertura (06h/07h) e fechamento (11h30)."],
+    ["3. REGRA DE SETORES COM 4 PESSOAS (Bebidas e Limpeza): Mantém rigorosamente 3 pessoas trabalhando por dia de Segunda a Sábado."],
+    ["4. INTERMEDIÁRIOS NO MACARRÃO E LEITE CONDENSADO: Cobrem os dias de folga dupla dos titulares para nunca deixar o departamento vazio."],
+    ["5. ALTERNÂNCIA DE SEMANAS: Quem folgou no início da semana na Semana Azul passa para o final na Semana Vermelha (100% justo)."],
+    ["6. SEMANA DE PAGAMENTO (5º DIA ÚTIL): Autorizada solicitação de Banco de Horas (+1h ou +2h) para o fluxo da operação fluir sem gargalo."]
+  ];
+
+  aba.getRange(linRodape + 1, 1, regrasTexto.length, 1).setValues(regrasTexto)
+    .setFontSize(9).setFontWeight("bold").setFontColor("#334155");
+  for (var k = 0; k < regrasTexto.length; k++) {
+    aba.getRange(linRodape + 1 + k, 1, 1, 9).merge();
+  }
+
+  aba.autoResizeColumns(1, 9);
+  aba.autoResizeColumns(11, 19);
+
+  SpreadsheetApp.flush();
+  return jsonResponse({
+    success: true,
+    message: "Aba 'ESCALA NOVA MODELO 5X2' reestruturada com sucesso! Semana Azul e Semana Vermelha geradas com regras completas e intermediário das 09:00.",
+    totalColaboradores: dados.length
+  });
+}
+
+function handleGetSchedule(params) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var abaDiaria = ss.getSheetByName("Diaria") || ss.getSheetByName("ESCALA DIARIA");
+  var abaBanco = ss.getSheetByName("Banco de Dados");
+  var abaSenior = ss.getSheetByName("Senior_BH");
+  if (!abaDiaria) return jsonResponse({ success: false, error: "Aba 'Diaria' não encontrada na planilha." });
+
+  var resultadoDias = {};
+  for (var dia in TF_DIAS) {
+    var cfg = TF_DIAS[dia];
+    var isDomingo = (dia === "Domingo");
+    var valData = abaDiaria.getRange(cfg.celulaData).getValue();
+    var dataFormatada = "";
+    if (valData) {
+      dataFormatada = (valData instanceof Date)
+        ? Utilities.formatDate(valData, Session.getScriptTimeZone(), "dd/MM/yyyy")
+        : String(valData);
+    }
+
+    var slots = [];
+    for (var b = 0; b < cfg.blocos.length; b++) {
+      var bloco = cfg.blocos[b];
+      var qtd = bloco.fim - bloco.ini + 1;
+      var range = abaDiaria.getRange(bloco.ini, cfg.colDepto, qtd, 8);
+      var vals = range.getDisplayValues();
+      var cores = abaDiaria.getRange(bloco.ini, cfg.colDepto + 1, qtd, 1).getBackgrounds();
+
+      for (var i = 0; i < qtd; i++) {
+        var r = vals[i];
+        var depto = String(r[0] || "").trim();
+        var nome = String(r[1] || "").trim();
+        var escala = String(r[2] || "").trim();
+        if (nome.toUpperCase() === "NOME" || depto.toUpperCase() === "DEPARTAMENTO") continue;
+        if (depto === "" && nome === "") continue;
+
+        var corFundo = String(cores[i][0] || "").toLowerCase();
+        var isVago = (nome === "" || nome.toUpperCase() === "X" || corFundo === "#ea4335" || corFundo === "#ff0000");
+
+        slots.push({
+          linha: bloco.ini + i,
+          colunaLetra: colLetter(cfg.colDepto + 1),
+          grupo: bloco.grupo,
+          departamento: depto,
+          nome: (nome.toUpperCase() === "X") ? "" : nome,
+          escala: escala,
+          horario: isDomingo ? depto : escala,
+          entrada: limparHora(r[3]),
+          inicioAlmoco: limparHora(r[4]),
+          retornoAlmoco: limparHora(r[5]),
+          saida: limparHora(r[6]),
+          banco: limparHora(r[7]),
+          isVago: isVago,
+          corFundo: corFundo
+        });
+      }
+    }
+
+    // Leitura completa de Folgas (linhas 6 a 12)
+    var rangeFolgas = abaDiaria.getRange(6, cfg.colDepto, 7, 3).getDisplayValues();
+    var folgas = [];
+    for (var f = 0; f < rangeFolgas.length; f++) {
+      var fNome = String(rangeFolgas[f][0] || "").trim();
+      var fDept = String(rangeFolgas[f][1] || "").trim();
+      var fSol = String(rangeFolgas[f][2] || "").trim();
+      if (fNome !== "" || fDept !== "") {
+        folgas.push({
+          linha: 6 + f,
+          departamento: fDept,
+          nome: fNome,
+          solucao: fSol,
+          tipo: "folga"
+        });
+      }
+    }
+
+    // Leitura completa de Ausências / Atestados (linhas 6 a 12)
+    var rangeAus = abaDiaria.getRange(6, cfg.colDepto + 3, 7, 4).getDisplayValues();
+    var ausenciasCompletas = [];
+    var ausenciasNomes = [];
+    for (var a = 0; a < rangeAus.length; a++) {
+      var aNome = String(rangeAus[a][0] || "").trim();
+      var aDept = String(rangeAus[a][1] || "").trim();
+      var aSol = String(rangeAus[a][3] || "").trim();
+      if (aNome !== "" || aDept !== "") {
+        ausenciasCompletas.push({
+          linha: 6 + a,
+          nome: aNome,
+          departamento: aDept,
+          solucao: aSol,
+          tipo: "ausencia"
+        });
+        if (aNome !== "") ausenciasNomes.push(aNome);
+      }
+    }
+
+    // Lista unificada de todos ausentes / de folga no dia para filtros
+    for (var k = 0; k < folgas.length; k++) {
+      if (folgas[k].nome && ausenciasNomes.indexOf(folgas[k].nome) === -1) {
+        ausenciasNomes.push(folgas[k].nome);
+      }
+    }
+
+    resultadoDias[dia] = {
+      diaSemana: dia,
+      data: dataFormatada,
+      celulaData: cfg.celulaData,
+      colunaColab: colLetter(cfg.colDepto + 1),
+      colunaAusencia: cfg.colunaAusencia,
+      temHorarios: true,
+      slots: slots,
+      folgas: folgas,
+      ausenciasCompletas: ausenciasCompletas,
+      ausencias: ausenciasNomes
+    };
+  }
+
+  var listaColaboradores = [];
+  if (abaBanco) {
+    var ult = abaBanco.getLastRow();
+    if (ult >= 2) {
+      var dadosBanco = abaBanco.getRange(2, 1, ult - 1, 5).getValues();
+      for (var k = 0; k < dadosBanco.length; k++) {
+        var bNome = String(dadosBanco[k][0] || "").trim();
+        if (bNome !== "") {
+          listaColaboradores.push({
+            nome: bNome,
+            escala: String(dadosBanco[k][1] || "").trim(),
+            folga: String(dadosBanco[k][2] || "").trim(),
+            cracha: String(dadosBanco[k][3] || "").trim(),
+            departamento: String(dadosBanco[k][4] || "").trim()
+          });
+        }
+      }
+    }
+  }
+
+  var saldosSenior = [];
+  if (abaSenior) {
+    var ultS = abaSenior.getLastRow();
+    if (ultS >= 2) {
+      var dadosSenior = abaSenior.getRange(2, 1, ultS - 1, 4).getDisplayValues();
+      for (var s = 0; s < dadosSenior.length; s++) {
+        var sCracha = String(dadosSenior[s][0] || "").trim();
+        var sNome = String(dadosSenior[s][1] || "").trim();
+        var sSaldo = String(dadosSenior[s][2] || "").trim();
+        if (sCracha !== "" || sNome !== "") {
+          saldosSenior.push({ cracha: sCracha, nome: sNome, saldo: sSaldo });
+        }
+      }
+    }
+  }
+
+  return jsonResponse({
+    success: true,
+    versao: TF_CONFIG.versao,
+    dias: resultadoDias,
+    colaboradores: listaColaboradores,
+    seniorBh: saldosSenior,
+    atualizadoEm: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss")
+  });
+}
+
+function handleUpdateSlot(params) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var abaDiaria = ss.getSheetByName("Diaria") || ss.getSheetByName("ESCALA DIARIA");
+    if (!abaDiaria) return jsonResponse({ success: false, error: "Aba 'Diaria' não encontrada." });
+
+    var dia = params.dia || params.day;
+    var cfg = TF_DIAS[dia];
+    var linha = parseInt(params.linha || params.row, 10);
+    var novoNome = String(params.nome !== undefined ? params.nome : (params.name !== undefined ? params.name : "")).trim();
+    if (!cfg || isNaN(linha) || !linhaValida(cfg, linha)) {
+      return jsonResponse({ success: false, error: "Parâmetros inválidos: dia ou linha fora do intervalo." });
+    }
+
+    var celulaAlvo = (params.colunaLetra && String(params.colunaLetra).trim() !== "")
+      ? abaDiaria.getRange(String(params.colunaLetra).trim().toUpperCase() + linha)
+      : abaDiaria.getRange(linha, cfg.colDepto + 1);
+
+    if (novoNome === "" || novoNome.toUpperCase() === "X") {
+      celulaAlvo.setValue(novoNome === "" ? "" : "X");
+      celulaAlvo.setBackground("#ea4335");
+    } else {
+      celulaAlvo.setValue(novoNome);
+      celulaAlvo.setBackground(null);
+    }
+    celulaAlvo.setFontColor(null);
+    SpreadsheetApp.flush();
+
+    return jsonResponse({
+      success: true,
+      message: "Escala atualizada com sucesso!",
+      dia: dia,
+      linha: linha,
+      colunaLetra: colLetter(cfg.colDepto + 1),
+      nome: novoNome,
+      linhaAtualizada: lerLinha(abaDiaria, cfg, linha),
+      atualizadoEm: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss")
+    });
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+function handleUpdateFolga(params) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var abaDiaria = ss.getSheetByName("Diaria") || ss.getSheetByName("ESCALA DIARIA");
+    if (!abaDiaria) return jsonResponse({ success: false, error: "Aba 'Diaria' não encontrada." });
+
+    var dia = params.dia;
+    var cfg = TF_DIAS[dia];
+    var linha = parseInt(params.linha, 10);
+    if (!cfg || isNaN(linha) || linha < 6 || linha > 12) {
+      return jsonResponse({ success: false, error: "Dia ou linha inválidos (deve ser entre 6 e 12)." });
+    }
+
+    var depto = params.departamento !== undefined ? String(params.departamento).trim() : null;
+    var nome = params.nome !== undefined ? String(params.nome).trim() : null;
+    var solucao = params.solucao !== undefined ? String(params.solucao).trim() : null;
+
+    if (nome !== null) abaDiaria.getRange(linha, cfg.colDepto).setValue(nome);
+    if (depto !== null) abaDiaria.getRange(linha, cfg.colDepto + 1).setValue(depto);
+    if (solucao !== null) abaDiaria.getRange(linha, cfg.colDepto + 2).setValue(solucao);
+
+    SpreadsheetApp.flush();
+    return jsonResponse({
+      success: true,
+      message: "Folga atualizada com sucesso!",
+      dia: dia,
+      linha: linha
+    });
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
+  }
+}
+
+function handleUpdateAusencia(params) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var abaDiaria = ss.getSheetByName("Diaria") || ss.getSheetByName("ESCALA DIARIA");
+    if (!abaDiaria) return jsonResponse({ success: false, error: "Aba 'Diaria' não encontrada." });
+
+    var dia = params.dia;
+    var cfg = TF_DIAS[dia];
+    var linha = parseInt(params.linha, 10);
+    if (!cfg || isNaN(linha) || linha < 6 || linha > 12) {
+      return jsonResponse({ success: false, error: "Dia ou linha inválidos (deve ser entre 6 e 12)." });
+    }
+
+    var nome = params.nome !== undefined ? String(params.nome).trim() : null;
+    var depto = params.departamento !== undefined ? String(params.departamento).trim() : null;
+    var solucao = params.solucao !== undefined ? String(params.solucao).trim() : null;
+
+    if (nome !== null) abaDiaria.getRange(linha, cfg.colDepto + 3).setValue(nome);
+    if (depto !== null) abaDiaria.getRange(linha, cfg.colDepto + 4).setValue(depto);
+    if (solucao !== null) abaDiaria.getRange(linha, cfg.colDepto + 6).setValue(solucao);
+
+    SpreadsheetApp.flush();
+    return jsonResponse({
+      success: true,
+      message: "Ausência/Atestado atualizado com sucesso!",
+      dia: dia,
+      linha: linha
+    });
+  } finally {
+    try { lock.releaseLock(); } catch(e) {}
+  }
+}
+
+function handleUpdateCell(params) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var abaDiaria = ss.getSheetByName("Diaria") || ss.getSheetByName("ESCALA DIARIA");
+    if (!abaDiaria) return jsonResponse({ success: false, error: "Aba 'Diaria' não encontrada." });
+
+    var dia = params.dia;
+    var cfg = TF_DIAS[dia];
+    var linha = parseInt(params.linha, 10);
+    var campo = String(params.campo || "");
+    var valor = String(params.valor !== undefined ? params.valor : "").trim();
+
+    if (!cfg || isNaN(linha) || !linhaValida(cfg, linha)) {
+      return jsonResponse({ success: false, error: "Dia ou linha inválidos." });
+    }
+    if (campo === "nome") return handleUpdateSlot({ dia: dia, linha: linha, nome: valor, colunaLetra: params.colunaLetra });
+    if (!TF_CAMPOS.hasOwnProperty(campo)) {
+      return jsonResponse({ success: false, error: "Campo não editável: " + campo });
+    }
+
+    var cel = (params.colunaLetra && String(params.colunaLetra).trim() !== "")
+      ? abaDiaria.getRange(String(params.colunaLetra).trim().toUpperCase() + linha)
+      : abaDiaria.getRange(linha, cfg.colDepto + TF_CAMPOS[campo]);
+
+    var isBanco = (campo === "banco");
+    if (valor === "") {
+      cel.clearContent();
+    } else {
+      var frac = horaParaFracao(valor, isBanco);
+      if (frac === null) {
+        return jsonResponse({ success: false, error: "Valor inválido: \"" + valor + "\". Use HH:MM" + (isBanco ? " (ex: 2:00 ou -2:00)." : ".") });
+      }
+      cel.setValue(frac);
+      var fmt = String(cel.getNumberFormat() || "");
+      if (fmt.toLowerCase().indexOf("h") === -1) {
+        cel.setNumberFormat(isBanco ? "[hh]:mm" : "hh:mm");
+      }
+    }
+
+    SpreadsheetApp.flush();
+    return jsonResponse({
+      success: true,
+      dia: dia,
+      linha: linha,
+      campo: campo,
+      linhaAtualizada: lerLinha(abaDiaria, cfg, linha),
+      atualizadoEm: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss")
+    });
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+function handleBatchUpdate(data) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(15000);
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var abaDiaria = ss.getSheetByName("Diaria") || ss.getSheetByName("ESCALA DIARIA");
+    if (!abaDiaria) return jsonResponse({ success: false, error: "Aba 'Diaria' não encontrada." });
+
+    var updates = data.updates || [];
+    if (typeof updates === "string") {
+      try { updates = JSON.parse(updates); } catch (eU) {}
+    }
+
+    var count = 0;
+    for (var u = 0; u < updates.length; u++) {
+      var item = updates[u];
+      var dia = item.dia;
+      var cfg = TF_DIAS[dia];
+      var linha = parseInt(item.linha, 10);
+      if (!cfg || isNaN(linha) || !linhaValida(cfg, linha)) continue;
+
+      if (item.nome !== undefined) {
+        var celNome = (item.colunaLetra)
+          ? abaDiaria.getRange(String(item.colunaLetra).trim().toUpperCase() + linha)
+          : abaDiaria.getRange(linha, cfg.colDepto + 1);
+        var novoNome = String(item.nome || "").trim();
+        if (novoNome === "" || novoNome.toUpperCase() === "X") {
+          celNome.setValue(novoNome === "" ? "" : "X");
+          celNome.setBackground("#ea4335");
+        } else {
+          celNome.setValue(novoNome);
+          celNome.setBackground(null);
+        }
+        celNome.setFontColor(null);
+      }
+
+      ["entrada", "inicioAlmoco", "retornoAlmoco", "banco"].forEach(function(cName) {
+        if (item[cName] !== undefined) {
+          var cel = abaDiaria.getRange(linha, cfg.colDepto + TF_CAMPOS[cName]);
+          var vStr = String(item[cName] || "").trim();
+          var isBnc = (cName === "banco");
+          if (vStr === "") {
+            cel.clearContent();
+          } else {
+            var fr = horaParaFracao(vStr, isBnc);
+            if (fr !== null) {
+              cel.setValue(fr);
+              cel.setNumberFormat(isBnc ? "[hh]:mm" : "hh:mm");
+            }
+          }
+        }
+      });
+      count++;
+    }
+
+    SpreadsheetApp.flush();
+    return jsonResponse({
+      success: true,
+      message: count + " registros atualizados com sucesso em lote!",
+      totalUpdated: count,
+      atualizadoEm: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss")
+    });
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+function handleSyncSeniorBh(data) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var abaSenior = ss.getSheetByName("Senior_BH");
+  if (!abaSenior) abaSenior = ss.insertSheet("Senior_BH");
+
+  abaSenior.getRange("A1:D1").setValues([["CADASTRO / CRACHA", "COLABORADOR", "SALDO ATUAL", "ULTIMA ATUALIZACAO"]]);
+  abaSenior.getRange("A1:D1").setFontWeight("bold").setBackground("#1e293b").setFontColor("#38bdf8");
+
+  var lista = data.saldos || [];
+  if (typeof lista === "string") {
+    try { lista = JSON.parse(lista); } catch (eL) {}
+  }
+
+  if (lista.length > 0) {
+    abaSenior.getRange(2, 1, Math.max(abaSenior.getLastRow(), 2), 4).clearContent();
+    var rowsToInsert = [];
+    var agora = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm");
+    for (var i = 0; i < lista.length; i++) {
+      var it = lista[i];
+      rowsToInsert.push([
+        String(it.cracha || "").trim(),
+        String(it.nome || "").trim(),
+        String(it.saldo || "00:00").trim(),
+        agora
+      ]);
+    }
+    abaSenior.getRange(2, 1, rowsToInsert.length, 4).setValues(rowsToInsert);
+  }
+
+  abaSenior.autoResizeColumns(1, 4);
+  SpreadsheetApp.flush();
+
+  return jsonResponse({
+    success: true,
+    message: "Aba Senior_BH sincronizada com " + lista.length + " colaboradores!",
+    totalSaldos: lista.length
+  });
+}
+
+function handleRestoreSaidaFormulas() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var abaDiaria = ss.getSheetByName("Diaria") || ss.getSheetByName("ESCALA DIARIA");
+  if (!abaDiaria) return jsonResponse({ success: false, error: "Aba 'Diaria' não encontrada." });
+
+  var rest = 0;
+  for (var dia in TF_DIAS) {
+    var cfg = TF_DIAS[dia];
+    var colEnt = colLetter(cfg.colDepto + TF_CAMPOS.entrada);
+    var colIni = colLetter(cfg.colDepto + TF_CAMPOS.inicioAlmoco);
+    var colRet = colLetter(cfg.colDepto + TF_CAMPOS.retornoAlmoco);
+    var colBnc = colLetter(cfg.colDepto + TF_CAMPOS.banco);
+    var colSaiNum = cfg.colDepto + 6;
+
+    for (var b = 0; b < cfg.blocos.length; b++) {
+      var bloco = cfg.blocos[b];
+      for (var lin = bloco.ini; lin <= bloco.fim; lin++) {
+        var celSai = abaDiaria.getRange(lin, colSaiNum);
+        var formulaAtual = celSai.getFormula();
+        if (!formulaAtual || formulaAtual === "") {
+          var f = '=IF(' + colEnt + lin + '="","",(' + colEnt + lin + '+TIME(8,20,0)+(' + colRet + lin + '-' + colIni + lin + ')+' + colBnc + lin + '))';
+          celSai.setFormula(f);
+          celSai.setNumberFormat("hh:mm");
+          rest++;
+        }
+      }
+    }
+  }
+
+  SpreadsheetApp.flush();
+  return jsonResponse({ success: true, message: "Fórmulas de Saída verificadas!", totalRestauradas: rest });
+}
+
+function handleAuditSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var abaDiaria = ss.getSheetByName("Diaria") || ss.getSheetByName("ESCALA DIARIA");
+  var alertas = [];
+
+  for (var dia in TF_DIAS) {
+    var cfg = TF_DIAS[dia];
+    var nomesNoDia = {};
+
+    for (var b = 0; b < cfg.blocos.length; b++) {
+      var bloco = cfg.blocos[b];
+      var qtd = bloco.fim - bloco.ini + 1;
+      var vals = abaDiaria.getRange(bloco.ini, cfg.colDepto, qtd, 8).getDisplayValues();
+      var cores = abaDiaria.getRange(bloco.ini, cfg.colDepto + 1, qtd, 1).getBackgrounds();
+
+      for (var i = 0; i < qtd; i++) {
+        var lin = bloco.ini + i;
+        var depto = String(vals[i][0] || "").trim();
+        var nome = String(vals[i][1] || "").trim();
+        var corFundo = String(cores[i][0] || "").toLowerCase();
+
+        if (nome === "" || nome.toUpperCase() === "X" || corFundo === "#ea4335") {
+          alertas.push({ tipo: "vaga", dia: dia, linha: lin, setor: depto, mensagem: "Posto " + depto + " está vago." });
+        } else {
+          var nUpper = nome.toUpperCase();
+          if (nomesNoDia[nUpper]) {
+            alertas.push({ tipo: "duplicidade", dia: dia, linha: lin, nome: nome, mensagem: nome + " está alocado mais de uma vez na " + dia });
+          } else {
+            nomesNoDia[nUpper] = lin;
+          }
+        }
+      }
+    }
+  }
+
+  return jsonResponse({ success: true, totalAlertas: alertas.length, alertas: alertas });
+}
+
+function menuAuditarHoje() {
+  var res = handleAuditSheet();
+  var data = JSON.parse(res.getContent());
+  var ui = SpreadsheetApp.getUi();
+  if (data.totalAlertas === 0) {
+    ui.alert("✅ Escala 100% Auditada!", "Nenhum posto vago ou duplicado encontrado.", ui.ButtonSet.OK);
+  } else {
+    var msg = "Foram encontrados " + data.totalAlertas + " avisos na semana:\n\n";
+    data.alertas.slice(0, 8).forEach(function(a) {
+      msg += "• [" + a.dia + "] " + a.mensagem + "\n";
+    });
+    if (data.alertas.length > 8) msg += "\n... e mais " + (data.alertas.length - 8) + " avisos.";
+    ui.alert("⚠️ Auditoria da Escala", msg, ui.ButtonSet.OK);
+  }
+}
+
+function menuDestacarVagas() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var abaDiaria = ss.getSheetByName("Diaria") || ss.getSheetByName("ESCALA DIARIA");
+  var vagas = 0;
+  for (var dia in TF_DIAS) {
+    var cfg = TF_DIAS[dia];
+    for (var b = 0; b < cfg.blocos.length; b++) {
+      var bloco = cfg.blocos[b];
+      for (var lin = bloco.ini; lin <= bloco.fim; lin++) {
+        var cel = abaDiaria.getRange(lin, cfg.colDepto + 1);
+        var val = String(cel.getValue() || "").trim();
+        if (val === "" || val.toUpperCase() === "X") {
+          cel.setBackground("#ea4335");
+          vagas++;
+        }
+      }
+    }
+  }
+  SpreadsheetApp.getUi().alert("Postos Vagos", "Total de " + vagas + " vagas identificadas e destacadas em vermelho na semana.", SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+function menuRestaurarFormulas() {
+  var res = handleRestoreSaidaFormulas();
+  var data = JSON.parse(res.getContent());
+  SpreadsheetApp.getUi().alert("Fórmulas Restauradas", data.message + " (" + data.totalRestauradas + " fórmulas reconfiguradas).", SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+function menuInicializarSeniorBH() {
+  handleSyncSeniorBh({ saldos: [] });
+  SpreadsheetApp.getUi().alert("Aba Senior_BH", "Aba 'Senior_BH' configurada e pronta para receber os saldos do Senior!", SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+function menuSobre() {
+  SpreadsheetApp.getUi().alert(
+    "TaskFlow Super Conector v3.2",
+    "Versão: 3.2 Master\nSuporte a Escala 5x2 (Semana Azul e Vermelha), controle remoto total permanente, auditoria em tempo real e controle de banco de horas.",
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
+
+function jsonResponse(data) {
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// =========================================================================
+// SINCRONIZAÇÃO AUTOMÁTICA DE FOLGAS DE FERIADO FINALIZADAS
+// =========================================================================
+
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    var sheet = e.range.getSheet();
+    if (sheet.getName() !== "Diaria" && sheet.getName() !== "ESCALA DIARIA") return;
+    
+    var row = e.range.getRow();
+    var col = e.range.getColumn();
+    var celulasData = [4, 13, 22, 31, 40, 49, 58]; // Colunas D, M, V, AE, AN, AW, BF
+    
+    // Dispara apenas quando alterar a célula de data na linha 2 ou 3
+    if ((row === 2 || row === 3) && celulasData.indexOf(col) !== -1) {
+      var dataTexto = e.range.getDisplayValue().trim();
+      if (dataTexto) {
+        // Restaura exclusivamente a alocação de pessoas da escala (linhas 20 a 51)
+        restaurarEscalaDoHistoricoNaDiaria(dataTexto, col);
+      }
+    }
+  } catch (err) {
+    console.warn("[TaskFlow onEdit] Erro:", err);
+  }
+}
+
+function menuSincronizarFolgasFeriado() {
+  var res = sincronizarFolgasFeriadoSemana();
+  var msg = "Sincronização concluída!\n\n";
+  if (res.alteracoes && res.alteracoes.length > 0) {
+    msg += "Colaboradores atualizados:\n• " + res.alteracoes.join("\n• ");
+  } else {
+    msg += "Todas as folgas de feriado confirmadas (" + res.totalFinalized + ") já estão devidamente preenchidas nas datas corretas da escala.";
+  }
+  SpreadsheetApp.getUi().alert("Folgas de Feriado Atualizadas", msg, SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+function handleSincronizarFolgasFeriado(params) {
+  var res = sincronizarFolgasFeriadoSemana();
+  return jsonResponse(res);
+}
+
+function sincronizarFolgasFeriadoSemana(ss) {
+  if (!ss) ss = SpreadsheetApp.getActiveSpreadsheet();
+  var abaDiaria = ss.getSheetByName("Diaria") || ss.getSheetByName("ESCALA DIARIA");
+  var abaBanco = ss.getSheetByName("Banco de Dados");
+  if (!abaDiaria) return { success: false, error: "Aba Diaria não encontrada" };
+
+  var deptoMap = {};
+  if (abaBanco) {
+    var bData = abaBanco.getRange(2, 1, Math.max(abaBanco.getLastRow() - 1, 1), 5).getValues();
+    for (var b = 0; b < bData.length; b++) {
+      var bNome = String(bData[b][0] || "").trim().toUpperCase();
+      if (bNome) deptoMap[bNome] = String(bData[b][4] || "").trim();
+    }
+  }
+
+  function getDepto(nome) {
+    if (!nome) return "Reposição";
+    var upper = nome.toUpperCase().trim();
+    if (deptoMap[upper]) return deptoMap[upper];
+    for (var k in deptoMap) {
+      if (k.indexOf(upper) !== -1 || upper.indexOf(k) !== -1) return deptoMap[k];
+      var p1 = k.split(" ")[0];
+      var p2 = upper.split(" ")[0];
+      if (p1.length > 3 && p1 === p2) return deptoMap[k];
+    }
+    return "Reposição";
+  }
+
+  var meses = {
+    "janeiro": "01", "fevereiro": "02", "março": "03", "marco": "03",
+    "abril": "04", "maio": "05", "junho": "06", "julho": "07",
+    "agosto": "08", "setembro": "09", "outubro": "10", "novembro": "11", "dezembro": "12"
+  };
+
+  function normalizarData(val) {
+    if (!val) return "";
+    if (val instanceof Date) return Utilities.formatDate(val, Session.getScriptTimeZone(), "dd/MM/yyyy");
+    var s = String(val).trim().toLowerCase();
+    var mNum = s.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/);
+    if (mNum) {
+      return mNum[1].padStart(2, "0") + "/" + mNum[2].padStart(2, "0") + "/" + (mNum[3] ? (mNum[3].length === 2 ? "20" + mNum[3] : mNum[3]) : "2026");
+    }
+    var mExt = s.match(/(\d{1,2})\s+de\s+([a-zçã]+)(?:\s+de\s+(\d{2,4}))?/);
+    if (mExt && meses[mExt[2]]) {
+      return mExt[1].padStart(2, "0") + "/" + meses[mExt[2]] + "/" + (mExt[3] || "2026");
+    }
+    return "";
+  }
+
+  // 1. Coleta todas as folgas das abas finalizadas (ex: FOLGAS FERIADO 04/10)
+  var sheets = ss.getSheets();
+  var finalizedFolgas = [];
+
+  for (var i = 0; i < sheets.length; i++) {
+    var sName = sheets[i].getName();
+    var upper = sName.toUpperCase();
+    // Inclui abas de ORGANIZAÇÃO FOLGAS FERIADO e abas finalizadas
+    if (upper.indexOf("FOLGA") !== -1 && upper.indexOf("FERIADO") !== -1) {
+      var lastRow = sheets[i].getLastRow();
+      if (lastRow < 3) continue;
+      var d = sheets[i].getRange(1, 1, lastRow, Math.min(sheets[i].getLastColumn(), 5)).getDisplayValues();
+      var colNome = 1, colDia = 2, startR = 2;
+      for (var r = 0; r < Math.min(d.length, 5); r++) {
+        for (var c = 0; c < d[r].length; c++) {
+          var cell = d[r][c].toUpperCase();
+          if (cell.indexOf("NOME") !== -1) colNome = c;
+          if (cell.indexOf("DIA") !== -1 || cell.indexOf("DATA") !== -1) colDia = c;
+        }
+        if (d[r][colNome] && d[r][colNome].toUpperCase().indexOf("NOME") !== -1) {
+          startR = r + 1;
+          break;
+        }
+      }
+      for (var k = startR; k < d.length; k++) {
+        var n = String(d[k][colNome] || "").trim();
+        var dia = normalizarData(d[k][colDia]);
+        if (n && n.toUpperCase() !== "NOME" && dia) {
+          finalizedFolgas.push({ aba: sName, nome: n, dataNorm: dia });
+        }
+      }
+    }
+  }
+
+  // 2. Mapeamento dos dias na Diaria
+  var diasConfig = [
+    { nome: "Segunda", celData: "D3",  colNome: 5,  colDepto: 6,  colSit: 7,  colSol: 8 },
+    { nome: "Terça",   celData: "M3",  colNome: 14, colDepto: 15, colSit: 16, colSol: 17 },
+    { nome: "Quarta",  celData: "V3",  colNome: 23, colDepto: 24, colSit: 25, colSol: 26 },
+    { nome: "Quinta",  celData: "AE3", colNome: 32, colDepto: 33, colSit: 34, colSol: 35 },
+    { nome: "Sexta",   celData: "AN3", colNome: 41, colDepto: 42, colSit: 43, colSol: 44 },
+    { nome: "Sábado",  celData: "AW3", colNome: 50, colDepto: 51, colSit: 52, colSol: 53 },
+    { nome: "Domingo", celData: "BF3", colNome: 59, colDepto: 60, colSit: 61, colSol: 62 }
+  ];
+
+  var relatorio = [];
+
+  for (var d = 0; d < diasConfig.length; d++) {
+    var cfg = diasConfig[d];
+    var valData = abaDiaria.getRange(cfg.celData).getValue();
+    var dataNorm = normalizarData(valData);
+    if (!dataNorm) continue;
+
+    var matches = finalizedFolgas.filter(function(f) { return f.dataNorm === dataNorm; });
+    if (matches.length === 0) continue;
+
+    var rangeAtuais = abaDiaria.getRange(6, cfg.colNome, 7, 5).getDisplayValues();
+    var slots = [];
+    for (var s = 0; s < 7; s++) {
+      slots.push({
+        linha: 6 + s,
+        nome: String(rangeAtuais[s][0] || "").trim(),
+        depto: String(rangeAtuais[s][1] || "").trim(),
+        situacao: String(rangeAtuais[s][2] || "").trim(),
+        solucao: String(rangeAtuais[s][3] || "").trim()
+      });
+    }
+
+    // 1. LIMPEZA: Remove da lista qualquer colaborador com SITUAÇÃO="FERIADO" que pertencia à data anterior e não a esta nova
+    for (var s = 0; s < slots.length; s++) {
+      var sl = slots[s];
+      var isFer = sl.situacao.toUpperCase().indexOf("FERIADO") !== -1 || sl.depto.toUpperCase().indexOf("FERIADO") !== -1;
+      if (sl.nome && isFer) {
+        var pertence = matches.some(function(m) {
+          var n1 = sl.nome.toUpperCase().trim();
+          var n2 = m.nome.toUpperCase().trim();
+          return n1 === n2 || n1.indexOf(n2) !== -1 || n2.indexOf(n1) !== -1;
+        });
+        if (!pertence) {
+          abaDiaria.getRange(sl.linha, cfg.colNome).setValue("");
+          abaDiaria.getRange(sl.linha, cfg.colDepto).setValue("");
+          abaDiaria.getRange(sl.linha, cfg.colSit).setValue("");
+          if (cfg.colSol) abaDiaria.getRange(sl.linha, cfg.colSol).setValue("");
+          relatorio.push(cfg.nome + ": " + sl.nome + " removido (folga pertencia a outra data)");
+          sl.nome = "";
+          sl.depto = "";
+          sl.situacao = "";
+          sl.solucao = "";
+        }
+      }
+    }
+
+    // 2. ADIÇÃO: Aloca os colaboradores que pertencem a esta nova data e ainda não estão presentes
+    for (var m = 0; m < matches.length; m++) {
+      var fer = matches[m];
+      var jaAlocado = slots.some(function(sl) {
+        if (!sl.nome || sl.nome.trim() === '' || sl.nome === '-') return false;
+        var n1 = sl.nome.toUpperCase().trim();
+        var n2 = fer.nome.toUpperCase().trim();
+        return n1 === n2 || n1.indexOf(n2) !== -1 || n2.indexOf(n1) !== -1;
+      });
+
+      if (!jaAlocado) {
+        var slotLivre = slots.find(function(sl) { return !sl.nome || sl.nome === "-"; });
+        if (slotLivre) {
+          slotLivre.nome = fer.nome;
+          var pureDepto = getDepto(fer.nome).replace(/\(FERIADO\)/gi, "").replace(/FERIADO/gi, "").trim();
+          slotLivre.depto = pureDepto || "Reposição";
+          slotLivre.situacao = "FERIADO";
+          abaDiaria.getRange(slotLivre.linha, cfg.colNome).setValue(slotLivre.nome);
+          abaDiaria.getRange(slotLivre.linha, cfg.colDepto).setValue(slotLivre.depto);
+          abaDiaria.getRange(slotLivre.linha, cfg.colSit).setValue("FERIADO");
+          relatorio.push(cfg.nome + " (" + dataNorm + "): " + fer.nome + " alocado na Linha " + slotLivre.linha);
+        }
+      }
+    }
+  }
+
+  SpreadsheetApp.flush();
+  return { success: true, totalFinalized: finalizedFolgas.length, alteracoes: relatorio };
+}
+
+
+// =========================================================================
+// MÓDULO DE HISTÓRICO MENSAL & JANELA DESLIZANTE (TASKFLOW v3.3)
+// =========================================================================
+
+/**
+ * Garante que a aba 'Historico_Escalas' exista na planilha com os cabeçalhos corretos
+ */
+function obterOuCriarAbaHistorico(ss) {
+  if (!ss) ss = SpreadsheetApp.getActiveSpreadsheet();
+  var aba = ss.getSheetByName("Historico_Escalas");
+  if (!aba) {
+    aba = ss.insertSheet("Historico_Escalas");
+    var headers = [
+      "ID", "Data", "DiaSemana", "Mês/Ano", "Linha", 
+      "Departamento", "Titular_Ou_Posto", "Colaborador", 
+      "Horario_Entrada", "Horario_Saida", "Status", "Solucao_Ou_Substituto", "TipoRegistro", "DataHoraRegistro"
+    ];
+    aba.getRange(1, 1, 1, headers.length).setValues([headers]);
+    aba.getRange(1, 1, 1, headers.length)
+       .setBackground("#0f172a")
+       .setFontColor("#38bdf8")
+       .setFontWeight("bold")
+       .setHorizontalAlignment("center");
+    aba.setFrozenRows(1);
+  }
+  return aba;
+}
+
+/**
+ * Salva todos os 7 dias da aba 'Diaria' no 'Historico_Escalas'
+ */
+function salvarSemanaNoHistorico() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var abaDiaria = ss.getSheetByName("Diaria");
+  if (!abaDiaria) return { success: false, error: "Aba Diaria não encontrada" };
+
+  var abaHist = obterOuCriarAbaHistorico(ss);
+  var dias = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+  var registros = [];
+  var agora = new Date().toISOString();
+
+  // Lê todas as linhas do histórico para evitar duplicatas exatas (Data + Linha + Tipo)
+  var lastRow = abaHist.getLastRow();
+  var chavesExistentes = {};
+  if (lastRow > 1) {
+    var dadosChaves = abaHist.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (var i = 0; i < dadosChaves.length; i++) {
+      if (dadosChaves[i][0]) chavesExistentes[dadosChaves[i][0]] = 2 + i;
+    }
+  }
+
+  var diasConfig = [
+    { nome: "Segunda", celData: "D3", colDepto: 2, colNome: 3, colAusNome: 6, colAusDepto: 7, colAusSit: 8, colAusSol: 9 },
+    { nome: "Terça",   celData: "M3", colDepto: 11, colNome: 12, colAusNome: 15, colAusDepto: 16, colAusSit: 17, colAusSol: 18 },
+    { nome: "Quarta",  celData: "V3", colDepto: 20, colNome: 21, colAusNome: 24, colAusDepto: 25, colAusSit: 26, colAusSol: 27 },
+    { nome: "Quinta",  celData: "AE3", colDepto: 29, colNome: 30, colAusNome: 33, colAusDepto: 34, colAusSit: 35, colAusSol: 36 },
+    { nome: "Sexta",   celData: "AN3", colDepto: 38, colNome: 39, colAusNome: 42, colAusDepto: 43, colAusSit: 44, colAusSol: 45 },
+    { nome: "Sábado",  celData: "AW3", colDepto: 47, colNome: 48, colAusNome: 51, colAusDepto: 52, colAusSit: 53, colAusSol: 54 },
+    { nome: "Domingo", celData: "BF3", colDepto: 56, colNome: 57, colAusNome: 60, colAusDepto: 61, colAusSit: 62, colAusSol: 63 }
+  ];
+
+  for (var d = 0; d < diasConfig.length; d++) {
+    var cfg = diasConfig[d];
+    var valData = abaDiaria.getRange(cfg.celData).getValue();
+    var dataNorm = normalizarData(valData);
+    if (!dataNorm) continue;
+
+    var partes = dataNorm.split('/');
+    var mesAno = partes.length === 3 ? (partes[1] + '/' + partes[2]) : "";
+
+    // 1. Postos da Escala (Linhas 20 a 51)
+    var rangeSlots = abaDiaria.getRange(20, cfg.colDepto, 32, 8).getDisplayValues();
+    for (var r = 0; r < rangeSlots.length; r++) {
+      var numLinha = 20 + r;
+      var depto = String(rangeSlots[r][0] || "").trim();
+      var nome = String(rangeSlots[r][1] || "").trim();
+      var entrada = String(rangeSlots[r][3] || "").trim();
+      var saida = String(rangeSlots[r][7] || "").trim();
+
+      if (!depto && !nome) continue;
+
+      var isVago = (!nome || nome === "-" || nome.toUpperCase() === "VAGO" || nome.toUpperCase() === "X");
+      var status = isVago ? "VAGO" : "CONFIRMADO";
+      var idChave = dataNorm + "_SLOT_" + numLinha;
+
+      registros.push([
+        idChave, dataNorm, cfg.nome, mesAno, numLinha,
+        depto, depto, nome, entrada, saida, status, "", "ESCALA_POSTO", agora
+      ]);
+    }
+
+    // 2. Folgas Semanais (Linhas 6 a 12, Cols Folga)
+    var rangeFolgas = abaDiaria.getRange(6, cfg.colNome, 7, 3).getDisplayValues();
+    for (var f = 0; f < rangeFolgas.length; f++) {
+      var numLinhaF = 6 + f;
+      var fNome = String(rangeFolgas[f][0] || "").trim();
+      var fDepto = String(rangeFolgas[f][1] || "").trim();
+      var fSol = String(rangeFolgas[f][2] || "").trim();
+
+      if (fNome && fNome !== "-") {
+        var idChaveF = dataNorm + "_FOLGA_" + numLinhaF;
+        registros.push([
+          idChaveF, dataNorm, cfg.nome, mesAno, numLinhaF,
+          fDepto, "Folga Semanal", fNome, "", "", "FOLGA", fSol, "FOLGA_SEMANAL", agora
+        ]);
+      }
+    }
+
+    // 3. Ausências / Atestados / Feriados (Linhas 6 a 12, Cols Ausência)
+    var rangeAus = abaDiaria.getRange(6, cfg.colAusNome, 7, 4).getDisplayValues();
+    for (var a = 0; a < rangeAus.length; a++) {
+      var numLinhaA = 6 + a;
+      var aNome = String(rangeAus[a][0] || "").trim();
+      var aDepto = String(rangeAus[a][1] || "").trim();
+      var aSit = String(rangeAus[a][2] || "").trim();
+      var aSol = String(rangeAus[a][3] || "").trim();
+
+      if (aNome && aNome !== "-") {
+        var idChaveA = dataNorm + "_AUSENCIA_" + numLinhaA;
+        registros.push([
+          idChaveA, dataNorm, cfg.nome, mesAno, numLinhaA,
+          aDepto, aSit || "Ausência", aNome, "", "", aSit || "AUSENCIA", aSol, "AUSENCIA_ATESTADO", agora
+        ]);
+      }
+    }
+  }
+
+  // Grava novos registros ou atualiza existentes em lote
+  var novosParaInserir = [];
+  for (var k = 0; k < registros.length; k++) {
+    var reg = registros[k];
+    var chave = reg[0];
+    if (chavesExistentes[chave]) {
+      // Atualiza linha existente
+      var linhaExistente = chavesExistentes[chave];
+      abaHist.getRange(linhaExistente, 1, 1, reg.length).setValues([reg]);
+    } else {
+      novosParaInserir.push(reg);
+    }
+  }
+
+  if (novosParaInserir.length > 0) {
+    var nextRow = abaHist.getLastRow() + 1;
+    abaHist.getRange(nextRow, 1, novosParaInserir.length, novosParaInserir[0].length).setValues(novosParaInserir);
+  }
+
+  SpreadsheetApp.flush();
+  return {
+    success: true,
+    totalSalvos: registros.length,
+    novos: novosParaInserir.length,
+    atualizados: registros.length - novosParaInserir.length
+  };
+}
+
+/**
+ * Consulta o Histórico por Mês/Ano (ex: '11/2026')
+ */
+function handleGetMonthlyHistory(params) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var abaHist = ss.getSheetByName("Historico_Escalas");
+  if (!abaHist) {
+    return jsonResponse({ success: true, dias: {}, total: 0 });
+  }
+
+  var mesAnoFiltro = params.mes_ano || ""; // ex: "11/2026"
+  var dataFiltro = params.data || ""; // ex: "26/10/2026"
+
+  var lastRow = abaHist.getLastRow();
+  if (lastRow <= 1) {
+    return jsonResponse({ success: true, dias: {}, total: 0 });
+  }
+
+  var raw = abaHist.getRange(2, 1, lastRow - 1, 14).getDisplayValues();
+  var diasMap = {};
+  var total = 0;
+
+  for (var i = 0; i < raw.length; i++) {
+    var row = raw[i];
+    var dData = row[1];
+    var dMesAno = row[3];
+
+    if (mesAnoFiltro && dMesAno !== mesAnoFiltro) continue;
+    if (dataFiltro && dData !== dataFiltro) continue;
+
+    if (!diasMap[dData]) {
+      diasMap[dData] = {
+        data: dData,
+        diaSemana: row[2],
+        mesAno: dMesAno,
+        slots: [],
+        folgas: [],
+        ausencias: []
+      };
+    }
+
+    var item = {
+      id: row[0],
+      linha: Number(row[4]),
+      departamento: row[5],
+      titular: row[6],
+      colaborador: row[7],
+      entrada: row[8],
+      saida: row[9],
+      status: row[10],
+      solucao: row[11],
+      tipoRegistro: row[12]
+    };
+
+    if (item.tipoRegistro === "ESCALA_POSTO") {
+      diasMap[dData].slots.push(item);
+    } else if (item.tipoRegistro === "FOLGA_SEMANAL") {
+      diasMap[dData].folgas.push(item);
+    } else {
+      diasMap[dData].ausencias.push(item);
+    }
+    total++;
+  }
+
+  return jsonResponse({
+    success: true,
+    total: total,
+    filtro: mesAnoFiltro || dataFiltro || "Todos",
+    dias: diasMap
+  });
+}
+
+function handleSaveDailyToHistory(params) {
+  var res = salvarSemanaNoHistorico();
+  return jsonResponse(res);
+}
+
+/**
+ * Rotina de Virada Diária (Janela Deslizante / Rolling 7 Days)
+ * Pode ser chamada via Gatilho da Meia-Noite ou manualmente
+ */
+function rotinaViradaDiaria() {
+  // 1. Antes de qualquer mudança, salva o estado atual com segurança no histórico
+  salvarSemanaNoHistorico();
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var abaDiaria = ss.getSheetByName("Diaria");
+  if (!abaDiaria) return { success: false, error: "Aba Diaria não encontrada" };
+
+  var hoje = new Date();
+  var diasSemanaNomes = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+
+  // Configuração das células de data de cada coluna diária
+  var celulasData = {
+    "Segunda": "D3",
+    "Terça":   "M3",
+    "Quarta":  "V3",
+    "Quinta":  "AE3",
+    "Sexta":   "AN3",
+    "Sábado":  "AW3",
+    "Domingo": "BF3"
+  };
+
+  // Calcula as datas dos próximos 7 dias a partir de hoje
+  // Ex: Se hoje for Terça 27/10, o bloco de Terça recebe 27/10, Quarta 28/10, ... Segunda próxima recebe 02/11!
+  var atualizacoes = [];
+  for (var offset = 0; offset < 7; offset++) {
+    var d = new Date(hoje.getTime() + (offset * 24 * 60 * 60 * 1000));
+    var diaSemanaIndex = d.getDay();
+    var nomeDia = diasSemanaNomes[diaSemanaIndex];
+    var celula = celulasData[nomeDia];
+
+    if (celula) {
+      var diaFmt = (d.getDate() < 10 ? '0' : '') + d.getDate();
+      var mesFmt = ((d.getMonth() + 1) < 10 ? '0' : '') + (d.getMonth() + 1);
+      var anoFmt = d.getFullYear();
+      var novaDataStr = diaFmt + '/' + mesFmt + '/' + anoFmt;
+
+      var valorAtual = abaDiaria.getRange(celula).getValue();
+      var dataAtualNorm = normalizarData(valorAtual);
+
+      if (dataAtualNorm !== novaDataStr) {
+        abaDiaria.getRange(celula).setValue(novaDataStr);
+        atualizacoes.push(nomeDia + " (" + celula + "): " + dataAtualNorm + " -> " + novaDataStr);
+      }
+    }
+  }
+
+  // 2. Após atualizar as datas, sincroniza folgas de feriado com a escala 5x2 se houver feriados no período
+  menuSincronizarFolgasFeriado();
+
+  SpreadsheetApp.flush();
+  return { success: true, atualizacoes: atualizacoes };
+}
+
+function handleRotinaViradaDiaria(params) {
+  var res = rotinaViradaDiaria();
+  return jsonResponse(res);
+}
+
+/**
+ * Cria ou restaura o gatilho automático que roda todo dia entre 00h e 01h
+ */
+function configurarGatilhoMeiaNoite() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === "rotinaViradaDiaria") {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+
+  ScriptApp.newTrigger("rotinaViradaDiaria")
+    .timeBased()
+    .everyDays(1)
+    .atHour(0)
+    .create();
+
+  SpreadsheetApp.getActiveSpreadsheet().toast("⏰ Gatilho da meia-noite configurado com sucesso!", "TaskFlow");
+  return { success: true, message: "Gatilho diário configurado para rodar à meia-noite." };
+}
+
+function menuSalvarHistoricoSemana() {
+  var res = salvarSemanaNoHistorico();
+  SpreadsheetApp.getActiveSpreadsheet().toast("✅ " + res.totalSalvos + " postos e folgas arquivados no 'Historico_Escalas'!", "TaskFlow");
+}
+
+
+/**
+ * Restaura postos, horários, folgas e ausências do Historico_Escalas para a aba Diaria
+ */
+function restaurarEscalaDoHistoricoNaDiaria(dataAlvo, colDataOuDia) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var abaDiaria = ss.getSheetByName("Diaria") || ss.getSheetByName("ESCALA DIARIA");
+  var abaHist = ss.getSheetByName("Historico_Escalas");
+  if (!abaDiaria) return { success: false, error: "Aba Diaria não encontrada" };
+
+  var diasConfig = {
+    4:  { nome: "Segunda", celData: "D3", colData: 4,  colNome: 3 },
+    13: { nome: "Terça",   celData: "M3", colData: 13, colNome: 12 },
+    22: { nome: "Quarta",  celData: "V3", colData: 22, colNome: 21 },
+    31: { nome: "Quinta",  celData: "AE3",colData: 31, colNome: 30 },
+    40: { nome: "Sexta",   celData: "AN3",colData: 40, colNome: 39 },
+    49: { nome: "Sábado",  celData: "AW3",colData: 49, colNome: 48 },
+    58: { nome: "Domingo", celData: "BF3",colData: 58, colNome: 57 }
+  };
+
+  var cfg = null;
+  if (typeof colDataOuDia === "number" && diasConfig[colDataOuDia]) {
+    cfg = diasConfig[colDataOuDia];
+  } else {
+    for (var k in diasConfig) {
+      if (diasConfig[k].nome === colDataOuDia) {
+        cfg = diasConfig[k];
+        break;
+      }
+    }
+  }
+  if (!cfg) cfg = diasConfig[4]; // Default: Segunda
+
+  // Normaliza dataAlvo em string dd/MM/yyyy
+  var sData = String(dataAlvo || "").trim();
+  if (dataAlvo instanceof Date) {
+    var dd = dataAlvo.getDate();
+    var mm = dataAlvo.getMonth() + 1;
+    var yy = dataAlvo.getFullYear();
+    sData = (dd < 10 ? "0" + dd : dd) + "/" + (mm < 10 ? "0" + mm : mm) + "/" + yy;
+  }
+
+  // 1. VERIFICA SE A DATA CORRESPONDE A OUTRO DIA DA PRÓPRIA SEMANA NA ABA DIARIA (ex: Terça vizinha)
+  var diaIrmao = null;
+  for (var cK in diasConfig) {
+    if (diasConfig[cK].colData === cfg.colData) continue;
+    var dataIrmao = abaDiaria.getRange(diasConfig[cK].celData).getDisplayValue().trim();
+    if (dataIrmao === sData) {
+      diaIrmao = diasConfig[cK];
+      break;
+    }
+  }
+
+  if (diaIrmao) {
+    // Copia EXCLUSIVAMENTE a alocação de pessoas da escala (linhas 20 a 51)
+    // Colunas: Nome (0), Escala (1), Entrada (2), IniAlm (3), RetAlm (4), Saida (5), Banco (6)
+    var dOrigem = abaDiaria.getRange(20, diaIrmao.colNome, 32, 7).getValues();
+    var dDestino = abaDiaria.getRange(20, cfg.colNome, 32, 7).getValues();
+
+    for (var idx = 0; idx < 32; idx++) {
+      dDestino[idx][0] = dOrigem[idx][0]; // Nome
+      dDestino[idx][1] = dOrigem[idx][1]; // Escala
+      dDestino[idx][2] = dOrigem[idx][2]; // Entrada
+      dDestino[idx][3] = dOrigem[idx][3]; // IniAlm
+      dDestino[idx][4] = dOrigem[idx][4]; // RetAlm
+      dDestino[idx][6] = dOrigem[idx][6]; // Banco
+    }
+    abaDiaria.getRange(20, cfg.colNome, 32, 7).setValues(dDestino);
+
+    SpreadsheetApp.flush();
+    try {
+      ss.toast("📥 Escala de " + sData + " copiada de " + diaIrmao.nome + " para " + cfg.nome + "!", "TaskFlow", 5);
+    } catch(e) {}
+
+    return {
+      success: true,
+      copiadoDe: diaIrmao.nome,
+      diaDestino: cfg.nome,
+      dataRestaurada: sData,
+      slotsRestaurados: 32
+    };
+  }
+
+  // 2. SE NÃO FOR OUTRO DIA DA SEMANA, BUSCA NO HISTÓRICO MENSAL
+  if (!abaHist) return { success: false, error: "Aba Historico_Escalas não encontrada" };
+  var lr = abaHist.getLastRow();
+  if (lr <= 1) return { success: false, error: "Histórico vazio" };
+
+  var rows = abaHist.getRange(2, 1, lr - 1, 19).getValues();
+  var slotsParaRestaurar = {};
+
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    var rData = String(r[1] || "").trim();
+    if (r[1] instanceof Date) {
+      var d = r[1].getDate();
+      var m = r[1].getMonth() + 1;
+      var y = r[1].getFullYear();
+      rData = (d < 10 ? "0" + d : d) + "/" + (m < 10 ? "0" + m : m) + "/" + y;
+    }
+
+    if (rData !== sData) continue;
+
+    var tipo = r[16];
+    var numLinha = Number(r[4]);
+
+    if (tipo === "ESCALA_POSTO" && numLinha >= 20 && numLinha <= 57) {
+      slotsParaRestaurar[numLinha] = {
+        nome: String(r[7] || "").trim(),
+        entrada: r[8],
+        inicioAlmoco: r[9],
+        retornoAlmoco: r[10],
+        saida: r[11],
+        banco: r[12],
+        escala: String(r[13] || "").trim()
+      };
+    }
+  }
+
+  var totalSlots = Object.keys(slotsParaRestaurar).length;
+  if (totalSlots === 0) {
+    return { success: false, notFound: true, message: "Nenhum registro encontrado no histórico para a data " + sData };
+  }
+
+  // Preenche EXCLUSIVAMENTE os postos de reposição (linhas 20 a 51)
+  var rangeSlots = abaDiaria.getRange(20, cfg.colNome, 32, 7);
+  var valoresSlots = rangeSlots.getValues();
+
+  for (var rIdx = 0; rIdx < 32; rIdx++) {
+    var l = 20 + rIdx;
+    if (slotsParaRestaurar[l]) {
+      var s = slotsParaRestaurar[l];
+      valoresSlots[rIdx][0] = s.nome;
+      valoresSlots[rIdx][1] = s.escala;
+      valoresSlots[rIdx][2] = s.entrada;
+      valoresSlots[rIdx][3] = s.inicioAlmoco;
+      valoresSlots[rIdx][4] = s.retornoAlmoco;
+      valoresSlots[rIdx][6] = s.banco;
+    } else {
+      valoresSlots[rIdx][0] = "";
+      valoresSlots[rIdx][1] = "";
+      valoresSlots[rIdx][2] = "";
+      valoresSlots[rIdx][3] = "";
+      valoresSlots[rIdx][4] = "";
+      valoresSlots[rIdx][6] = "";
+    }
+  }
+  rangeSlots.setValues(valoresSlots);
+
+  SpreadsheetApp.flush();
+  try {
+    ss.toast("📥 Escala de " + sData + " restaurada com sucesso em " + cfg.nome + "!", "TaskFlow Histórico", 5);
+  } catch(e) {}
+
+  return {
+    success: true,
+    dataRestaurada: sData,
+    diaDestino: cfg.nome,
+    slotsRestaurados: totalSlots
+  };
+}
+
+/**
+ * Menu interativo no Google Planilhas
+ */
+function menuPuxarMemoriaHistorico() {
+  var ui = SpreadsheetApp.getUi();
+  var resp = ui.prompt("📥 Puxar Memória do Histórico", "Digite a data que deseja puxar (ex: 26/10/2026):", ui.ButtonSet.OK_CANCEL);
+  if (resp.getSelectedButton() !== ui.Button.OK) return;
+
+  var dataStr = resp.getResponseText().trim();
+  if (!dataStr) return;
+
+  var respDia = ui.prompt("Dia da Semana", "Em qual coluna deseja carregar? Digite: Segunda, Terça, Quarta, Quinta, Sexta, Sábado ou Domingo:", ui.ButtonSet.OK_CANCEL);
+  if (respDia.getSelectedButton() !== ui.Button.OK) return;
+
+  var diaDestino = respDia.getResponseText().trim();
+  var res = restaurarEscalaDoHistoricoNaDiaria(dataStr, diaDestino);
+
+  if (res.success) {
+    ui.alert("Memória Restaurada!", "A escala de " + dataStr + " foi restaurada com sucesso na coluna de " + res.diaDestino + "!\n\n• Postos preenchidos: " + res.slotsRestaurados + "\n• Folgas restauradas: " + res.folgasRestauradas, ui.ButtonSet.OK);
+  } else {
+    ui.alert("Aviso", res.message || res.error || "Data não encontrada no histórico.", ui.ButtonSet.OK);
+  }
+}
