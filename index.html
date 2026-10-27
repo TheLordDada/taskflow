@@ -2473,12 +2473,34 @@
                     </div>
 
                     <!-- Rodapé de Envio com pb-safe para celulares -->
+                    <!-- Barra de Pré-visualização de Foto de Comprovação Pendente -->
+                    <div id="task-chat-image-preview-bar" class="hidden px-3 py-2 bg-indigo-950/70 border-t border-indigo-800/80 flex items-center justify-between shrink-0">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <img id="task-chat-image-preview-thumb" src="" alt="Comprovante" class="w-10 h-10 object-cover rounded-lg border border-indigo-500/60 shadow-sm shrink-0">
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-1.5 text-xs font-bold text-indigo-300">
+                                    <i class="fa-solid fa-camera"></i>
+                                    <span>Foto de Comprovação Anexada</span>
+                                </div>
+                                <p class="text-[10px] text-gray-400 truncate">Envie com uma mensagem ou envie a foto diretamente.</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="app.cancelChatImageUpload()" title="Remover foto" class="w-7 h-7 rounded-lg bg-gray-800 hover:bg-rose-900/60 text-gray-400 hover:text-rose-300 flex items-center justify-center transition text-xs shrink-0">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <!-- Rodapé de Envio com pb-safe para celulares -->
                     <div class="p-3 border-t border-gray-800 bg-gray-950 flex items-center gap-2 shrink-0 pb-safe">
+                        <input type="file" id="task-chat-image-input" accept="image/*" class="hidden" onchange="app.handleChatImageSelected(event)">
+                        <button type="button" onclick="app.triggerChatImageUpload()" title="Tirar foto ou anexar da galeria para comprovar a tarefa" class="w-9 h-9 rounded-xl bg-gray-800 hover:bg-gray-750 text-indigo-400 text-xs flex items-center justify-center transition border border-gray-700 active:scale-95 shrink-0 group">
+                            <i class="fa-solid fa-camera group-hover:scale-110 transition"></i>
+                        </button>
                         <button type="button" onclick="app.toggleMentionDropdown()" title="Mencionar Colaborador (@)" class="w-9 h-9 rounded-xl bg-gray-800 hover:bg-gray-750 text-indigo-400 font-black text-xs flex items-center justify-center transition border border-gray-700 active:scale-95 shrink-0">
                             @
                         </button>
                         <input type="text" id="task-chat-input" onkeydown="app.handleChatKeyDown(event)" placeholder="Escreva uma mensagem... (@ para marcar)" class="flex-1 bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition">
-                        <button type="button" onclick="app.sendTaskComment()" class="w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-xs shadow-md shadow-indigo-600/30 transition active:scale-95 shrink-0">
+                        <button type="button" onclick="app.sendTaskComment()" title="Enviar mensagem / foto" class="w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center text-xs shadow-md shadow-indigo-600/30 transition active:scale-95 shrink-0">
                             <i class="fa-solid fa-paper-plane"></i>
                         </button>
                     </div>
@@ -4071,6 +4093,7 @@
                 }
                 const drop = document.getElementById('task-mention-dropdown');
                 if (drop) drop.classList.add('hidden');
+                this.cancelChatImageUpload();
                 this.activeGalleryImages = [];
                 this.currentViewTaskId = null;
             }
@@ -4216,6 +4239,20 @@
                         ? 'bg-indigo-950/70 border border-indigo-800/80 text-gray-100 ml-auto' 
                         : 'bg-gray-900/90 border border-gray-800 text-gray-200 mr-auto';
 
+                    let imgHtml = '';
+                    if (c.image) {
+                        const safeAuthor = (c.authorName || 'Colaborador').replace(/'/g, "\\'");
+                        imgHtml = `
+                            <div class="my-1 rounded-xl overflow-hidden border border-indigo-500/40 bg-black/50 cursor-pointer shadow-md group relative max-w-full" onclick="app.openChatImageLightbox('${c.image}', '${safeAuthor}')">
+                                <img src="${c.image}" alt="Comprovação de Tarefa" class="max-h-56 w-auto max-w-full rounded-xl object-contain mx-auto transition-transform duration-200 group-hover:scale-[1.02]">
+                                <div class="absolute bottom-1.5 right-1.5 px-2 py-0.5 rounded-md bg-black/80 text-[10px] text-emerald-400 font-bold flex items-center gap-1 backdrop-blur-sm border border-emerald-500/30 pointer-events-none">
+                                    <i class="fa-solid fa-circle-check text-[10px]"></i>
+                                    <span>Comprovante</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+
                     html += `
                         <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[90%] ${isMe ? 'ml-auto' : ''}">
                             <div class="flex items-center gap-1.5 text-[10px] text-gray-400 mb-1 px-1">
@@ -4224,7 +4261,8 @@
                                 <span>• ${dateFormatted}</span>
                             </div>
                             <div class="p-2.5 rounded-2xl ${bubbleBg} text-xs leading-relaxed break-words shadow-sm">
-                                ${formattedText}
+                                ${imgHtml}
+                                ${formattedText ? `<div class="${c.image ? 'mt-1 pt-1 border-t border-gray-800/60' : ''}">${formattedText}</div>` : ''}
                             </div>
                         </div>
                     `;
@@ -4352,7 +4390,10 @@
                 const input = document.getElementById('task-chat-input');
                 if (!input) return;
                 const text = input.value.trim();
-                if (!text) return;
+                const imageToSend = this.pendingChatImage || null;
+
+                // Permite envio se houver texto OU imagem
+                if (!text && !imageToSend) return;
 
                 if (!this.currentChatTaskId) {
                     alert("Por favor, clique em 'Salvar Tarefa' primeiro para gerar o identificador do chat.");
@@ -4376,14 +4417,26 @@
                     authorEmail: authorEmail,
                     authorRole: authorRole,
                     text: text,
+                    image: imageToSend,
+                    isProof: !!imageToSend,
                     mentions: mentionsClean,
                     createdAt: Date.now()
                 };
 
                 if (!task.comments) task.comments = [];
                 task.comments.push(comment);
-                task.updatedAt = Date.now();
 
+                // Integra automaticamente a foto de comprovação na galeria da tarefa
+                if (imageToSend) {
+                    if (!task.images) task.images = [];
+                    if (!task.images.includes(imageToSend)) {
+                        task.images.push(imageToSend);
+                    }
+                    const tabBadgePhotos = document.getElementById('tab-badge-photos-count');
+                    if (tabBadgePhotos) tabBadgePhotos.innerText = `Fotos (${task.images.length})`;
+                }
+
+                task.updatedAt = Date.now();
                 this.saveLocally();
 
                 // Publica em nuvem imediatamente
@@ -4400,21 +4453,105 @@
 
                 // Som de notificação local e feedback
                 try { this.playNotificationSound(); } catch(e) {}
-                if (window.syncManager) syncManager.showToast("✓ Mensagem enviada para o chat da tarefa!");
+                if (window.syncManager) {
+                    syncManager.showToast(imageToSend ? "✓ Foto de comprovação enviada no chat!" : "✓ Mensagem enviada para o chat da tarefa!");
+                }
 
                 // Dispara notificação no envio (com menção ou geral)
-                const notifTitle = mentionsClean.length > 0 ? `TaskFlow - @Menção em Tarefa` : `TaskFlow - Chat da Tarefa`;
-                const notifBody = mentionsClean.length > 0 
-                    ? `${authorName} mencionou ${mentionsClean.join(', ')} na tarefa: "${task.title}"`
-                    : `${authorName}: "${text}" na tarefa "${task.title}"`;
+                let notifTitle = 'TaskFlow - Chat da Tarefa';
+                let notifBody = '';
+                if (imageToSend) {
+                    notifTitle = 'TaskFlow - Comprovante de Tarefa';
+                    notifBody = `📸 ${authorName} enviou uma foto de comprovação na tarefa: "${task.title}"`;
+                } else if (mentionsClean.length > 0) {
+                    notifTitle = 'TaskFlow - @Menção em Tarefa';
+                    notifBody = `${authorName} mencionou ${mentionsClean.join(', ')} na tarefa: "${task.title}"`;
+                } else {
+                    notifBody = `${authorName}: "${text}" na tarefa "${task.title}"`;
+                }
                 try { this.dispatchNotification(notifTitle, notifBody); } catch(e) {}
 
                 input.value = '';
+                this.cancelChatImageUpload();
+
                 const drop = document.getElementById('task-mention-dropdown');
                 if (drop) drop.classList.add('hidden');
 
                 this.renderTaskChat();
                 this.render(); // Atualiza contador do card na lista de tarefas imediatamente!
+            }
+
+            // ==========================================
+            // COMPROVAÇÃO DE TAREFA POR FOTO NO CHAT
+            // ==========================================
+            triggerChatImageUpload() {
+                const fileInput = document.getElementById('task-chat-image-input');
+                if (fileInput) {
+                    fileInput.value = '';
+                    fileInput.click();
+                }
+            }
+
+            async handleChatImageSelected(e) {
+                const file = e.target.files && e.target.files[0];
+                if (!file) return;
+
+                try {
+                    if (window.syncManager) syncManager.showToast("Processando imagem de comprovação...");
+                    const compressed = await this.compressImage(file, 960, 0.75);
+                    if (!compressed) {
+                        alert("Não foi possível processar a foto. Tente novamente.");
+                        return;
+                    }
+                    this.pendingChatImage = compressed;
+
+                    const previewBar = document.getElementById('task-chat-image-preview-bar');
+                    const thumb = document.getElementById('task-chat-image-preview-thumb');
+                    if (thumb) thumb.src = compressed;
+                    if (previewBar) previewBar.classList.remove('hidden');
+
+                    const input = document.getElementById('task-chat-input');
+                    if (input) {
+                        input.placeholder = "Adicione uma legenda ou envie a foto diretamente...";
+                        input.focus();
+                    }
+                } catch (err) {
+                    console.error("Erro ao processar foto do chat:", err);
+                    alert("Erro ao anexar imagem.");
+                }
+            }
+
+            cancelChatImageUpload() {
+                this.pendingChatImage = null;
+                const previewBar = document.getElementById('task-chat-image-preview-bar');
+                if (previewBar) previewBar.classList.add('hidden');
+                const fileInput = document.getElementById('task-chat-image-input');
+                if (fileInput) fileInput.value = '';
+                const input = document.getElementById('task-chat-input');
+                if (input) input.placeholder = "Escreva uma mensagem... (@ para marcar)";
+            }
+
+            openChatImageLightbox(src, author = '') {
+                const modal = document.getElementById('modal-chat-image-lightbox');
+                const img = document.getElementById('lightbox-img-full');
+                const dl = document.getElementById('lightbox-download-btn');
+                const cap = document.getElementById('lightbox-caption');
+                if (!modal || !img) return;
+
+                img.src = src;
+                if (dl) dl.href = src;
+                if (cap) cap.innerText = author ? `Comprovação de tarefa enviada por ${author}` : 'Foto de comprovação da tarefa';
+
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+            }
+
+            closeChatImageLightbox() {
+                const modal = document.getElementById('modal-chat-image-lightbox');
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                }
             }
 
             async saveTask(e) {
@@ -11657,6 +11794,12 @@
                             const exists = task.comments.some(c => c.id === payload.comment.id);
                             if (!exists) {
                                 task.comments.push(payload.comment);
+                                if (payload.comment.image) {
+                                    if (!task.images) task.images = [];
+                                    if (!task.images.includes(payload.comment.image)) {
+                                        task.images.push(payload.comment.image);
+                                    }
+                                }
                                 task.updatedAt = Date.now();
                                 app.saveLocally();
                                 app.render(); // Atualiza contador na lista de tarefas em tempo real
@@ -17182,5 +17325,21 @@
     <button id="btn-back-to-top" onclick="document.getElementById('app-main-content-scroll') ? document.getElementById('app-main-content-scroll').scrollTo({top: 0, behavior: 'smooth'}) : window.scrollTo({top: 0, behavior: 'smooth'})" class="hidden fixed bottom-16 right-4 z-40 w-9 h-9 rounded-full bg-indigo-600/90 hover:bg-indigo-500 text-white shadow-xl flex items-center justify-center transition active:scale-95 border border-indigo-400/40" title="Voltar ao início">
         <i class="fa-solid fa-arrow-up text-xs"></i>
     </button>
+
+    <!-- MODAL LIGHTBOX PARA FOTOS DO CHAT (COMPROVAÇÃO DE TAREFA) -->
+    <div id="modal-chat-image-lightbox" style="display: none; z-index: 100005;" class="fixed inset-0 bg-black/95 backdrop-blur-md hidden flex flex-col items-center justify-center p-3 sm:p-6 select-none" onclick="app.closeChatImageLightbox()">
+        <div class="absolute top-4 right-4 flex items-center gap-2 z-50">
+            <a id="lightbox-download-btn" href="#" download="comprovante-tarefa.jpg" onclick="event.stopPropagation()" title="Baixar foto" class="w-10 h-10 rounded-full bg-gray-900/90 border border-gray-700 text-white flex items-center justify-center text-sm hover:bg-indigo-600 transition shadow-lg">
+                <i class="fa-solid fa-download"></i>
+            </a>
+            <button type="button" onclick="app.closeChatImageLightbox()" title="Fechar" class="w-10 h-10 rounded-full bg-gray-900/90 border border-gray-700 text-white flex items-center justify-center text-base hover:bg-rose-600 transition shadow-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="max-w-4xl max-h-[85vh] flex items-center justify-center overflow-hidden" onclick="event.stopPropagation()">
+            <img id="lightbox-img-full" src="" alt="Comprovante de Tarefa" class="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border border-gray-800">
+        </div>
+        <p id="lightbox-caption" class="mt-3 text-xs text-gray-300 font-medium text-center bg-gray-900/80 px-3 py-1 rounded-full border border-gray-800"></p>
+    </div>
 </body>
 </html>
