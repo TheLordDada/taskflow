@@ -732,6 +732,10 @@
                         <span class="flex items-center gap-2.5"><i class="fa-solid fa-calendar-week w-4 text-xs"></i> Próximas</span>
                         <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 font-bold" id="count-upcoming">0</span>
                     </button>
+                    <button onclick="app.setFilter('completed')" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition text-gray-400 hover:bg-gray-800/60 hover:text-emerald-300" id="nav-completed">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-circle-check w-4 text-xs text-emerald-400"></i> Concluídas</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 font-bold border border-emerald-900/60" id="count-completed">0</span>
+                    </button>
                 </nav>
             </div>
         </div>
@@ -888,6 +892,11 @@
                     <button type="button" onclick="app.setFilter('upcoming')" id="task-filter-upcoming" class="shrink-0 whitespace-nowrap py-1.5 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-gray-200 hover:bg-gray-800/40 transition flex items-center gap-1.5">
                         <i class="fa-solid fa-calendar-plus text-xs"></i>
                         <span>Próximas</span>
+                    </button>
+                    <button type="button" onclick="app.setFilter('completed')" id="task-filter-completed" class="shrink-0 whitespace-nowrap py-1.5 px-3 text-xs font-bold rounded-xl text-gray-400 hover:text-emerald-300 hover:bg-gray-800/40 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-check text-xs text-emerald-400"></i>
+                        <span>Concluídas</span>
+                        <span id="count-completed-top" class="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-bold">0</span>
                     </button>
                 </div>
                 <div id="tasks-container" class="space-y-2.5">
@@ -1515,6 +1524,10 @@
                         </div>
                         <!-- Botões de Ação Rápida -->
                         <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+                            <button type="button" id="btn-toggle-folgas-collapse" onclick="scheduleApp.toggleFolgasCollapse()" title="Minimizar ou expandir quadro de folgas e ausências" class="px-3 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 border border-gray-700/70 text-gray-200 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer">
+                                <i id="icon-toggle-folgas" class="fa-solid fa-chevron-up text-amber-400 text-xs"></i>
+                                <span id="text-toggle-folgas">Minimizar</span>
+                            </button>
                             <button type="button" id="btn-uncovered-badge-pill" onclick="scheduleApp.setAbsenceFilter('uncovered')" class="hidden px-3 py-2 rounded-xl bg-rose-950 hover:bg-rose-900 border border-rose-500/80 text-rose-200 text-xs font-black transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer animate-pulse">
                                 <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
                                 <span id="label-uncovered-badge-pill">0 Sem Cobertura</span>
@@ -1530,27 +1543,30 @@
                         </div>
                     </div>
 
-                    <!-- Filtros Rápidos do Quadro -->
-                    <div class="flex items-center justify-between gap-2 flex-wrap">
-                        <div class="flex items-center gap-1.5 flex-wrap" id="schedule-absences-filters">
-                            <button type="button" onclick="scheduleApp.setAbsenceFilter('all')" id="btn-abs-filter-all" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-teal-600 text-white shadow-sm cursor-pointer">
-                                Todos (<span id="count-abs-all">0</span>)
-                            </button>
-                            <button type="button" onclick="scheduleApp.setAbsenceFilter('folga')" id="btn-abs-filter-folga" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-teal-300 border border-teal-900/60 cursor-pointer">
-                                🌴 Folgas (<span id="count-abs-folgas">0</span>)
-                            </button>
-                            <button type="button" onclick="scheduleApp.setAbsenceFilter('ausencia')" id="btn-abs-filter-ausencia" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-indigo-300 border border-indigo-900/60 cursor-pointer">
-                                🩺 Ausências / Atestados (<span id="count-abs-ausencias">0</span>)
-                            </button>
-                            <button type="button" onclick="scheduleApp.setAbsenceFilter('uncovered')" id="btn-abs-filter-uncovered" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-rose-300 border border-rose-900/60 cursor-pointer">
-                                🚨 Descobertos (<span id="count-abs-uncovered">0</span>)
-                            </button>
+                    <!-- Corpo Retrátil do Quadro de Folgas & Ausências -->
+                    <div id="schedule-absences-body" class="space-y-4">
+                        <!-- Filtros Rápidos do Quadro -->
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <div class="flex items-center gap-1.5 flex-wrap" id="schedule-absences-filters">
+                                <button type="button" onclick="scheduleApp.setAbsenceFilter('all')" id="btn-abs-filter-all" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-teal-600 text-white shadow-sm cursor-pointer">
+                                    Todos (<span id="count-abs-all">0</span>)
+                                </button>
+                                <button type="button" onclick="scheduleApp.setAbsenceFilter('folga')" id="btn-abs-filter-folga" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-teal-300 border border-teal-900/60 cursor-pointer">
+                                    🌴 Folgas (<span id="count-abs-folgas">0</span>)
+                                </button>
+                                <button type="button" onclick="scheduleApp.setAbsenceFilter('ausencia')" id="btn-abs-filter-ausencia" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-indigo-300 border border-indigo-900/60 cursor-pointer">
+                                    🩺 Ausências / Atestados (<span id="count-abs-ausencias">0</span>)
+                                </button>
+                                <button type="button" onclick="scheduleApp.setAbsenceFilter('uncovered')" id="btn-abs-filter-uncovered" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-rose-300 border border-rose-900/60 cursor-pointer">
+                                    🚨 Descobertos (<span id="count-abs-uncovered">0</span>)
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Lista de Cards de Folgas e Ausências -->
-                    <div id="schedule-absences-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
-                        <!-- Injetado dinamicamente via scheduleApp.renderStatsAndAbsences() -->
+                        <!-- Lista de Cards de Folgas e Ausências -->
+                        <div id="schedule-absences-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+                            <!-- Injetado dinamicamente via scheduleApp.renderStatsAndAbsences() -->
+                        </div>
                     </div>
                 </div>
 
@@ -4744,6 +4760,45 @@
                 }
             }
 
+            dismissTaskForMe(id) {
+                const user = (window.auth && auth.currentUser) ? auth.currentUser : null;
+                if (!user) {
+                    alert("Por favor, faça login para excluir a tarefa da sua lista pessoal.");
+                    return;
+                }
+                const userKey = (user.email || user.displayName || '').toLowerCase().trim();
+                const task = this.tasks.find(t => t.id == id);
+                if (!task) return;
+
+                if (!confirm(`Deseja excluir esta tarefa apenas para você?\n\n• Ela sumirá da sua lista.\n• Continuará visível para os outros colaboradores vinculados e para os administradores no painel.`)) {
+                    return;
+                }
+
+                task.hiddenFor = task.hiddenFor || [];
+                if (!task.hiddenFor.includes(userKey)) {
+                    task.hiddenFor.push(userKey);
+                }
+                if (user.email && !task.hiddenFor.includes(user.email.toLowerCase().trim())) {
+                    task.hiddenFor.push(user.email.toLowerCase().trim());
+                }
+                if (user.displayName && !task.hiddenFor.includes(user.displayName.toLowerCase().trim())) {
+                    task.hiddenFor.push(user.displayName.toLowerCase().trim());
+                }
+
+                task.updatedAt = Date.now();
+                this.saveLocally();
+
+                if (window.syncManager) {
+                    window.syncManager.publish({
+                        type: 'TASK_UPSERT',
+                        task: task
+                    });
+                }
+
+                this.render();
+                if (window.toast) toast.info("Tarefa excluída da sua lista pessoal.");
+            }
+
             deleteTask(id) {
                 if (!confirm("Deseja realmente excluir esta tarefa?")) return;
                 this.tasks = this.tasks.filter(t => t.id != id);
@@ -4836,7 +4891,11 @@
                 const user = (window.auth && auth.currentUser) ? auth.currentUser : null;
                 if (!user) return this.tasks;
 
-                // Administrador vê TODAS as tarefas
+                const myName = (user.displayName || '').toLowerCase().trim();
+                const myEmail = (user.email || '').toLowerCase().trim();
+                const userKey = myEmail || myName;
+
+                // Administrador vê TODAS as tarefas (exceto se ele mesmo escolheu ocultar para si)
                 const isAdm = !!(
                     user.isAdmin || 
                     (user.email && (ADMIN_EMAILS.includes(user.email.toLowerCase().trim()) || user.email.toLowerCase().includes('admin'))) ||
@@ -4844,12 +4903,16 @@
                     (user.role && user.role.toLowerCase().includes('admin')) ||
                     (user.displayName && user.displayName.toUpperCase().includes('ADMIN'))
                 );
-                if (isAdm) return this.tasks;
-
-                const myName = (user.displayName || '').toLowerCase().trim();
-                const myEmail = (user.email || '').toLowerCase().trim();
 
                 return this.tasks.filter(t => {
+                    // Requisito 3: Se o usuário excluiu a tarefa "para mim", oculta da visualização dele
+                    if (t.hiddenFor && Array.isArray(t.hiddenFor) && userKey) {
+                        if (t.hiddenFor.includes(userKey) || (myEmail && t.hiddenFor.includes(myEmail)) || (myName && t.hiddenFor.includes(myName))) {
+                            return false;
+                        }
+                    }
+
+                    if (isAdm) return true;
                     const assignee = (t.assignee || '').toLowerCase().trim();
                     const authorName = (t.authorName || '').toLowerCase().trim();
                     const authorEmail = (t.authorEmail || '').toLowerCase().trim();
@@ -4877,20 +4940,29 @@
                 const myName = user ? (user.displayName || '').toLowerCase().trim() : '';
                 const myEmail = user ? (user.email || '').toLowerCase().trim() : '';
 
-                // Lista de tarefas visíveis para o perfil atual (Admin vê tudo; outros veem as suas, criadas por si ou livres)
+                // Lista de tarefas visíveis para o perfil atual (já excluindo as que o usuário dispensou para si)
                 const visibleTasks = this.getVisibleTasks();
 
-                let filtered = visibleTasks.filter(t => {
-                    if (this.currentFilter === 'today') return t.date === todayStr;
-                    if (this.currentFilter === 'upcoming') return t.date > todayStr;
-                    if (this.currentFilter === 'mine') {
-                        const assignee = (t.assignee || '').toLowerCase().trim();
-                        return (myName && assignee.includes(myName)) || (myEmail && assignee.includes(myEmail));
-                    }
-                    return true;
-                });
+                const pendingTasks = visibleTasks.filter(t => !t.completed);
+                const completedTasks = visibleTasks.filter(t => !!t.completed);
 
-                const countMine = visibleTasks.filter(t => {
+                // Requisito 3: Aba Concluídas separada para despoluir a visualização das tarefas ativas!
+                let filtered = [];
+                if (this.currentFilter === 'completed') {
+                    filtered = completedTasks;
+                } else {
+                    filtered = pendingTasks.filter(t => {
+                        if (this.currentFilter === 'today') return t.date === todayStr;
+                        if (this.currentFilter === 'upcoming') return t.date > todayStr;
+                        if (this.currentFilter === 'mine') {
+                            const assignee = (t.assignee || '').toLowerCase().trim();
+                            return (myName && assignee.includes(myName)) || (myEmail && assignee.includes(myEmail));
+                        }
+                        return true;
+                    });
+                }
+
+                const countMine = pendingTasks.filter(t => {
                     const assignee = (t.assignee || '').toLowerCase().trim();
                     return (myName && assignee.includes(myName)) || (myEmail && assignee.includes(myEmail));
                 }).length;
@@ -4899,23 +4971,38 @@
                 const countMineEl = document.getElementById('count-mine');
                 const countTodayEl = document.getElementById('count-today');
                 const countUpcomingEl = document.getElementById('count-upcoming');
+                const countCompletedEl = document.getElementById('count-completed');
+                const countCompletedTopEl = document.getElementById('count-completed-top');
 
-                if (countAllEl) countAllEl.innerText = visibleTasks.length;
+                if (countAllEl) countAllEl.innerText = pendingTasks.length;
                 if (countMineEl) countMineEl.innerText = countMine;
-                if (countTodayEl) countTodayEl.innerText = visibleTasks.filter(t => t.date === todayStr).length;
-                if (countUpcomingEl) countUpcomingEl.innerText = visibleTasks.filter(t => t.date > todayStr).length;
+                if (countTodayEl) countTodayEl.innerText = pendingTasks.filter(t => t.date === todayStr).length;
+                if (countUpcomingEl) countUpcomingEl.innerText = pendingTasks.filter(t => t.date > todayStr).length;
+                if (countCompletedEl) countCompletedEl.innerText = completedTasks.length;
+                if (countCompletedTopEl) countCompletedTopEl.innerText = completedTasks.length;
                 const sidebarCount = document.getElementById('sidebar-tasks-count');
-                if (sidebarCount) sidebarCount.innerText = visibleTasks.length;
+                if (sidebarCount) sidebarCount.innerText = pendingTasks.length;
 
                 if(filtered.length === 0) {
+                    if (this.currentFilter === 'completed') {
+                        container.innerHTML = `
+                            <div class="text-center py-14 px-4 bg-gray-900/60 border border-gray-800 rounded-3xl space-y-3">
+                                <div class="w-12 h-12 bg-emerald-950/60 border border-emerald-800/60 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto text-xl shadow-lg shadow-emerald-950/50">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                </div>
+                                <h3 class="text-base font-bold text-gray-200">Nenhuma tarefa concluída arquivada</h3>
+                                <p class="text-xs text-gray-400 max-w-sm mx-auto">Assim que você ou sua equipe concluírem uma tarefa, ela será movida automaticamente para esta aba para despoluir a visualização principal.</p>
+                            </div>`;
+                        return;
+                    }
                     container.innerHTML = `
                         <div class="text-center py-14 px-4 bg-gray-900/60 border border-gray-800 rounded-3xl space-y-3">
                             <div class="w-12 h-12 rounded-2xl bg-indigo-950/60 text-indigo-400 border border-indigo-900/50 flex items-center justify-center mx-auto text-xl shadow-lg">
                                 <i class="fa-solid fa-clipboard-check"></i>
                             </div>
                             <div>
-                                <p class="text-sm font-bold text-gray-200">Nenhuma tarefa encontrada neste filtro</p>
-                                <p class="text-xs text-gray-500 mt-0.5">Crie uma nova tarefa ou alterne para a área de Ocorrências & Processos.</p>
+                                <p class="text-sm font-bold text-gray-200">Nenhuma tarefa pendente encontrada</p>
+                                <p class="text-xs text-gray-500 mt-0.5">Você está com tudo em dia ou não há tarefas pendentes neste filtro.</p>
                             </div>
                             <div class="flex items-center justify-center gap-2 pt-2">
                                 <button onclick="app.openModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center gap-1.5">
@@ -4984,7 +5071,10 @@
                             <button onclick='app.openModal(${safeTaskJson})' title="Editar Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition active:scale-95">
                                 <i class="fa-solid fa-pen text-xs"></i>
                             </button>
-                            <button onclick="app.deleteTask('${t.id}')" title="Excluir Tarefa" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-gray-800 transition active:scale-95">
+                            <button onclick="app.dismissTaskForMe('${t.id}')" title="Excluir apenas para mim (mantém a tarefa para os outros membros e no painel)" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-amber-400 hover:bg-gray-800 transition active:scale-95 cursor-pointer">
+                                <i class="fa-solid fa-eye-slash text-xs"></i>
+                            </button>
+                            <button onclick="app.deleteTask('${t.id}')" title="Excluir Tarefa Geral" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-400 hover:bg-gray-800 transition active:scale-95">
                                 <i class="fa-solid fa-trash text-xs"></i>
                             </button>
                         </div>
@@ -12279,6 +12369,39 @@
         // MÓDULO: ESCALA DIÁRIA & TURNOS (SINCRONIZAÇÃO BIDIRECIONAL GOOGLE SHEETS)
         // =========================================================================
         class ScheduleApp {
+            toggleFolgasCollapse() {
+                this.folgasCollapsed = !this.folgasCollapsed;
+                localStorage.setItem('taskflow_folgas_collapsed', this.folgasCollapsed ? 'true' : 'false');
+                this.applyFolgasCollapseState();
+            }
+
+            applyFolgasCollapseState() {
+                const body = document.getElementById('schedule-absences-body');
+                const icon = document.getElementById('icon-toggle-folgas');
+                const text = document.getElementById('text-toggle-folgas');
+                const btn = document.getElementById('btn-toggle-folgas-collapse');
+                const card = document.getElementById('schedule-absences-card');
+
+                if (this.folgasCollapsed) {
+                    if (body) body.classList.add('hidden');
+                    if (icon) icon.className = 'fa-solid fa-chevron-down text-amber-400 text-xs';
+                    if (text) text.innerText = 'Expandir Quadro';
+                    if (btn) {
+                        btn.classList.add('bg-amber-950/40', 'border-amber-600/60', 'text-amber-200');
+                        btn.classList.remove('bg-gray-900', 'border-gray-700/70', 'text-gray-200');
+                    }
+                    if (card) card.classList.remove('space-y-4');
+                } else {
+                    if (body) body.classList.remove('hidden');
+                    if (icon) icon.className = 'fa-solid fa-chevron-up text-amber-400 text-xs';
+                    if (text) text.innerText = 'Minimizar';
+                    if (btn) {
+                        btn.classList.remove('bg-amber-950/40', 'border-amber-600/60', 'text-amber-200');
+                        btn.classList.add('bg-gray-900', 'border-gray-700/70', 'text-gray-200');
+                    }
+                    if (card) card.classList.add('space-y-4');
+                }
+            }
 
             canUserEdit() {
                 if (!auth.currentUser) return false;
@@ -12313,6 +12436,7 @@
                 this.viewMode = savedViewMode || (window.innerWidth < 768 ? 'cards' : 'table');
                 this.currentFilter = 'all';
                 this.currentDeptFilter = 'all';
+                this.folgasCollapsed = localStorage.getItem('taskflow_folgas_collapsed') === 'true';
                 this.searchQuery = '';
                 this.isSyncing = false;
                 this.showFolgas = (localStorage.getItem('taskflow_schedule_show_folgas') === 'true');
@@ -13395,9 +13519,9 @@
                             });
                         });
                     } else {
-                        // Segunda a Sábado: Reposição linhas 20 a 51 na planilha (gviz rows 13 a 44)
-                        for (let r = 13; r <= 44; r++) {
-                            const linha = 20 + (r - 13);
+                        // Segunda a Sábado: Reposição linhas 19 a 50 na planilha (gviz rows 12 a 43, 32 postos completos)
+                        for (let r = 12; r <= 43; r++) {
+                            const linha = 19 + (r - 12);
                             const dept = getCell(r, cfg.colDept);
                             const nome = getCell(r, cfg.colNome);
                             if (dept.toUpperCase().includes('LIDERANÇA') || dept.toUpperCase().includes('MONITORIA')) continue;
@@ -13414,9 +13538,9 @@
                                 isVago, corFundo: isVago ? '#ea4335' : ''
                             });
                         }
-                        // Segunda a Sábado: Liderança linhas 55 a 57 na planilha (gviz rows 46 a 48)
+                        // Segunda a Sábado: Liderança linhas 54 a 56 na planilha (gviz rows 46 a 48)
                         for (let r = 46; r <= 48; r++) {
-                            const linha = 55 + (r - 46);
+                            const linha = 54 + (r - 46);
                             const dept = getCell(r, cfg.colDept);
                             const nome = getCell(r, cfg.colNome);
                             const esc  = getCell(r, cfg.colEsc);
@@ -13479,7 +13603,26 @@
 
                     if (resJson && resJson.success && resJson.dias) {
                         // Garante leitura completa das Folgas (B:D) e Ausências (E:H) caso o WebApp não tenha retornado folgas estruturadas
-                        const needsDetailedAbsences = Object.values(resJson.dias).some(d => !d.folgas || d.folgas.length === 0);
+                        // Garante presença da Linha 19 (1º Arroz/Óleo) caso venha de cache antigo
+                    const missingLine19 = Object.entries(resJson.dias).some(([dName, dData]) => {
+                        return dName !== 'Domingo' && dData.slots && dData.slots.length > 0 && !dData.slots.some(s => Number(s.linha) === 19);
+                    });
+                    if (missingLine19) {
+                        try {
+                            const gvizFull = await this.fetchGvizSchedule();
+                            if (gvizFull && gvizFull.dias) {
+                                for (const dName in gvizFull.dias) {
+                                    if (resJson.dias[dName] && gvizFull.dias[dName].slots) {
+                                        resJson.dias[dName].slots = gvizFull.dias[dName].slots;
+                                    }
+                                }
+                            }
+                        } catch(eGv19) {
+                            console.warn('[Schedule] Falha recompor linha 19 via GViz:', eGv19);
+                        }
+                    }
+
+                    const needsDetailedAbsences = Object.values(resJson.dias).some(d => !d.folgas || d.folgas.length === 0);
                         if (needsDetailedAbsences && this.webAppUrl) {
                             try {
                                 const fetchCode = 'var ss = SpreadsheetApp.getActiveSpreadsheet(); var s = ss.getSheetByName("Diaria"); var res = {}; var dias = [{ nome: "Segunda", rangeF: "B6:D12", rangeA: "E6:I12", celData: "D3" }, { nome: "Terça", rangeF: "K6:M12", rangeA: "N6:R12", celData: "M3" }, { nome: "Quarta", rangeF: "T6:V12", rangeA: "W6:AA12", celData: "V3" }, { nome: "Quinta", rangeF: "AC6:AE12", rangeA: "AF6:AJ12", celData: "AE3" }, { nome: "Sexta", rangeF: "AL6:AN12", rangeA: "AO6:AS12", celData: "AN3" }, { nome: "Sábado", rangeF: "AU6:AW12", rangeA: "AX6:BB12", celData: "AW3" }, { nome: "Domingo", rangeF: "BD6:BF12", rangeA: "BG6:BK12", celData: "BF3" }]; for (var i = 0; i < dias.length; i++) { var d = dias[i]; res[d.nome] = { folgas: s.getRange(d.rangeF).getDisplayValues(), ausencias: s.getRange(d.rangeA).getDisplayValues(), dataDia: s.getRange(d.celData).getDisplayValue() }; } var sheets = ss.getSheets(); var finalizedFolgas = []; var meses = { "janeiro": "01", "fevereiro": "02", "março": "03", "marco": "03", "abril": "04", "maio": "05", "junho": "06", "julho": "07", "agosto": "08", "setembro": "09", "outubro": "10", "novembro": "11", "dezembro": "12" }; function normData(val) { if (!val) return ""; var str = String(val).trim().toLowerCase(); var mNum = str.match(/(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?/); if (mNum) return mNum[1].padStart(2, "0") + "/" + mNum[2].padStart(2, "0") + "/" + (mNum[3] ? (mNum[3].length === 2 ? "20" + mNum[3] : mNum[3]) : "2026"); var mExt = str.match(/(\\d{1,2})\\s+de\\s+([a-zçã]+)(?:\\s+de\\s+(\\d{2,4}))?/); if (mExt && meses[mExt[2]]) return mExt[1].padStart(2, "0") + "/" + meses[mExt[2]] + "/" + (mExt[3] || "2026"); return ""; } for (var sh = 0; sh < sheets.length; sh++) { var shName = sheets[sh].getName(); var shUpper = shName.toUpperCase(); // Inclui ORGANIZAÇÃO FOLGAS FERIADO e abas finalizadas if (shUpper.indexOf("FOLGA") !== -1 && shUpper.indexOf("FERIADO") !== -1) { var lR = sheets[sh].getLastRow(); if (lR < 3) continue; var sData = sheets[sh].getRange(1, 1, lR, Math.min(sheets[sh].getLastColumn(), 5)).getDisplayValues(); var cNome = 1, cDia = 2, stR = 2; for (var r = 0; r < Math.min(sData.length, 5); r++) { for (var c = 0; c < sData[r].length; c++) { var cl = sData[r][c].toUpperCase(); if (cl.indexOf("NOME") !== -1) cNome = c; if (cl.indexOf("DIA") !== -1 || cl.indexOf("DATA") !== -1) cDia = c; } if (sData[r][cNome] && sData[r][cNome].toUpperCase().indexOf("NOME") !== -1) { stR = r + 1; break; } } for (var k = stR; k < sData.length; k++) { var n = String(sData[k][cNome] || "").trim(); var dNorm = normData(sData[k][cDia]); if (n && n.toUpperCase() !== "NOME" && dNorm) finalizedFolgas.push({ aba: shName, cracha: String(sData[k][0] || "").trim(), nome: n, dataNorm: dNorm }); } } } ({ dias: res, finalizedFolgas: finalizedFolgas });';
@@ -14262,7 +14405,7 @@
                     }
 
                     // Ignora linha de espaçamento antes do início real dos colaboradores (L18 nos dias de semana)
-                    if (diaName !== 'Domingo' && linha < 20 && !s.nome && !s.horario) {
+                    if (diaName !== 'Domingo' && linha < 19 && !s.nome && !s.horario) {
                         return false;
                     }
 
@@ -14728,6 +14871,7 @@
                 }
 
                 absencesList.innerHTML = contentHtml;
+                this.applyFolgasCollapseState();
             }
 
             getDayColConfig(dia) {
