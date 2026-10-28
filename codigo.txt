@@ -1363,7 +1363,7 @@
                 </div>
 
                 <!-- Seletor e Navegação (Semanal x Mensal) - FIXO / STICKY -->
-                <div class="sticky top-0 z-30 bg-gray-950/95 backdrop-blur p-2.5 sm:p-3 rounded-2xl border border-gray-800/90 shadow-xl space-y-2.5">
+                <div class="relative bg-gray-950/95 backdrop-blur p-2.5 sm:p-3 rounded-2xl border border-gray-800/90 shadow-xl space-y-2.5">
                     <!-- Barra de Alternância: Modo Semanal vs Modo Mensal -->
                     <div class="flex items-center justify-between gap-2 flex-wrap">
                         <div class="inline-flex items-center p-1 rounded-xl bg-gray-900 border border-gray-700/80 shadow-inner">
@@ -1554,10 +1554,16 @@
                                 <button type="button" onclick="scheduleApp.setAbsenceFilter('folga')" id="btn-abs-filter-folga" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-teal-300 border border-teal-900/60 cursor-pointer">
                                     🌴 Folgas (<span id="count-abs-folgas">0</span>)
                                 </button>
-                                <button type="button" onclick="scheduleApp.setAbsenceFilter('ausencia')" id="btn-abs-filter-ausencia" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-indigo-300 border border-indigo-900/60 cursor-pointer">
-                                    🩺 Ausências / Atestados (<span id="count-abs-ausencias">0</span>)
+                                <button type="button" onclick="scheduleApp.setAbsenceFilter('atestado')" id="btn-abs-filter-atestado" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-rose-300 border border-rose-900/60 cursor-pointer">
+                                    🩺 Atestados (<span id="count-abs-atestados">0</span>)
                                 </button>
-                                <button type="button" onclick="scheduleApp.setAbsenceFilter('uncovered')" id="btn-abs-filter-uncovered" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-rose-300 border border-rose-900/60 cursor-pointer">
+                                <button type="button" onclick="scheduleApp.setAbsenceFilter('ferias')" id="btn-abs-filter-ferias" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-cyan-300 border border-cyan-900/60 cursor-pointer">
+                                    🏖️ Férias (<span id="count-abs-ferias">0</span>)
+                                </button>
+                                <button type="button" onclick="scheduleApp.setAbsenceFilter('feriado')" id="btn-abs-filter-feriado" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-amber-300 border border-amber-900/60 cursor-pointer">
+                                    ⭐ Feriados (<span id="count-abs-feriados">0</span>)
+                                </button>
+                                <button type="button" onclick="scheduleApp.setAbsenceFilter('uncovered')" id="btn-abs-filter-uncovered" class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 text-rose-400 border border-rose-900/60 cursor-pointer">
                                     🚨 Descobertos (<span id="count-abs-uncovered">0</span>)
                                 </button>
                             </div>
@@ -13622,7 +13628,7 @@
                         }
                     }
 
-                    const needsDetailedAbsences = Object.values(resJson.dias).some(d => !d.folgas || d.folgas.length === 0);
+                    const needsDetailedAbsences = true;
                         if (needsDetailedAbsences && this.webAppUrl) {
                             try {
                                 const fetchCode = 'var ss = SpreadsheetApp.getActiveSpreadsheet(); var s = ss.getSheetByName("Diaria"); var res = {}; var dias = [{ nome: "Segunda", rangeF: "B6:D12", rangeA: "E6:I12", celData: "D3" }, { nome: "Terça", rangeF: "K6:M12", rangeA: "N6:R12", celData: "M3" }, { nome: "Quarta", rangeF: "T6:V12", rangeA: "W6:AA12", celData: "V3" }, { nome: "Quinta", rangeF: "AC6:AE12", rangeA: "AF6:AJ12", celData: "AE3" }, { nome: "Sexta", rangeF: "AL6:AN12", rangeA: "AO6:AS12", celData: "AN3" }, { nome: "Sábado", rangeF: "AU6:AW12", rangeA: "AX6:BB12", celData: "AW3" }, { nome: "Domingo", rangeF: "BD6:BF12", rangeA: "BG6:BK12", celData: "BF3" }]; for (var i = 0; i < dias.length; i++) { var d = dias[i]; res[d.nome] = { folgas: s.getRange(d.rangeF).getDisplayValues(), ausencias: s.getRange(d.rangeA).getDisplayValues(), dataDia: s.getRange(d.celData).getDisplayValue() }; } var sheets = ss.getSheets(); var finalizedFolgas = []; var meses = { "janeiro": "01", "fevereiro": "02", "março": "03", "marco": "03", "abril": "04", "maio": "05", "junho": "06", "julho": "07", "agosto": "08", "setembro": "09", "outubro": "10", "novembro": "11", "dezembro": "12" }; function normData(val) { if (!val) return ""; var str = String(val).trim().toLowerCase(); var mNum = str.match(/(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?/); if (mNum) return mNum[1].padStart(2, "0") + "/" + mNum[2].padStart(2, "0") + "/" + (mNum[3] ? (mNum[3].length === 2 ? "20" + mNum[3] : mNum[3]) : "2026"); var mExt = str.match(/(\\d{1,2})\\s+de\\s+([a-zçã]+)(?:\\s+de\\s+(\\d{2,4}))?/); if (mExt && meses[mExt[2]]) return mExt[1].padStart(2, "0") + "/" + meses[mExt[2]] + "/" + (mExt[3] || "2026"); return ""; } for (var sh = 0; sh < sheets.length; sh++) { var shName = sheets[sh].getName(); var shUpper = shName.toUpperCase(); // Inclui ORGANIZAÇÃO FOLGAS FERIADO e abas finalizadas if (shUpper.indexOf("FOLGA") !== -1 && shUpper.indexOf("FERIADO") !== -1) { var lR = sheets[sh].getLastRow(); if (lR < 3) continue; var sData = sheets[sh].getRange(1, 1, lR, Math.min(sheets[sh].getLastColumn(), 5)).getDisplayValues(); var cNome = 1, cDia = 2, stR = 2; for (var r = 0; r < Math.min(sData.length, 5); r++) { for (var c = 0; c < sData[r].length; c++) { var cl = sData[r][c].toUpperCase(); if (cl.indexOf("NOME") !== -1) cNome = c; if (cl.indexOf("DIA") !== -1 || cl.indexOf("DATA") !== -1) cDia = c; } if (sData[r][cNome] && sData[r][cNome].toUpperCase().indexOf("NOME") !== -1) { stR = r + 1; break; } } for (var k = stR; k < sData.length; k++) { var n = String(sData[k][cNome] || "").trim(); var dNorm = normData(sData[k][cDia]); if (n && n.toUpperCase() !== "NOME" && dNorm) finalizedFolgas.push({ aba: shName, cracha: String(sData[k][0] || "").trim(), nome: n, dataNorm: dNorm }); } } } ({ dias: res, finalizedFolgas: finalizedFolgas });';
@@ -13686,14 +13692,17 @@
                                                     const isFer = !!ferConfirmado || (situacao + ' ' + depto + ' ' + nome + ' ' + sol).toUpperCase().includes('FERIADO');
                                                     if (ferConfirmado) matchedFeriadosNomes.add(ferConfirmado.nome.toUpperCase());
 
+                                                    const sitUp = situacao.toUpperCase();
+                                                    const isFeriadoFinal = isFer || sitUp.includes('FERIADO');
+                                                    const cleanSit = situacao || (isFeriadoFinal ? 'FERIADO' : 'AUSÊNCIA');
                                                     resJson.dias[diaName].ausenciasCompletas.push({
                                                         linha: 6 + idx,
                                                         nome: nome,
                                                         departamento: depto || 'Geral',
-                                                        situacao: situacao || (isFer ? 'FERIADO' : ''),
+                                                        situacao: cleanSit,
                                                         solucao: sol,
                                                         tipo: 'ausencia',
-                                                        isFeriado: isFer,
+                                                        isFeriado: isFeriadoFinal,
                                                         feriadoOrigem: ferConfirmado ? ferConfirmado.aba : ''
                                                     });
                                                 }
@@ -14547,18 +14556,22 @@
                 // Estilo ativo nos botões de filtro
                 const btnAll = document.getElementById('btn-abs-filter-all');
                 const btnFolga = document.getElementById('btn-abs-filter-folga');
-                const btnAus = document.getElementById('btn-abs-filter-ausencia');
+                const btnAtestado = document.getElementById('btn-abs-filter-atestado');
+                const btnFerias = document.getElementById('btn-abs-filter-ferias');
+                const btnFeriado = document.getElementById('btn-abs-filter-feriado');
                 const btnUnc = document.getElementById('btn-abs-filter-uncovered');
 
                 [
-                    { btn: btnAll, id: 'all', textCol: 'text-gray-300' },
-                    { btn: btnFolga, id: 'folga', textCol: 'text-teal-300' },
-                    { btn: btnAus, id: 'ausencia', textCol: 'text-indigo-300' },
-                    { btn: btnUnc, id: 'uncovered', textCol: 'text-rose-300' }
+                    { btn: btnAll, id: 'all', textCol: 'text-gray-300', activeBg: 'bg-teal-600' },
+                    { btn: btnFolga, id: 'folga', textCol: 'text-teal-300', activeBg: 'bg-teal-600' },
+                    { btn: btnAtestado, id: 'atestado', textCol: 'text-rose-300', activeBg: 'bg-rose-600' },
+                    { btn: btnFerias, id: 'ferias', textCol: 'text-cyan-300', activeBg: 'bg-cyan-600' },
+                    { btn: btnFeriado, id: 'feriado', textCol: 'text-amber-300', activeBg: 'bg-amber-600' },
+                    { btn: btnUnc, id: 'uncovered', textCol: 'text-rose-400', activeBg: 'bg-rose-700' }
                 ].forEach(item => {
                     if (!item.btn) return;
                     if (this.absenceFilter === item.id) {
-                        item.btn.className = 'px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-teal-600 text-white shadow-sm cursor-pointer';
+                        item.btn.className = `px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition ${item.activeBg} text-white shadow-sm cursor-pointer`;
                     } else {
                         item.btn.className = `px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl text-xs font-bold transition bg-gray-900 hover:bg-gray-800 ${item.textCol} border border-gray-800 cursor-pointer`;
                     }
@@ -14596,35 +14609,69 @@
                         statusValue = item.solucao;
                     }
 
-                    const cardBorder = isFer 
-                        ? 'border-amber-500/70 shadow-amber-500/10 hover:border-amber-400' 
-                        : (unc ? 'border-rose-900/60 hover:border-rose-700/80' : 'border-gray-800 hover:border-gray-700');
+                    const sType = getSitType(item);
+                    let tagBadgeHtml = "";
+                    let avatarStyle = "";
+                    let cardBorder = "";
+                    let subtitleText = "";
 
-                    const safeNome = (item.nome || '').replace(/'/g, "\\'");
-                    const safeDepto = (item.departamento || '').replace(/'/g, "\\'");
-                    const safeSolucao = (item.solucao || '').replace(/'/g, "\\'");
+                    if (isFolga) {
+                        tagBadgeHtml = '<span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-teal-500/20 text-teal-300 border border-teal-500/40 flex items-center gap-1"><i class="fa-solid fa-calendar-check text-[9px] text-teal-400"></i> FOLGA SEMANAL</span>';
+                        avatarStyle = "bg-teal-700/60 border border-teal-500/40 text-teal-200";
+                        cardBorder = unc ? "border-rose-900/60 hover:border-rose-700/80" : "border-gray-800 hover:border-gray-700";
+                        subtitleText = "Folga da escala diária";
+                    } else if (sType === "feriado") {
+                        tagBadgeHtml = '<span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm flex items-center gap-1"><i class="fa-solid fa-umbrella-beach text-[9px] text-amber-400"></i> FERIADO</span>';
+                        avatarStyle = "bg-amber-700/60 border border-amber-500/40 text-amber-200";
+                        cardBorder = "border-amber-500/70 shadow-amber-500/10 hover:border-amber-400";
+                        subtitleText = "Folga de Feriado";
+                    } else if (sType === "atestado") {
+                        tagBadgeHtml = '<span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm flex items-center gap-1"><i class="fa-solid fa-notes-medical text-[9px] text-rose-400"></i> ATESTADO</span>';
+                        avatarStyle = "bg-rose-700/60 border border-rose-500/40 text-rose-200";
+                        cardBorder = "border-rose-800/80 shadow-rose-950/20 hover:border-rose-600";
+                        subtitleText = "Atestado Médico";
+                    } else if (sType === "ferias") {
+                        tagBadgeHtml = '<span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm flex items-center gap-1"><i class="fa-solid fa-plane-departure text-[9px] text-cyan-400"></i> FÉRIAS</span>';
+                        avatarStyle = "bg-cyan-700/60 border border-cyan-500/40 text-cyan-200";
+                        cardBorder = "border-cyan-800/80 shadow-cyan-950/20 hover:border-cyan-600";
+                        subtitleText = "Em Férias";
+                    } else {
+                        const rawSit = String(item.situacao || "AUSÊNCIA").trim();
+                        tagBadgeHtml = `<span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 flex items-center gap-1"><i class="fa-solid fa-user-xmark text-[9px]"></i> ${rawSit}</span>`;
+                        avatarStyle = "bg-indigo-700/60 border border-indigo-500/40 text-indigo-200";
+                        cardBorder = unc ? "border-rose-900/60 hover:border-rose-700/80" : "border-gray-800 hover:border-gray-700";
+                        subtitleText = rawSit;
+                    }
+
+                    if (unc && sType !== "feriado") {
+                        cardBorder = "border-rose-900/80 hover:border-rose-600 shadow-rose-950/20";
+                    }
+
+                    const safeNome = (item.nome || "").replace(/'/g, "\\'");
+                    const safeDepto = (item.departamento || "").replace(/'/g, "\\'");
+                    const safeSolucao = (item.solucao || "").replace(/'/g, "\\'");
 
                     return `
                         <div class="p-3.5 rounded-2xl bg-gray-950/80 border ${cardBorder} transition shadow-sm flex flex-col justify-between gap-2.5 group relative overflow-hidden">
-                            <!-- Top: Departamento + Feriado + Linha -->
+                            <!-- Top: Departamento + Badge de Situação + Linha -->
                             <div class="flex items-center justify-between gap-1.5">
                                 <div class="flex items-center gap-1.5 flex-wrap">
                                     <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-gray-900 text-gray-200 border border-gray-700">
-                                        <i class="fa-solid fa-boxes-stacked mr-1 text-gray-400 text-[9px]"></i>${item.departamento || 'Geral'}
+                                        <i class="fa-solid fa-boxes-stacked mr-1 text-gray-400 text-[9px]"></i>${item.departamento || "Geral"}
                                     </span>
-                                    ${isFer ? '<span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-sm flex items-center gap-1"><i class="fa-solid fa-star text-[9px]"></i> FOLGA DE FERIADO</span>' : ''}
+                                    ${tagBadgeHtml}
                                 </div>
                                 <span class="text-[10px] font-mono text-gray-500 font-bold">L${item.linha}</span>
                             </div>
 
                             <!-- Nome Colaborador -->
                             <div class="flex items-center gap-2.5">
-                                <div class="w-8 h-8 rounded-xl ${isFolga ? 'bg-teal-700/60 border border-teal-500/40 text-teal-200' : 'bg-indigo-700/60 border border-indigo-500/40 text-indigo-200'} flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
+                                <div class="w-8 h-8 rounded-xl ${avatarStyle} flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
                                     ${initials}
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <h6 class="text-xs sm:text-sm font-black text-white truncate group-hover:text-amber-200 transition">${item.nome}</h6>
-                                    <span class="text-[10px] text-gray-400 font-medium block truncate">${isFer ? 'Folga compensatória de feriado' : (isFolga ? 'Folga da escala' : 'Atestado / Férias')}</span>
+                                    <span class="text-[10px] text-gray-400 font-medium block truncate">${subtitleText}</span>
                                 </div>
                             </div>
 
@@ -14655,6 +14702,15 @@
                     ausenciasFiltradas = effectiveAus.filter(isUncovered);
                 } else if (this.absenceFilter === 'folga') {
                     ausenciasFiltradas = [];
+                } else if (this.absenceFilter === 'atestado') {
+                    folgasFiltradas = [];
+                    ausenciasFiltradas = effectiveAus.filter(a => getSitType(a) === 'atestado');
+                } else if (this.absenceFilter === 'ferias') {
+                    folgasFiltradas = [];
+                    ausenciasFiltradas = effectiveAus.filter(a => getSitType(a) === 'ferias');
+                } else if (this.absenceFilter === 'feriado') {
+                    folgasFiltradas = [];
+                    ausenciasFiltradas = effectiveAus.filter(a => getSitType(a) === 'feriado');
                 } else if (this.absenceFilter === 'ausencia') {
                     folgasFiltradas = [];
                 }
