@@ -1432,7 +1432,7 @@
                             <i class="fa-solid fa-triangle-exclamation"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-[10px] sm:text-[11px] text-gray-400 uppercase font-black tracking-wider">Vagas Abertas</p>
+                            <p class="text-[10px] sm:text-[11px] text-gray-400 uppercase font-black tracking-wider">Postos para Alocar</p>
                             <p id="stat-schedule-vagos" class="text-base sm:text-xl font-black text-rose-400">0</p>
                         </div>
                     </div>
@@ -1452,7 +1452,7 @@
                     <div class="flex items-center gap-2 flex-wrap">
                         <button type="button" onclick="scheduleApp.setFilter('all')" id="sched-filter-all" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-teal-600 text-white shadow-sm cursor-pointer">Todos</button>
                         <button type="button" onclick="scheduleApp.setFilter('vacant')" id="sched-filter-vacant" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-gray-900 text-gray-300 hover:text-white border border-gray-700 cursor-pointer">
-                            <i class="fa-solid fa-circle-exclamation text-rose-400 text-xs"></i> Vagas Abertas
+                            <i class="fa-solid fa-circle-exclamation text-rose-400 text-xs"></i> Postos para Alocar
                         </button>
                         <button type="button" onclick="scheduleApp.setFilter('assigned')" id="sched-filter-assigned" class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-gray-900 text-gray-300 hover:text-white border border-gray-700 cursor-pointer">
                             <i class="fa-solid fa-circle-check text-emerald-400 text-xs"></i> Alocados
@@ -16314,7 +16314,7 @@
                                 <span>Diagnóstico de Vagas (${dia})</span>
                             </span>
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${vagas.length > 0 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-teal-500/20 text-teal-300 border border-teal-500/40'}">
-                                ${vagas.length} ${vagas.length === 1 ? 'VAGA ABERTA' : 'VAGAS ABERTAS'}
+                                ${vagas.length} ${vagas.length === 1 ? 'POSTO PARA ALOCAR' : 'POSTOS PARA ALOCAR'}
                             </span>
                         </div>
                         <p class="text-xs text-gray-300 leading-relaxed">
