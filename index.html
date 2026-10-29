@@ -742,7 +742,12 @@
 
             <!-- Alternador Principal de Módulos (Sidebar Vertical Elegante) -->
             <div class="space-y-1.5 mb-4">
-                <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-2 mb-1">Módulos</p>
+                <div class="flex items-center justify-between px-2 mb-1">
+                    <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Módulos</p>
+                    <button type="button" onclick="app.openModal()" class="text-[10px] text-indigo-400 hover:text-white font-bold flex items-center gap-1 hover:underline cursor-pointer" title="Criar Nova Tarefa">
+                        <i class="fa-solid fa-plus text-[9px]"></i> Nova Tarefa
+                    </button>
+                </div>
                 <button type="button" id="main-switch-tasks" onclick="window.switchMainView('tasks')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition bg-indigo-600 text-white shadow-md shadow-sm" title="Quadro de Tarefas da Equipe">
                     <span class="flex items-center gap-2.5 min-w-0">
                         <i class="fa-solid fa-list-check w-4 text-xs text-indigo-200"></i>
@@ -962,6 +967,11 @@
                         <i class="fa-solid fa-circle-check text-xs text-emerald-400"></i>
                         <span>Concluídas</span>
                         <span id="count-completed-top" class="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-bold">0</span>
+                    </button>
+                    <!-- Botão de Criação em Destaque na Barra de Tarefas -->
+                    <button type="button" onclick="app.openModal()" class="ml-auto shrink-0 whitespace-nowrap py-1.5 px-3.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 active:scale-95 cursor-pointer" title="Criar Nova Tarefa para a Equipe">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>+ Nova Tarefa</span>
                     </button>
                 </div>
                 <div id="tasks-container" class="space-y-2.5">
@@ -5402,21 +5412,16 @@
 
             // Controle de Botões de Criação no Topbar (Aparecem no Desktop, Ocultos no Mobile para usar o FAB)
             if (btnNewTask) {
-                btnNewTask.className = (view === 'tasks')
-                    ? "hidden sm:flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg shadow-sm whitespace-nowrap"
-                    : "hidden";
+                btnNewTask.style.display = (view === 'tasks') ? 'flex' : 'none';
+                btnNewTask.className = "items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg shadow-sm whitespace-nowrap cursor-pointer";
             }
             if (btnNewOcc) {
-                btnNewOcc.style.display = '';
-                btnNewOcc.className = (view === 'occurrences')
-                    ? "hidden sm:flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-black font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-amber-600/30 whitespace-nowrap"
-                    : "hidden";
+                btnNewOcc.style.display = (view === 'occurrences') ? 'flex' : 'none';
+                btnNewOcc.className = "items-center gap-1.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-black font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-amber-600/30 whitespace-nowrap cursor-pointer";
             }
             if (btnNewFb) {
-                btnNewFb.style.display = '';
-                btnNewFb.className = (view === 'feedback')
-                    ? "hidden sm:flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-purple-600/30 whitespace-nowrap"
-                    : "hidden";
+                btnNewFb.style.display = (view === 'feedback') ? 'flex' : 'none';
+                btnNewFb.className = "items-center gap-1.5 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-purple-600/30 whitespace-nowrap cursor-pointer";
             }
 
             // Estilos padrão inativos (Sidebar Vertical e Topbar)
