@@ -399,6 +399,29 @@
                 box-shadow: none !important;
                 border: none !important;
             }
+
+            /* ÁREA DE IMPRESSÃO EXCLUSIVA DE CARTAZES DE SUPERMERCADO */
+            #poster-printable-area, #poster-printable-area * {
+                visibility: visible !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            #poster-printable-area {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                box-shadow: none !important;
+                border: none !important;
+                z-index: 9999999 !important;
+            }
+            .poster-page-break {
+                page-break-after: always !important;
+                break-after: page !important;
+            }
             #monthly-report-printable .report-divider-heavy {
                 background: #111827 !important;
                 height: 2px !important;
@@ -769,13 +792,19 @@
                     </span>
                     <span id="feedback-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-purple-500 text-white font-extrabold animate-pulse shrink-0">0</span>
                 </button>
-                
                 <button type="button" id="main-switch-schedule" onclick="window.switchMainView('schedule')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition" title="Escala Diária de Colaboradores & Turnos">
                     <span class="flex items-center gap-2.5 min-w-0">
                         <i class="fa-solid fa-calendar-days w-4 text-xs text-teal-400"></i>
                         <span class="truncate">Escala Diária & Turnos</span>
                     </span>
                     <span id="schedule-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-teal-500 text-black font-extrabold shrink-0">0</span>
+                </button>
+                <button type="button" id="main-switch-tools" onclick="window.switchMainView('tools')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition" title="Gerador de Cartazes de Ofertas e Produtos Próximos do Vencimento">
+                    <span class="flex items-center gap-2.5 min-w-0">
+                        <i class="fa-solid fa-tags w-4 text-xs text-amber-400"></i>
+                        <span class="truncate">Cartazes & Ofertas</span>
+                    </span>
+                    <span id="sidebar-tools-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-black font-extrabold shrink-0">0</span>
                 </button>
             </div>
 
@@ -873,7 +902,11 @@
                         <span>Escala</span>
                         <span id="topbar-schedule-badge" class="hidden text-[10px] px-1 rounded-full bg-teal-500 text-black font-extrabold ml-0.5">0</span>
                     </button>
-                    
+                    <button type="button" id="topbar-switch-tools" onclick="window.switchMainView('tools')" class="px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative" title="Gerador de Cartazes de Ofertas e Vencimento">
+                        <i class="fa-solid fa-tags text-[11px] text-amber-400"></i>
+                        <span>Cartazes</span>
+                        <span id="topbar-tools-badge" class="hidden text-[10px] px-1.5 py-0.2 rounded-full bg-amber-500 text-black font-extrabold ml-0.5">0</span>
+                    </button>
                     <button type="button" id="topbar-switch-reports" onclick="admin.openPanel(); admin.switchTab('reports');" class="px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative" title="Relatórios com Gráficos de Pizza">
                         <i class="fa-solid fa-chart-pie text-[11px] text-emerald-400"></i>
                         <span>Relatórios</span>
@@ -1658,10 +1691,275 @@
                     <!-- Injetado dinamicamente via scheduleApp.renderSlots() -->
                 </div>
             </div>
+
+            <!-- ======================================================== -->
+            <!-- MÓDULO 5: FERRAMENTAS & GERADOR DE CARTAZES DE LOJA      -->
+            <!-- ======================================================== -->
+            <div id="view-tools-container" class="hidden space-y-4 pb-28 md:pb-6">
+                <!-- Cabeçalho do Módulo de Ferramentas / Cartazes -->
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-tags text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                                Gerador de Cartazes de Loja
+                                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">Supermercado</span>
+                            </h3>
+                            <p class="text-xs text-gray-400">Cartazes de produtos próximos ao vencimento, ofertas De/Por e fila de impressão na nuvem.</p>
+                        </div>
+                    </div>
+
+                    <!-- Botões de Navegação das Abas -->
+                    <div class="inline-flex items-center p-1 rounded-xl bg-gray-950 border border-gray-800 shadow-inner w-full sm:w-auto">
+                        <button type="button" id="btn-tab-poster-creator" onclick="posterApp.switchTab('creator')" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-amber-600 text-black shadow cursor-pointer">
+                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                            <span>Novo Cartaz</span>
+                        </button>
+                        <button type="button" id="btn-tab-poster-queue" onclick="posterApp.switchTab('queue')" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 text-gray-400 hover:text-white cursor-pointer relative">
+                            <i class="fa-solid fa-print text-xs"></i>
+                            <span>Fila de Impressão</span>
+                            <span id="badge-poster-queue-count" class="hidden ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500 text-black font-black">0</span>
+                        </button>
+                        <button type="button" id="btn-tab-poster-history" onclick="posterApp.switchTab('history')" class="flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 text-gray-400 hover:text-white cursor-pointer">
+                            <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                            <span>Histórico</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ======================================================== -->
+                <!-- ABA 1: NOVO CARTAZ (FORMULÁRIO + PREVIEW AO VIVO)       -->
+                <!-- ======================================================== -->
+                <div id="poster-tab-creator" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <!-- Formulário de Criação -->
+                    <div class="lg:col-span-5 bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-3.5 shadow-sm">
+                        <div class="border-b border-gray-800 pb-2 flex items-center justify-between">
+                            <h4 class="text-xs font-bold text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-sliders text-amber-400"></i> Parâmetros do Cartaz
+                            </h4>
+                            <button type="button" onclick="posterApp.resetForm()" class="text-[11px] text-gray-400 hover:text-rose-400 font-semibold transition flex items-center gap-1">
+                                <i class="fa-solid fa-rotate-left text-[10px]"></i> Limpar
+                            </button>
+                        </div>
+
+                        <!-- Tipo de Cartaz -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-300 mb-1">Modelo da Oferta</label>
+                            <div class="grid grid-cols-2 gap-1.5">
+                                <button type="button" onclick="posterApp.setType('vencimento')" id="btn-type-vencimento" class="p-2 rounded-lg text-xs font-extrabold border text-left flex items-center gap-2 bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm cursor-pointer">
+                                    <i class="fa-solid fa-triangle-exclamation text-amber-400 text-sm shrink-0"></i>
+                                    <div>
+                                        <div class="leading-tight">Vencimento</div>
+                                        <div class="text-[9px] font-medium opacity-80">Próximo da Data</div>
+                                    </div>
+                                </button>
+                                <button type="button" onclick="posterApp.setType('oferta')" id="btn-type-oferta" class="p-2 rounded-lg text-xs font-extrabold border text-left flex items-center gap-2 bg-gray-950 text-gray-400 border-gray-800 hover:border-gray-700 cursor-pointer">
+                                    <i class="fa-solid fa-fire text-rose-500 text-sm shrink-0"></i>
+                                    <div>
+                                        <div class="leading-tight">Super Oferta</div>
+                                        <div class="text-[9px] font-medium opacity-80">De: Por:</div>
+                                    </div>
+                                </button>
+                                <button type="button" onclick="posterApp.setType('normal')" id="btn-type-normal" class="p-2 rounded-lg text-xs font-extrabold border text-left flex items-center gap-2 bg-gray-950 text-gray-400 border-gray-800 hover:border-gray-700 cursor-pointer">
+                                    <i class="fa-solid fa-star text-blue-400 text-sm shrink-0"></i>
+                                    <div>
+                                        <div class="leading-tight">Destaque</div>
+                                        <div class="text-[9px] font-medium opacity-80">Preço Especial</div>
+                                    </div>
+                                </button>
+                                <button type="button" onclick="posterApp.setType('atacado')" id="btn-type-atacado" class="p-2 rounded-lg text-xs font-extrabold border text-left flex items-center gap-2 bg-gray-950 text-gray-400 border-gray-800 hover:border-gray-700 cursor-pointer">
+                                    <i class="fa-solid fa-boxes-packing text-emerald-400 text-sm shrink-0"></i>
+                                    <div>
+                                        <div class="leading-tight">Leve + Pague -</div>
+                                        <div class="text-[9px] font-medium opacity-80">Atacado / Qtd</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Descrição do Produto -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-300 mb-1">Nome / Descrição do Produto *</label>
+                            <input type="text" id="poster-input-title" oninput="posterApp.updateLivePreview()" placeholder="Ex: LEITE CONDENSADO MOÇA 395G" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs font-bold text-white uppercase focus:outline-none focus:border-amber-500 transition placeholder:text-gray-600">
+                        </div>
+
+                        <!-- Setor / Departamento -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-300 mb-1">Setor / Departamento</label>
+                                <select id="poster-input-dept" onchange="posterApp.updateLivePreview()" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-2.5 py-2 text-xs text-gray-200 font-semibold focus:outline-none focus:border-amber-500 cursor-pointer">
+                                    <option value="Mercearia">Mercearia</option>
+                                    <option value="Laticínios">Laticínios</option>
+                                    <option value="Carnes & Açougue">Carnes & Açougue</option>
+                                    <option value="Hortifruti">Hortifruti</option>
+                                    <option value="Fiambreria & Queijos">Fiambreria & Queijos</option>
+                                    <option value="Bebidas">Bebidas</option>
+                                    <option value="Padaria & Confeitaria">Padaria</option>
+                                    <option value="Higiene & Perfumaria">Higiene & Perfumaria</option>
+                                    <option value="Limpeza">Limpeza</option>
+                                    <option value="Bazar">Bazar</option>
+                                    <option value="Pet Shop">Pet Shop</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-300 mb-1">Unidade de Medida</label>
+                                <select id="poster-input-unit" onchange="posterApp.updateLivePreview()" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-2.5 py-2 text-xs text-gray-200 font-bold focus:outline-none focus:border-amber-500 cursor-pointer">
+                                    <option value="CADA">CADA / UN</option>
+                                    <option value="KG">KG (Quilo)</option>
+                                    <option value="PCT">PCT (Pacote)</option>
+                                    <option value="100G">100G</option>
+                                    <option value="CX">CX (Caixa)</option>
+                                    <option value="L">Litro</option>
+                                    <option value="BANDEJA">Bandeja</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Preço De e Preço Por -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-300 mb-1">Preço DE (R$)</label>
+                                <input type="text" id="poster-input-price-from" oninput="posterApp.maskMoney(this); posterApp.updateLivePreview()" placeholder="0,00" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs font-bold text-gray-300 focus:outline-none focus:border-amber-500 transition">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-amber-400 mb-1">Preço POR (R$) *</label>
+                                <input type="text" id="poster-input-price-to" oninput="posterApp.maskMoney(this); posterApp.updateLivePreview()" placeholder="0,00" class="w-full bg-gray-950 border border-amber-500/50 rounded-xl px-3 py-2 text-xs font-black text-amber-300 focus:outline-none focus:border-amber-400 transition">
+                            </div>
+                        </div>
+
+                        <!-- Data de Vencimento (Visível para Vencimento) -->
+                        <div id="poster-box-vencimento">
+                            <label class="block text-[11px] font-bold text-rose-400 mb-1">Data Limite de Vencimento *</label>
+                            <input type="date" id="poster-input-expiry" onchange="posterApp.updateLivePreview()" class="w-full bg-gray-950 border border-rose-800/80 rounded-xl px-3 py-2 text-xs font-bold text-rose-200 focus:outline-none focus:border-rose-500 transition">
+                        </div>
+
+                        <!-- Condição de Atacado (Visível para Atacado) -->
+                        <div id="poster-box-atacado" class="hidden">
+                            <label class="block text-[11px] font-bold text-emerald-400 mb-1">Condição de Atacado</label>
+                            <input type="text" id="poster-input-atacado-cond" oninput="posterApp.updateLivePreview()" placeholder="Ex: A partir de 3 unidades" class="w-full bg-gray-950 border border-emerald-800/80 rounded-xl px-3 py-2 text-xs font-bold text-emerald-200 focus:outline-none focus:border-emerald-500 transition">
+                        </div>
+
+                        <!-- Observação / Rodapé do Cartaz -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-300 mb-1">Texto de Rodapé / Observação</label>
+                            <input type="text" id="poster-input-footer" oninput="posterApp.updateLivePreview()" placeholder="Ex: Preço válido enquanto durar o estoque" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none focus:border-amber-500 transition placeholder:text-gray-600">
+                        </div>
+
+                        <!-- Formato de Impressão -->
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-300 mb-1">Tamanho da Folha para Impressão</label>
+                            <div class="grid grid-cols-3 gap-1.5 text-center">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="poster-size" value="a4" checked onchange="posterApp.setSize('a4')" class="hidden peer">
+                                    <div class="p-2 rounded-lg border border-gray-800 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-300 text-gray-400 text-[11px] font-bold transition">
+                                        A4 Retrato<br><span class="text-[9px] font-normal opacity-70">1 por folha</span>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="poster-size" value="a4_landscape" onchange="posterApp.setSize('a4_landscape')" class="hidden peer">
+                                    <div class="p-2 rounded-lg border border-gray-800 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-300 text-gray-400 text-[11px] font-bold transition">
+                                        A4 Paisagem<br><span class="text-[9px] font-normal opacity-70">Horizontal</span>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="poster-size" value="a5" onchange="posterApp.setSize('a5')" class="hidden peer">
+                                    <div class="p-2 rounded-lg border border-gray-800 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-300 text-gray-400 text-[11px] font-bold transition">
+                                        A5 Meia Folha<br><span class="text-[9px] font-normal opacity-70">2 por folha</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Botões de Ação -->
+                        <div class="pt-2 flex flex-col sm:flex-row gap-2">
+                            <button type="button" onclick="posterApp.printCurrent()" class="flex-1 bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer">
+                                <i class="fa-solid fa-print text-sm"></i>
+                                <span>Imprimir Colorido Agora</span>
+                            </button>
+                            <button type="button" onclick="posterApp.saveToQueue()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 cursor-pointer">
+                                <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
+                                <span>Salvar na Fila (PC Impressora)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Pré-visualização ao Vivo do Cartaz (Simulação Real da Folha Impressa) -->
+                    <div class="lg:col-span-7 flex flex-col items-center">
+                        <div class="w-full mb-2 flex items-center justify-between text-xs text-gray-400 px-1">
+                            <span class="flex items-center gap-1.5 font-bold text-gray-300">
+                                <i class="fa-solid fa-eye text-amber-400"></i> Pré-Visualização em Tempo Real
+                            </span>
+                            <span class="text-[10px] text-gray-500 font-mono">Padrão Supermercados Rondon</span>
+                        </div>
+
+                        <!-- Moldura de Preview Escalada -->
+                        <div id="poster-preview-wrapper" class="w-full flex items-center justify-center p-3 bg-gray-950/80 rounded-xl border border-gray-800 shadow-inner overflow-hidden">
+                            <div id="poster-preview-card" class="w-full max-w-md aspect-[1/1.414] bg-[#FFE500] text-black border-4 border-black rounded-lg shadow-2xl flex flex-col justify-between overflow-hidden select-none transition-all">
+                                <!-- Injetado dinamicamente via posterApp.updateLivePreview() -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ======================================================== -->
+                <!-- ABA 2: FILA DE IMPRESSÃO NA NUVEM (PC DA IMPRESSORA)    -->
+                <!-- ======================================================== -->
+                <div id="poster-tab-queue" class="hidden space-y-3">
+                    <div class="bg-gray-900 border border-gray-800 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+                            <div>
+                                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Cartazes Aguardando Impressão</h4>
+                                <p class="text-[11px] text-gray-400">Solicitações enviadas pela equipe da loja pelo celular ou computador.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <button type="button" onclick="posterApp.syncWithCloud(true)" class="p-2 px-3 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-gray-700 active:scale-95 cursor-pointer" title="Atualizar fila da nuvem">
+                                <i class="fa-solid fa-rotate text-xs text-amber-400"></i>
+                                <span>Atualizar</span>
+                            </button>
+                            <button type="button" onclick="posterApp.printAllPending()" class="flex-1 sm:flex-none p-2 px-4 bg-amber-500 hover:bg-amber-400 text-black font-black rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 active:scale-95 cursor-pointer">
+                                <i class="fa-solid fa-print text-xs"></i>
+                                <span>Imprimir Todos os Pendentes</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Cartazes da Fila -->
+                    <div id="poster-queue-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <!-- Injetado dinamicamente via posterApp.renderQueue() -->
+                    </div>
+                </div>
+
+                <!-- ======================================================== -->
+                <!-- ABA 3: HISTÓRICO DE CARTAZES IMPRESSOS                   -->
+                <!-- ======================================================== -->
+                <div id="poster-tab-history" class="hidden space-y-3">
+                    <div class="bg-gray-900 border border-gray-800 rounded-xl p-3.5 flex items-center justify-between shadow-sm">
+                        <div>
+                            <h4 class="text-xs font-bold text-white uppercase tracking-wider">Histórico de Cartazes Impressos</h4>
+                            <p class="text-[11px] text-gray-400">Reimprima cartazes de ofertas anteriores com apenas 1 clique.</p>
+                        </div>
+                        <button type="button" onclick="posterApp.clearHistory()" class="text-xs text-rose-400 hover:text-rose-300 font-bold transition flex items-center gap-1">
+                            <i class="fa-solid fa-trash-can text-xs"></i> Limpar Histórico
+                        </button>
+                    </div>
+
+                    <div id="poster-history-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <!-- Injetado dinamicamente via posterApp.renderHistory() -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTAINER OCULTO DE IMPRESSÃO REAL (@media print) -->
+            <div id="poster-printable-area" style="display: none;"></div>
+
+
         </div>
 
-        
-            <!-- Bottom Navigation Bar Mobile -->
+        <!-- Bottom Navigation Bar Mobile -->
         <nav id="app-bottom-nav-bar" class="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur border-t border-gray-800 px-3 py-2 flex items-center justify-around z-40 shadow-2xl pb-safe-bottom">
             <button onclick="window.switchMainView('tasks')" id="mob-nav-tasks" class="flex flex-col items-center gap-1 text-indigo-400 py-1 px-2.5 transition active:scale-90">
                 <i class="fa-solid fa-list-check text-base"></i>
@@ -1682,7 +1980,6 @@
                 <span class="text-[10px] font-semibold">Feedback</span>
                 <span id="mob-feedback-badge" class="hidden absolute top-0 right-2 w-2 h-2 rounded-full bg-purple-500 animate-ping"></span>
             </button>
-            
             <button onclick="app.setFilter('mine')" id="mob-nav-mine" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2.5 transition active:scale-90">
                 <i class="fa-solid fa-user-check text-base"></i>
                 <span class="text-[10px] font-semibold">Minhas</span>
@@ -5384,6 +5681,7 @@
             const occSec = document.getElementById('view-occurrences-container');
             const fbSec = document.getElementById('view-feedback-container');
             const schedSec = document.getElementById('view-schedule-container');
+            const toolsSec = document.getElementById('view-tools-container');
 
             const viewTitle = document.getElementById('current-view-title');
             const btnNewTask = document.getElementById('topbar-new-task-btn');
@@ -5395,24 +5693,28 @@
             const switchOcc = document.getElementById('main-switch-occurrences');
             const switchFb = document.getElementById('main-switch-feedback');
             const switchSched = document.getElementById('main-switch-schedule');
+            const switchTools = document.getElementById('main-switch-tools');
 
             // Botões topbar
             const topbarTasks = document.getElementById('topbar-switch-tasks');
             const topbarOcc = document.getElementById('topbar-switch-occurrences');
             const topbarFb = document.getElementById('topbar-switch-feedback');
             const topbarSched = document.getElementById('topbar-switch-schedule');
+            const topbarTools = document.getElementById('topbar-switch-tools');
 
             // Botões mobile
             const mobTasks = document.getElementById('mob-nav-tasks');
             const mobOcc = document.getElementById('mob-nav-occurrences');
             const mobFb = document.getElementById('mob-nav-feedback');
             const mobSched = document.getElementById('mob-nav-schedule');
+            const mobTools = document.getElementById('mob-nav-tools');
 
             // Oculta todas as seções primeiro
             if (tasksSec) tasksSec.classList.add('hidden');
             if (occSec) occSec.classList.add('hidden');
             if (fbSec) fbSec.classList.add('hidden');
             if (schedSec) schedSec.classList.add('hidden');
+            if (toolsSec) toolsSec.classList.add('hidden');
 
             // Controle de Botões de Criação no Topbar (Aparecem no Desktop, Ocultos no Mobile para usar o FAB)
             if (btnNewTask) {
@@ -5432,14 +5734,20 @@
             if (switchTasks) switchTasks.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition";
             if (switchOcc) switchOcc.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition";
             if (switchFb) switchFb.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition";
+            if (switchSched) switchSched.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition";
+            if (switchTools) switchTools.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition";
 
             if (topbarTasks) topbarTasks.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1";
             if (topbarOcc) topbarOcc.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative";
             if (topbarFb) topbarFb.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative";
+            if (topbarSched) topbarSched.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative";
+            if (topbarTools) topbarTools.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative";
 
             if (mobTasks) mobTasks.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2 transition active:scale-90";
             if (mobOcc) mobOcc.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2.5 transition active:scale-90 relative";
             if (mobFb) mobFb.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2 transition active:scale-90 relative";
+            if (mobSched) mobSched.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1.5 transition active:scale-90 relative";
+            if (mobTools) mobTools.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1.5 transition active:scale-90 relative";
 
             const mobFab = document.getElementById('mob-fab-action-btn');
             if (view === 'tasks') {
@@ -17068,6 +17376,891 @@
                 window.scheduleApp.closeDeptDropdown();
             }
         });
+
+        // ==========================================================================
+        // MÓDULO: GERADOR DE CARTAZES DE LOJA & FILA DE IMPRESSÃO (SUPERMERCADOS)
+        // ==========================================================================
+        class PosterApp {
+            constructor() {
+                this.posters = [];
+                this.currentTab = 'creator';
+                this.currentType = 'vencimento';
+                this.currentSize = 'a4';
+                this.editingId = null;
+                this.isSyncing = false;
+            }
+
+            init() {
+                this.loadFromStorage();
+                this.updateLivePreview();
+                this.renderQueue();
+                this.renderHistory();
+                this.updateBadges();
+                this.syncWithCloud(false);
+            }
+
+            loadFromStorage() {
+                try {
+                    const raw = localStorage.getItem('taskflow_posters_db');
+                    if (raw) {
+                        this.posters = JSON.parse(raw);
+                    } else {
+                        // Cartazes iniciais de demonstração
+                        this.posters = [
+                            {
+                                id: 'post_1',
+                                type: 'vencimento',
+                                title: 'LEITE CONDENSADO MOÇA LATA 395G',
+                                dept: 'Mercearia',
+                                unit: 'CADA',
+                                priceFrom: '8,99',
+                                priceTo: '4,49',
+                                expiry: this.getDefaultExpiry(5),
+                                atacadoCond: '',
+                                footer: 'Oportunidade • Preço válido enquanto durar o estoque',
+                                size: 'a4',
+                                status: 'pending',
+                                author: 'Reposição',
+                                createdAt: Date.now() - 3600000
+                            },
+                            {
+                                id: 'post_2',
+                                type: 'oferta',
+                                title: 'ARROZ TIPO 1 CAMIL 5KG',
+                                dept: 'Mercearia',
+                                unit: 'PCT',
+                                priceFrom: '34,90',
+                                priceTo: '27,99',
+                                expiry: '',
+                                atacadoCond: '',
+                                footer: 'Oferta da Semana • Limite de 5 unidades por cliente',
+                                size: 'a4',
+                                status: 'pending',
+                                author: 'Encarregado',
+                                createdAt: Date.now() - 7200000
+                            }
+                        ];
+                        this.saveToStorage();
+                    }
+                } catch(e) {
+                    console.error('[PosterApp] Erro ao carregar do storage:', e);
+                    this.posters = [];
+                }
+            }
+
+            saveToStorage() {
+                try {
+                    localStorage.setItem('taskflow_posters_db', JSON.stringify(this.posters));
+                    this.updateBadges();
+                } catch(e) {
+                    console.error('[PosterApp] Erro ao salvar local:', e);
+                }
+            }
+
+            getDefaultExpiry(daysAhead = 7) {
+                const d = new Date();
+                d.setDate(d.getDate() + daysAhead);
+                const ano = d.getFullYear();
+                const mes = String(d.getMonth() + 1).padStart(2, '0');
+                const dia = String(d.getDate()).padStart(2, '0');
+                return `${ano}-${mes}-${dia}`;
+            }
+
+            formatDateBR(dateStr) {
+                if (!dateStr) return '';
+                const parts = dateStr.split('-');
+                if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                return dateStr;
+            }
+
+            switchTab(tab) {
+                this.currentTab = tab;
+                const tabCreator = document.getElementById('poster-tab-creator');
+                const tabQueue = document.getElementById('poster-tab-queue');
+                const tabHistory = document.getElementById('poster-tab-history');
+
+                const btnCreator = document.getElementById('btn-tab-poster-creator');
+                const btnQueue = document.getElementById('btn-tab-poster-queue');
+                const btnHistory = document.getElementById('btn-tab-poster-history');
+
+                if (tabCreator) tabCreator.classList.toggle('hidden', tab !== 'creator');
+                if (tabQueue) tabQueue.classList.toggle('hidden', tab !== 'queue');
+                if (tabHistory) tabHistory.classList.toggle('hidden', tab !== 'history');
+
+                [
+                    { btn: btnCreator, id: 'creator', activeBg: 'bg-amber-600 text-black shadow' },
+                    { btn: btnQueue, id: 'queue', activeBg: 'bg-amber-600 text-black shadow' },
+                    { btn: btnHistory, id: 'history', activeBg: 'bg-amber-600 text-black shadow' }
+                ].forEach(item => {
+                    if (!item.btn) return;
+                    if (tab === item.id) {
+                        item.btn.className = `flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${item.activeBg} cursor-pointer`;
+                    } else {
+                        item.btn.className = 'flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 text-gray-400 hover:text-white cursor-pointer';
+                    }
+                });
+
+                if (tab === 'queue') this.renderQueue();
+                if (tab === 'history') this.renderHistory();
+            }
+
+            setType(type) {
+                this.currentType = type;
+                ['vencimento', 'oferta', 'normal', 'atacado'].forEach(t => {
+                    const btn = document.getElementById(`btn-type-${t}`);
+                    if (!btn) return;
+                    if (t === type) {
+                        let colorClass = 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-sm';
+                        if (t === 'oferta') colorClass = 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-sm';
+                        if (t === 'normal') colorClass = 'bg-blue-500/20 text-blue-300 border-blue-500/50 shadow-sm';
+                        if (t === 'atacado') colorClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm';
+                        btn.className = `p-2 rounded-lg text-xs font-extrabold border text-left flex items-center gap-2 ${colorClass} cursor-pointer`;
+                    } else {
+                        btn.className = 'p-2 rounded-lg text-xs font-extrabold border text-left flex items-center gap-2 bg-gray-950 text-gray-400 border-gray-800 hover:border-gray-700 cursor-pointer';
+                    }
+                });
+
+                const boxVenc = document.getElementById('poster-box-vencimento');
+                const boxAtacado = document.getElementById('poster-box-atacado');
+                if (boxVenc) boxVenc.classList.toggle('hidden', type !== 'vencimento');
+                if (boxAtacado) boxAtacado.classList.toggle('hidden', type !== 'atacado');
+
+                this.updateLivePreview();
+            }
+
+            setSize(size) {
+                this.currentSize = size;
+                this.updateLivePreview();
+            }
+
+            maskMoney(input) {
+                let v = input.value.replace(/\D/g, '');
+                if (!v) { input.value = ''; return; }
+                v = (parseInt(v, 10) / 100).toFixed(2);
+                v = v.replace('.', ',');
+                v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+                input.value = v;
+            }
+
+            parseMoney(str) {
+                if (!str) return 0;
+                const clean = String(str).replace(/[^0-9,]/g, '').replace(',', '.');
+                return parseFloat(clean) || 0;
+            }
+
+            resetForm() {
+                this.editingId = null;
+                const tInput = document.getElementById('poster-input-title');
+                const pfInput = document.getElementById('poster-input-price-from');
+                const ptInput = document.getElementById('poster-input-price-to');
+                const expInput = document.getElementById('poster-input-expiry');
+                const atInput = document.getElementById('poster-input-atacado-cond');
+                const footInput = document.getElementById('poster-input-footer');
+
+                if (tInput) tInput.value = '';
+                if (pfInput) pfInput.value = '';
+                if (ptInput) ptInput.value = '';
+                if (expInput) expInput.value = this.getDefaultExpiry(7);
+                if (atInput) atInput.value = '';
+                if (footInput) footInput.value = '';
+
+                this.setType('vencimento');
+                this.setSize('a4');
+                this.updateLivePreview();
+            }
+
+            updateLivePreview() {
+                const card = document.getElementById('poster-preview-card');
+                if (!card) return;
+
+                const title = (document.getElementById('poster-input-title')?.value || '').trim() || 'NOME DO PRODUTO AQUI';
+                const dept = document.getElementById('poster-input-dept')?.value || 'Mercearia';
+                const unit = document.getElementById('poster-input-unit')?.value || 'CADA';
+                const priceFromStr = (document.getElementById('poster-input-price-from')?.value || '').trim();
+                const priceToStr = (document.getElementById('poster-input-price-to')?.value || '').trim() || '0,00';
+                const expiry = document.getElementById('poster-input-expiry')?.value || '';
+                const atacadoCond = (document.getElementById('poster-input-atacado-cond')?.value || '').trim() || 'A partir de 3 unidades';
+                const footer = (document.getElementById('poster-input-footer')?.value || '').trim() || 'Preço válido enquanto durar o estoque • Supermercados Rondon';
+
+                const pFrom = this.parseMoney(priceFromStr);
+                const pTo = this.parseMoney(priceToStr);
+
+                let discountBadgeHtml = '';
+                if (pFrom > pTo && pTo > 0) {
+                    const diff = pFrom - pTo;
+                    const pct = Math.round((diff / pFrom) * 100);
+                    discountBadgeHtml = `
+                        <div class="inline-flex items-center gap-1 bg-[#D90429] text-white px-2.5 py-1 rounded-md font-black text-xs sm:text-sm uppercase tracking-wide shadow-md">
+                            <i class="fa-solid fa-arrow-down"></i> ${pct}% OFF • ECONOMIZE R$ ${diff.toFixed(2).replace('.', ',')}
+                        </div>
+                    `;
+                }
+
+                const parts = priceToStr.split(',');
+                const reais = parts[0] || '0';
+                const centavos = parts[1] || '00';
+
+                let headerBanner = '';
+                if (this.currentType === 'vencimento') {
+                    const expBr = this.formatDateBR(expiry) || 'DATA NA EMBALAGEM';
+                    headerBanner = `
+                        <div class="bg-[#D90429] text-white text-center py-2.5 px-3 border-b-4 border-black">
+                            <span class="block text-sm sm:text-base font-black uppercase tracking-wider leading-tight">
+                                ⚠️ OPORTUNIDADE • PRÓXIMO AO VENCIMENTO
+                            </span>
+                        </div>
+                        <div class="bg-black text-[#FFE500] text-center py-1.5 px-3 border-b-2 border-black flex items-center justify-center gap-2">
+                            <span class="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider">CONSUMIR PREFERENCIALMENTE ATÉ:</span>
+                            <span class="text-white text-xs sm:text-sm font-black underline bg-black px-1.5 py-0.5 rounded">${expBr}</span>
+                        </div>
+                    `;
+                } else if (this.currentType === 'oferta') {
+                    headerBanner = `
+                        <div class="bg-[#D90429] text-white text-center py-3 px-3 border-b-4 border-black">
+                            <span class="block text-base sm:text-lg font-black uppercase tracking-wider leading-tight">
+                                🔥 SUPER OFERTA DO DIA 🔥
+                            </span>
+                            <span class="block text-[10px] font-bold text-amber-200 uppercase tracking-widest mt-0.5">
+                                ${dept.toUpperCase()}
+                            </span>
+                        </div>
+                    `;
+                } else if (this.currentType === 'atacado') {
+                    headerBanner = `
+                        <div class="bg-[#059669] text-white text-center py-3 px-3 border-b-4 border-black">
+                            <span class="block text-base sm:text-lg font-black uppercase tracking-wider leading-tight">
+                                📦 PREÇO ESPECIAL DE ATACADO
+                            </span>
+                            <span class="block text-xs font-black text-amber-300 uppercase mt-0.5">
+                                ${atacadoCond.toUpperCase()}
+                            </span>
+                        </div>
+                    `;
+                } else {
+                    headerBanner = `
+                        <div class="bg-[#1D4ED8] text-white text-center py-3 px-3 border-b-4 border-black">
+                            <span class="block text-base sm:text-lg font-black uppercase tracking-wider leading-tight">
+                                ⭐ OFERTA ESPECIAL • ${dept.toUpperCase()}
+                            </span>
+                        </div>
+                    `;
+                }
+
+                let dePorHtml = '';
+                if (pFrom > 0) {
+                    dePorHtml = `
+                        <div class="flex items-center justify-center gap-2 mb-1">
+                            <span class="text-gray-800 font-extrabold text-sm sm:text-base line-through">DE: R$ ${priceFromStr}</span>
+                            ${discountBadgeHtml}
+                        </div>
+                    `;
+                }
+
+                const isLandscape = this.currentSize === 'a4_landscape';
+                const wrapper = document.getElementById('poster-preview-card');
+                if (wrapper) {
+                    if (isLandscape) {
+                        wrapper.className = "w-full max-w-lg aspect-[1.414/1] bg-[#FFE500] text-black border-4 border-black rounded-lg shadow-2xl flex flex-col justify-between overflow-hidden select-none transition-all";
+                    } else {
+                        wrapper.className = "w-full max-w-md aspect-[1/1.414] bg-[#FFE500] text-black border-4 border-black rounded-lg shadow-2xl flex flex-col justify-between overflow-hidden select-none transition-all";
+                    }
+                }
+
+                card.innerHTML = `
+                    <!-- Cabeçalho de Destaque -->
+                    <div class="w-full shrink-0">
+                        ${headerBanner}
+                    </div>
+
+                    <!-- Nome do Produto -->
+                    <div class="p-3 sm:p-4 text-center flex-1 flex flex-col justify-center items-center">
+                        <h2 class="text-xl sm:text-2xl md:text-3xl font-black text-black uppercase tracking-tight leading-tight line-clamp-3 font-sans">
+                            ${title}
+                        </h2>
+                        <span class="text-[10px] sm:text-xs font-extrabold text-gray-800 uppercase tracking-widest mt-1">
+                            SETOR: ${dept}
+                        </span>
+                    </div>
+
+                    <!-- Área Gigante de Preço -->
+                    <div class="p-2 sm:p-3 text-center bg-white/40 border-y-2 border-black/40 shrink-0">
+                        ${dePorHtml}
+                        <div class="flex items-baseline justify-center">
+                            <span class="text-sm sm:text-base font-black text-black mr-1 uppercase">POR R$</span>
+                            <span class="text-5xl sm:text-6xl md:text-7xl font-black text-[#D90429] tracking-tighter leading-none" style="font-family: Impact, sans-serif;">
+                                ${reais}
+                            </span>
+                            <div class="flex flex-col items-start ml-1 leading-none self-start mt-1">
+                                <span class="text-2xl sm:text-3xl font-black text-[#D90429]" style="font-family: Impact, sans-serif;">,${centavos}</span>
+                                <span class="text-[10px] sm:text-xs font-extrabold text-black uppercase tracking-wider">${unit}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rodapé do Cartaz -->
+                    <div class="bg-black text-white text-center py-2 px-3 shrink-0 flex items-center justify-between text-[9px] sm:text-[10px] font-bold">
+                        <span class="truncate max-w-[70%] text-amber-300 uppercase">${footer}</span>
+                        <span class="text-gray-400 font-mono">SUPERMERCADOS RONDON</span>
+                    </div>
+                `;
+            }
+
+            buildPrintableHtml(item, isSingle = true) {
+                const title = item.title || 'PRODUTO';
+                const dept = item.dept || 'Geral';
+                const unit = item.unit || 'CADA';
+                const priceFromStr = item.priceFrom || '';
+                const priceToStr = item.priceTo || '0,00';
+                const expiry = item.expiry || '';
+                const atacadoCond = item.atacadoCond || '';
+                const footer = item.footer || 'Preço válido enquanto durar o estoque • Supermercados Rondon';
+
+                const pFrom = this.parseMoney(priceFromStr);
+                const pTo = this.parseMoney(priceToStr);
+
+                let discountBadgeHtml = '';
+                if (pFrom > pTo && pTo > 0) {
+                    const diff = pFrom - pTo;
+                    const pct = Math.round((diff / pFrom) * 100);
+                    discountBadgeHtml = `
+                        <div style="background-color: #D90429; color: #ffffff; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 16px; text-transform: uppercase;">
+                            ${pct}% DE DESCONTO • ECONOMIZE R$ ${diff.toFixed(2).replace('.', ',')}
+                        </div>
+                    `;
+                }
+
+                const parts = priceToStr.split(',');
+                const reais = parts[0] || '0';
+                const centavos = parts[1] || '00';
+
+                let headerBanner = '';
+                if (item.type === 'vencimento') {
+                    const expBr = this.formatDateBR(expiry) || 'DATA NA EMBALAGEM';
+                    headerBanner = `
+                        <div style="background-color: #D90429; color: #ffffff; text-align: center; padding: 14px 10px; border-bottom: 6px solid #000000;">
+                            <span style="font-size: 26px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; display: block; line-height: 1.1;">
+                                ⚠️ OPORTUNIDADE • PRÓXIMO AO VENCIMENTO
+                            </span>
+                        </div>
+                        <div style="background-color: #000000; color: #FFE500; text-align: center; padding: 8px 10px; border-bottom: 3px solid #000000;">
+                            <span style="font-size: 16px; font-weight: 800; text-transform: uppercase;">CONSUMIR PREFERENCIALMENTE ATÉ: </span>
+                            <span style="color: #ffffff; font-size: 20px; font-weight: 900; text-decoration: underline;">${expBr}</span>
+                        </div>
+                    `;
+                } else if (item.type === 'oferta') {
+                    headerBanner = `
+                        <div style="background-color: #D90429; color: #ffffff; text-align: center; padding: 18px 10px; border-bottom: 6px solid #000000;">
+                            <span style="font-size: 32px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block;">
+                                🔥 SUPER OFERTA DO DIA 🔥
+                            </span>
+                            <span style="font-size: 14px; font-weight: 800; color: #fef08a; text-transform: uppercase; display: block; margin-top: 4px;">
+                                ${dept.toUpperCase()}
+                            </span>
+                        </div>
+                    `;
+                } else if (item.type === 'atacado') {
+                    headerBanner = `
+                        <div style="background-color: #059669; color: #ffffff; text-align: center; padding: 18px 10px; border-bottom: 6px solid #000000;">
+                            <span style="font-size: 30px; font-weight: 900; text-transform: uppercase; display: block;">
+                                📦 PREÇO ESPECIAL DE ATACADO
+                            </span>
+                            <span style="font-size: 16px; font-weight: 900; color: #fde047; text-transform: uppercase; display: block; margin-top: 4px;">
+                                ${atacadoCond.toUpperCase()}
+                            </span>
+                        </div>
+                    `;
+                } else {
+                    headerBanner = `
+                        <div style="background-color: #1D4ED8; color: #ffffff; text-align: center; padding: 18px 10px; border-bottom: 6px solid #000000;">
+                            <span style="font-size: 30px; font-weight: 900; text-transform: uppercase; display: block;">
+                                ⭐ OFERTA ESPECIAL • ${dept.toUpperCase()}
+                            </span>
+                        </div>
+                    `;
+                }
+
+                let dePorHtml = '';
+                if (pFrom > 0) {
+                    dePorHtml = `
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px;">
+                            <span style="color: #1f2937; font-weight: 800; font-size: 20px; text-decoration: line-through;">DE: R$ ${priceFromStr}</span>
+                            ${discountBadgeHtml}
+                        </div>
+                    `;
+                }
+
+                const isLandscape = (item.size === 'a4_landscape');
+
+                return `
+                    <div class="${isSingle ? '' : 'poster-page-break'}" style="width: 100vw; height: 100vh; box-sizing: border-box; padding: 10mm; background: #ffffff; display: flex; align-items: center; justify-content: center;">
+                        <div style="width: 100%; height: 100%; background-color: #FFE500; border: 8px solid #000000; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; box-sizing: border-box;">
+                            <!-- Topo Banner -->
+                            <div style="width: 100%; flex-shrink: 0;">
+                                ${headerBanner}
+                            </div>
+
+                            <!-- Nome Produto -->
+                            <div style="padding: 20px; text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                                <h1 style="font-size: ${isLandscape ? '38px' : '44px'}; font-weight: 900; color: #000000; text-transform: uppercase; margin: 0; line-height: 1.15; font-family: Impact, Arial Black, sans-serif;">
+                                    ${title}
+                                </h1>
+                                <span style="font-size: 16px; font-weight: 800; color: #1f2937; text-transform: uppercase; margin-top: 8px; letter-spacing: 2px;">
+                                    SETOR: ${dept}
+                                </span>
+                            </div>
+
+                            <!-- Caixa do Preço -->
+                            <div style="padding: 16px 20px; text-align: center; background-color: rgba(255,255,255,0.45); border-top: 4px solid rgba(0,0,0,0.4); border-bottom: 4px solid rgba(0,0,0,0.4); flex-shrink: 0;">
+                                ${dePorHtml}
+                                <div style="display: flex; align-items: baseline; justify-content: center;">
+                                    <span style="font-size: 24px; font-weight: 900; color: #000000; margin-right: 8px; text-transform: uppercase;">POR R$</span>
+                                    <span style="font-size: ${isLandscape ? '110px' : '135px'}; font-weight: 900; color: #D90429; line-height: 0.9; font-family: Impact, Arial Black, sans-serif; letter-spacing: -3px;">
+                                        ${reais}
+                                    </span>
+                                    <div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 4px; line-height: 1; align-self: flex-start; margin-top: 6px;">
+                                        <span style="font-size: ${isLandscape ? '50px' : '65px'}; font-weight: 900; color: #D90429; font-family: Impact, Arial Black, sans-serif;">,${centavos}</span>
+                                        <span style="font-size: 20px; font-weight: 900; color: #000000; text-transform: uppercase;">${unit}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Rodapé -->
+                            <div style="background-color: #000000; color: #ffffff; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; flex-shrink: 0;">
+                                <span style="color: #FFE500; text-transform: uppercase;">${footer}</span>
+                                <span style="color: #d1d5db; letter-spacing: 1px;">SUPERMERCADOS RONDON</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            printCurrent() {
+                const title = (document.getElementById('poster-input-title')?.value || '').trim();
+                const priceTo = (document.getElementById('poster-input-price-to')?.value || '').trim();
+                if (!title || !priceTo) {
+                    alert('Por favor, informe ao menos o Nome do Produto e o Preço POR.');
+                    return;
+                }
+
+                const item = {
+                    type: this.currentType,
+                    title: title.toUpperCase(),
+                    dept: document.getElementById('poster-input-dept')?.value || 'Mercearia',
+                    unit: document.getElementById('poster-input-unit')?.value || 'CADA',
+                    priceFrom: document.getElementById('poster-input-price-from')?.value || '',
+                    priceTo: priceTo,
+                    expiry: document.getElementById('poster-input-expiry')?.value || '',
+                    atacadoCond: document.getElementById('poster-input-atacado-cond')?.value || '',
+                    footer: document.getElementById('poster-input-footer')?.value || 'Preço válido enquanto durar o estoque • Supermercados Rondon',
+                    size: this.currentSize
+                };
+
+                const printArea = document.getElementById('poster-printable-area');
+                if (!printArea) return;
+
+                printArea.innerHTML = this.buildPrintableHtml(item, true);
+                printArea.style.display = 'block';
+
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => {
+                        printArea.style.display = 'none';
+                        printArea.innerHTML = '';
+                    }, 1000);
+                }, 300);
+            }
+
+            printPosterById(id) {
+                const item = this.posters.find(p => p.id === id);
+                if (!item) return;
+
+                const printArea = document.getElementById('poster-printable-area');
+                if (!printArea) return;
+
+                printArea.innerHTML = this.buildPrintableHtml(item, true);
+                printArea.style.display = 'block';
+
+                // Marca como impresso
+                item.status = 'printed';
+                item.printedAt = Date.now();
+                this.saveToStorage();
+                this.renderQueue();
+                this.renderHistory();
+
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => {
+                        printArea.style.display = 'none';
+                        printArea.innerHTML = '';
+                    }, 1000);
+                }, 300);
+            }
+
+            printAllPending() {
+                const pending = this.posters.filter(p => p.status === 'pending');
+                if (pending.length === 0) {
+                    alert('Nenhum cartaz pendente de impressão na fila!');
+                    return;
+                }
+
+                const printArea = document.getElementById('poster-printable-area');
+                if (!printArea) return;
+
+                let fullHtml = '';
+                pending.forEach((item, idx) => {
+                    fullHtml += this.buildPrintableHtml(item, idx === pending.length - 1);
+                    item.status = 'printed';
+                    item.printedAt = Date.now();
+                });
+
+                this.saveToStorage();
+                this.renderQueue();
+                this.renderHistory();
+
+                printArea.innerHTML = fullHtml;
+                printArea.style.display = 'block';
+
+                setTimeout(() => {
+                    window.print();
+                    setTimeout(() => {
+                        printArea.style.display = 'none';
+                        printArea.innerHTML = '';
+                    }, 1000);
+                }, 300);
+            }
+
+            saveToQueue() {
+                const title = (document.getElementById('poster-input-title')?.value || '').trim();
+                const priceTo = (document.getElementById('poster-input-price-to')?.value || '').trim();
+
+                if (!title || !priceTo) {
+                    alert('Por favor, preencha o Nome do Produto e o Preço POR para salvar na fila.');
+                    return;
+                }
+
+                const authorName = (window.auth && auth.currentUser) ? auth.currentUser.displayName : 'Equipe da Loja';
+
+                if (this.editingId) {
+                    const item = this.posters.find(p => p.id === this.editingId);
+                    if (item) {
+                        item.type = this.currentType;
+                        item.title = title.toUpperCase();
+                        item.dept = document.getElementById('poster-input-dept')?.value || 'Mercearia';
+                        item.unit = document.getElementById('poster-input-unit')?.value || 'CADA';
+                        item.priceFrom = document.getElementById('poster-input-price-from')?.value || '';
+                        item.priceTo = priceTo;
+                        item.expiry = document.getElementById('poster-input-expiry')?.value || '';
+                        item.atacadoCond = document.getElementById('poster-input-atacado-cond')?.value || '';
+                        item.footer = document.getElementById('poster-input-footer')?.value || 'Preço válido enquanto durar o estoque • Supermercados Rondon';
+                        item.size = this.currentSize;
+                        item.updatedAt = Date.now();
+                    }
+                    this.editingId = null;
+                    if (window.notifications) notifications.showToast('✓ Cartaz atualizado na fila!', 'success');
+                } else {
+                    const newItem = {
+                        id: 'post_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+                        type: this.currentType,
+                        title: title.toUpperCase(),
+                        dept: document.getElementById('poster-input-dept')?.value || 'Mercearia',
+                        unit: document.getElementById('poster-input-unit')?.value || 'CADA',
+                        priceFrom: document.getElementById('poster-input-price-from')?.value || '',
+                        priceTo: priceTo,
+                        expiry: document.getElementById('poster-input-expiry')?.value || '',
+                        atacadoCond: document.getElementById('poster-input-atacado-cond')?.value || '',
+                        footer: document.getElementById('poster-input-footer')?.value || 'Preço válido enquanto durar o estoque • Supermercados Rondon',
+                        size: this.currentSize,
+                        status: 'pending',
+                        author: authorName,
+                        createdAt: Date.now()
+                    };
+                    this.posters.unshift(newItem);
+                    if (window.notifications) notifications.showToast('✓ Cartaz salvo na Fila de Impressão (Nuvem)!', 'success');
+                }
+
+                this.saveToStorage();
+                this.renderQueue();
+                this.syncWithCloud(false);
+                this.switchTab('queue');
+            }
+
+            editPoster(id) {
+                const item = this.posters.find(p => p.id === id);
+                if (!item) return;
+
+                this.editingId = id;
+                this.setType(item.type || 'vencimento');
+                this.setSize(item.size || 'a4');
+
+                const tInput = document.getElementById('poster-input-title');
+                const deptInput = document.getElementById('poster-input-dept');
+                const unitInput = document.getElementById('poster-input-unit');
+                const pfInput = document.getElementById('poster-input-price-from');
+                const ptInput = document.getElementById('poster-input-price-to');
+                const expInput = document.getElementById('poster-input-expiry');
+                const atInput = document.getElementById('poster-input-atacado-cond');
+                const footInput = document.getElementById('poster-input-footer');
+
+                if (tInput) tInput.value = item.title || '';
+                if (deptInput) deptInput.value = item.dept || 'Mercearia';
+                if (unitInput) unitInput.value = item.unit || 'CADA';
+                if (pfInput) pfInput.value = item.priceFrom || '';
+                if (ptInput) ptInput.value = item.priceTo || '';
+                if (expInput) expInput.value = item.expiry || '';
+                if (atInput) atInput.value = item.atacadoCond || '';
+                if (footInput) footInput.value = item.footer || '';
+
+                this.updateLivePreview();
+                this.switchTab('creator');
+            }
+
+            deletePoster(id) {
+                if (!confirm('Deseja realmente remover este cartaz?')) return;
+                this.posters = this.posters.filter(p => p.id !== id);
+                this.saveToStorage();
+                this.renderQueue();
+                this.renderHistory();
+                this.syncWithCloud(false);
+                if (window.notifications) notifications.showToast('✓ Cartaz removido.', 'info');
+            }
+
+            markAsPrinted(id) {
+                const item = this.posters.find(p => p.id === id);
+                if (!item) return;
+                item.status = (item.status === 'printed') ? 'pending' : 'printed';
+                item.printedAt = (item.status === 'printed') ? Date.now() : null;
+                this.saveToStorage();
+                this.renderQueue();
+                this.renderHistory();
+                this.syncWithCloud(false);
+            }
+
+            clearHistory() {
+                if (!confirm('Deseja limpar todo o histórico de cartazes já impressos?')) return;
+                this.posters = this.posters.filter(p => p.status === 'pending');
+                this.saveToStorage();
+                this.renderHistory();
+                this.syncWithCloud(false);
+                if (window.notifications) notifications.showToast('✓ Histórico limpo com sucesso!', 'info');
+            }
+
+            updateBadges() {
+                const pendingCount = this.posters.filter(p => p.status === 'pending').length;
+                const bQueue = document.getElementById('badge-poster-queue-count');
+                const bTopbar = document.getElementById('topbar-tools-badge');
+                const bSidebar = document.getElementById('sidebar-tools-badge');
+                const bMob = document.getElementById('mob-nav-tools-badge');
+
+                if (bQueue) {
+                    bQueue.innerText = pendingCount;
+                    bQueue.classList.toggle('hidden', pendingCount === 0);
+                }
+                if (bTopbar) {
+                    bTopbar.innerText = pendingCount;
+                    bTopbar.classList.toggle('hidden', pendingCount === 0);
+                }
+                if (bSidebar) {
+                    bSidebar.innerText = pendingCount;
+                    bSidebar.classList.toggle('hidden', pendingCount === 0);
+                }
+                if (bMob) {
+                    bMob.classList.toggle('hidden', pendingCount === 0);
+                }
+            }
+
+            renderQueue() {
+                const list = document.getElementById('poster-queue-list');
+                if (!list) return;
+
+                const pending = this.posters.filter(p => p.status === 'pending');
+                this.updateBadges();
+
+                if (pending.length === 0) {
+                    list.innerHTML = `
+                        <div class="col-span-full py-12 text-center bg-gray-950/60 rounded-xl border border-gray-800">
+                            <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto mb-2 text-xl">
+                                <i class="fa-solid fa-print"></i>
+                            </div>
+                            <h5 class="text-xs font-bold text-gray-300">Nenhum cartaz aguardando impressão</h5>
+                            <p class="text-[11px] text-gray-500 mt-0.5">Crie um novo cartaz pelo botão "Novo Cartaz" ou envie direto pelo celular no salão.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = pending.map(item => this.renderPosterCard(item, false)).join('');
+            }
+
+            renderHistory() {
+                const list = document.getElementById('poster-history-list');
+                if (!list) return;
+
+                const printed = this.posters.filter(p => p.status === 'printed');
+
+                if (printed.length === 0) {
+                    list.innerHTML = `
+                        <div class="col-span-full py-10 text-center bg-gray-950/60 rounded-xl border border-gray-800">
+                            <p class="text-xs text-gray-500">Nenhum cartaz impresso no histórico.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = printed.map(item => this.renderPosterCard(item, true)).join('');
+            }
+
+            renderPosterCard(item, isHistory = false) {
+                let typeBadge = '';
+                let borderClass = 'border-gray-800 hover:border-gray-700';
+
+                if (item.type === 'vencimento') {
+                    typeBadge = '<span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> VENCIMENTO</span>';
+                    borderClass = 'border-rose-900/60 hover:border-rose-600';
+                } else if (item.type === 'oferta') {
+                    typeBadge = '<span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1"><i class="fa-solid fa-fire text-[9px]"></i> SUPER OFERTA</span>';
+                    borderClass = 'border-amber-900/60 hover:border-amber-600';
+                } else if (item.type === 'atacado') {
+                    typeBadge = '<span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1"><i class="fa-solid fa-boxes-packing text-[9px]"></i> ATACADO</span>';
+                } else {
+                    typeBadge = '<span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/40 flex items-center gap-1"><i class="fa-solid fa-star text-[9px]"></i> DESTAQUE</span>';
+                }
+
+                const expiryHtml = item.expiry ? `
+                    <div class="mt-1 text-[11px] font-bold text-rose-300 flex items-center gap-1">
+                        <i class="fa-solid fa-clock text-[10px]"></i> Válido até: ${this.formatDateBR(item.expiry)}
+                    </div>
+                ` : '';
+
+                const safeId = item.id;
+                const deHtml = item.priceFrom ? `<span class="text-xs text-gray-500 line-through mr-1.5">DE: R$ ${item.priceFrom}</span>` : '';
+
+                return `
+                    <div class="bg-gray-950 p-3.5 rounded-xl border ${borderClass} shadow-sm flex flex-col justify-between gap-3 group relative">
+                        <div>
+                            <div class="flex items-center justify-between gap-1 mb-2">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-900 text-gray-300 border border-gray-800">
+                                        ${item.dept || 'Geral'}
+                                    </span>
+                                    ${typeBadge}
+                                </div>
+                                <span class="text-[10px] font-mono text-gray-500 uppercase">${item.size || 'A4'}</span>
+                            </div>
+
+                            <h5 class="text-sm font-black text-white leading-tight uppercase group-hover:text-amber-200 transition">
+                                ${item.title}
+                            </h5>
+                            ${expiryHtml}
+
+                            <div class="mt-2.5 flex items-baseline gap-1">
+                                ${deHtml}
+                                <span class="text-xs font-black text-amber-400 uppercase">POR R$</span>
+                                <span class="text-xl font-black text-white">${item.priceTo}</span>
+                                <span class="text-[10px] text-gray-400 font-bold">/ ${item.unit || 'UN'}</span>
+                            </div>
+
+                            <div class="mt-1 text-[10px] text-gray-500">
+                                Solicitado por: <span class="text-gray-300 font-semibold">${item.author || 'Equipe'}</span> • ${new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                        </div>
+
+                        <!-- Botões de Ação do Card -->
+                        <div class="pt-2 border-t border-gray-900 flex items-center justify-between gap-1.5">
+                            <button type="button" onclick="posterApp.printPosterById('${safeId}')" class="flex-1 bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-extrabold py-1.5 px-2.5 rounded-lg text-xs transition flex items-center justify-center gap-1 shadow-sm cursor-pointer" title="Imprimir Cartaz no PC da Impressora">
+                                <i class="fa-solid fa-print text-[11px]"></i>
+                                <span>${isHistory ? 'Reimprimir' : 'Imprimir'}</span>
+                            </button>
+                            <button type="button" onclick="posterApp.editPoster('${safeId}')" class="p-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-gray-300 border border-gray-800 transition cursor-pointer" title="Editar dados deste cartaz">
+                                <i class="fa-solid fa-pen text-xs"></i>
+                            </button>
+                            <button type="button" onclick="posterApp.markAsPrinted('${safeId}')" class="p-1.5 rounded-lg bg-gray-900 hover:bg-gray-800 ${isHistory ? 'text-amber-400' : 'text-emerald-400'} border border-gray-800 transition cursor-pointer" title="${isHistory ? 'Mover de volta para pendentes' : 'Marcar como já impresso'}">
+                                <i class="fa-solid ${isHistory ? 'fa-rotate-left' : 'fa-check'} text-xs"></i>
+                            </button>
+                            <button type="button" onclick="posterApp.deletePoster('${safeId}')" class="p-1.5 rounded-lg bg-gray-900 hover:bg-red-950 text-gray-500 hover:text-red-400 border border-gray-800 transition cursor-pointer" title="Excluir cartaz">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            async syncWithCloud(notify = false) {
+                if (this.isSyncing) return;
+                const webAppUrl = (window.scheduleApp && window.scheduleApp.webAppUrl) ||
+                                  'https://script.google.com/macros/s/AKfycbzlmXyjnVs5uH41a_9bddnNfIn-M2KMU4arwHreAlRkB0DFw3ziMLeR5MOVRarQy_4r/exec';
+
+                this.isSyncing = true;
+                try {
+                    // 1. Busca cartazes salvos remotamente no PropertiesService
+                    const codeGet = `(function() {
+                        var props = PropertiesService.getScriptProperties();
+                        var raw = props.getProperty("TASKFLOW_POSTERS_DB");
+                        if (!raw) return [];
+                        try { return JSON.parse(raw); } catch(e) { return []; }
+                    })()`;
+
+                    const resp = await fetch(webAppUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'execute_command', code: codeGet })
+                    });
+
+                    if (resp.ok) {
+                        const json = await resp.json();
+                        if (json && json.success && Array.isArray(json.result)) {
+                            const remotePosters = json.result;
+                            let changed = false;
+
+                            remotePosters.forEach(rem => {
+                                const idx = this.posters.findIndex(p => p.id === rem.id);
+                                if (idx === -1) {
+                                    this.posters.push(rem);
+                                    changed = true;
+                                } else if ((rem.updatedAt || rem.createdAt || 0) > (this.posters[idx].updatedAt || this.posters[idx].createdAt || 0)) {
+                                    this.posters[idx] = rem;
+                                    changed = true;
+                                }
+                            });
+
+                            if (changed) {
+                                this.saveToStorage();
+                                this.renderQueue();
+                                this.renderHistory();
+                            }
+
+                            // 2. Envia os novos itens locais de volta para a nuvem
+                            const payloadSafe = JSON.stringify(this.posters).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                            const codeSave = `(function() {
+                                var props = PropertiesService.getScriptProperties();
+                                props.setProperty("TASKFLOW_POSTERS_DB", "${payloadSafe}");
+                                return true;
+                            })()`;
+
+                            await fetch(webAppUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                body: JSON.stringify({ action: 'execute_command', code: codeSave })
+                            });
+
+                            if (notify && window.notifications) {
+                                notifications.showToast('✓ Fila de cartazes sincronizada com a nuvem!', 'success');
+                            }
+                        }
+                    }
+                } catch(err) {
+                    console.warn('[PosterApp] Sync falhou (operando em modo local):', err);
+                } finally {
+                    this.isSyncing = false;
+                }
+            }
+        }
+
+        window.posterApp = new PosterApp();
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.posterApp) window.posterApp.init();
+        });
+
+
     </script>
 
 
