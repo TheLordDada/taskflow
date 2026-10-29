@@ -3671,8 +3671,15 @@
             window.location.href = "https://thelorddada.github.io/taskflow/?v=" + Date.now();
         }
 
-        // PWA Service Worker com verificação de nova versão
+        // PWA Service Worker com detecção automática e auto-reload
         if ('serviceWorker' in navigator) {
+            let swRefreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!swRefreshing) {
+                    swRefreshing = true;
+                    window.location.reload();
+                }
+            });
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js?v=1793316684038').then(reg => {
                     if (reg) reg.update();
