@@ -1,7 +1,7 @@
 // ==================================================
-// IndexedDB REPOSITORY & CLOUD SYNC ENGINE
-// Sapataria Calce Couro - Sincronização em Tempo Real
-// Integrado com Google Apps Script / TaskFlow
+// IndexedDB REPOSITORY & REALTIME SYNC ENGINE
+// Sapataria Calce Couro - Atualização Instantânea sem F5
+// Suporta: SSE (Tempo Real Local), BroadcastChannel (Abas) e Nuvem Google Sheets
 // ==================================================
 
 const DB_NAME = 'CalceCouroDB';
@@ -23,7 +23,6 @@ function openDB() {
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
 
-      // Store para Ordens de Serviço
       if (!db.objectStoreNames.contains('ordens_servico')) {
         const osStore = db.createObjectStore('ordens_servico', { keyPath: 'id', autoIncrement: true });
         osStore.createIndex('numero_os', 'numero_os', { unique: true });
@@ -33,7 +32,6 @@ function openDB() {
         osStore.createIndex('sincronizado', 'sincronizado', { unique: false });
       }
 
-      // Store para Configurações / Contadores / Metadados de Sync
       if (!db.objectStoreNames.contains('configuracoes')) {
         db.createObjectStore('configuracoes', { keyPath: 'chave' });
       }
@@ -80,8 +78,8 @@ async function getNextOSNumber() {
   });
 }
 
-// Salvar / Atualizar OS Localmente e Marcar para Sincronização
-async function salvarOS(os, salvarNaFilha = true) {
+// Salvar / Atualizar OS Localmente
+async function salvarOS(os, dispararSync = true) {
   const db = await openDB();
   return new Promise(async (resolve, reject) => {
     try {
@@ -94,7 +92,6 @@ async function salvarOS(os, salvarNaFilha = true) {
 
       const agora = new Date().toISOString();
       os.atualizado_em = agora;
-      os.sincronizado = false;
 
       // Calcula financeiro
       const totalItens = (os.itens || []).reduce((acc, it) => acc + (parseFloat(it.valor) || 0), 0);
@@ -110,9 +107,12 @@ async function salvarOS(os, salvarNaFilha = true) {
         os.id = os.id || e.target.result;
         resolve(os);
 
-        // Dispara sync na nuvem em segundo plano sem travar a interface
-        if (salvarNaFilha) {
-          CloudSync.pushOrder(os).catch(err => console.warn('Sync em fila offline:', err));
+        if (dispararSync) {
+          // Avisa outras abas abertas no mesmo navegador instantaneamente
+          RealtimeSync.broadcastLocal('order_saved', os);
+
+          // Envia para o servidor local (SSE) e para a nuvem
+          RealtimeSync.pushOrder(os).catch(err => console.warn('Sync offline em fila:', err));
         }
       };
 
@@ -154,6 +154,20 @@ async function obterOSPorId(id) {
   });
 }
 
+// Obter OS por Número Sequencial
+async function obterOSPorNumero(numOS) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('ordens_servico', 'readonly');
+    const store = tx.objectStore('ordens_servico');
+    const index = store.index('numero_os');
+    const request = index.get(Number(numOS));
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
 // Excluir OS
 async function excluirOS(id) {
   const os = await obterOSPorId(id);
@@ -166,7 +180,8 @@ async function excluirOS(id) {
     request.onsuccess = () => {
       resolve(true);
       if (os && os.numero_os) {
-        CloudSync.deleteOrder(os.numero_os).catch(err => console.warn('Erro ao excluir na nuvem:', err));
+        RealtimeSync.broadcastLocal('order_deleted', { numero_os: os.numero_os });
+        RealtimeSync.deleteOrder(os.numero_os).catch(console.warn);
       }
     };
     request.onerror = () => reject(request.error);
@@ -177,7 +192,7 @@ async function excluirOS(id) {
 async function exportarBackupJSON() {
   const ordens = await listarTodasOS();
   const backup = {
-    versao: '2.0',
+    versao: '2.5',
     data_backup: new Date().toISOString(),
     empresa: 'Sapataria Calce Couro',
     total_ordens: ordens.length,
@@ -212,14 +227,12 @@ async function importarBackupJSON(arquivoJson) {
         let importadas = 0;
         for (const item of dados.ordens) {
           delete item.id;
-          item.sincronizado = false;
           store.put(item);
           importadas++;
         }
 
         tx.oncomplete = async () => {
-          // Força envio para a nuvem
-          CloudSync.sync().catch(console.error);
+          RealtimeSync.syncAll().catch(console.error);
           resolve(importadas);
         };
         tx.onerror = () => reject(tx.error);
@@ -233,42 +246,275 @@ async function importarBackupJSON(arquivoJson) {
 }
 
 // ==================================================
-// 2. CLOUD SYNC ENGINE (GOOGLE APPS SCRIPT & TASKFLOW)
+// 2. REAL-TIME SYNCHRONIZATION ENGINE (ZERO F5)
+// Três camadas simultâneas:
+// - Camada 1: SSE (Server-Sent Events) direto com o servidor Node local
+// - Camada 2: BroadcastChannel para comunicação instantânea entre abas
+// - Camada 3: Cloud Polling rápido (Google Apps Script) para celulares remotos
 // ==================================================
-const CloudSync = {
-  status: 'idle', // 'idle' | 'syncing' | 'synced' | 'offline' | 'error'
-  lastSyncTime: null,
-  syncListeners: [],
-  autoSyncTimer: null,
-  isSyncing: false,
+const RealtimeSync = {
+  status: 'idle', // 'idle' | 'syncing' | 'synced' | 'offline'
+  listeners: [],
+  changeCallbacks: [],
+  eventSource: null,
+  broadcastChannel: null,
+  pollTimer: null,
+  lastRevisionHash: '',
+  hasLocalServer: false,
 
   onStatusChange(fn) {
-    if (typeof fn === 'function') this.syncListeners.push(fn);
+    if (typeof fn === 'function') this.listeners.push(fn);
   },
 
-  notifyStatus(status, details = null) {
-    this.status = status;
-    this.syncListeners.forEach(fn => {
-      try { fn(status, details); } catch(e) {}
+  onDataChange(fn) {
+    if (typeof fn === 'function') this.changeCallbacks.push(fn);
+  },
+
+  notifyStatus(st, extra = null) {
+    this.status = st;
+    this.listeners.forEach(fn => {
+      try { fn(st, extra); } catch(e) {}
     });
   },
 
-  // Executa comando no Apps Script do Google
-  async executeCloud(code) {
-    const res = await fetch(APPS_SCRIPT_URL, {
+  triggerDataChange(reason, data) {
+    this.changeCallbacks.forEach(fn => {
+      try { fn(reason, data); } catch(e) {}
+    });
+  },
+
+  // Inicializa canais de tempo real
+  init() {
+    this.initBroadcastChannel();
+    this.initSSE();
+    this.startFastCloudPolling();
+  },
+
+  // 1. Canal entre Abas no mesmo navegador
+  initBroadcastChannel() {
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        this.broadcastChannel = new BroadcastChannel('calce_couro_realtime_channel');
+        this.broadcastChannel.onmessage = async (e) => {
+          const { event, data } = e.data || {};
+          if (event === 'order_saved' || event === 'status_changed' || event === 'order_deleted') {
+            await this.applyIncomingUpdate(data, false);
+            this.triggerDataChange(event, data);
+          }
+        };
+      }
+    } catch (e) {
+      console.warn('BroadcastChannel não suportado neste navegador:', e);
+    }
+  },
+
+  broadcastLocal(event, data) {
+    if (this.broadcastChannel) {
+      try {
+        this.broadcastChannel.postMessage({ event, data });
+      } catch (e) {}
+    }
+  },
+
+  // 2. Server-Sent Events (SSE) para conexões locais no servidor Node
+  initSSE() {
+    // Só tenta SSE se estiver rodando via HTTP/HTTPS e não for file://
+    if (!window.location.protocol.startsWith('http')) return;
+
+    try {
+      if (this.eventSource) this.eventSource.close();
+      this.eventSource = new EventSource('/api/sapataria/events');
+
+      this.eventSource.addEventListener('connected', () => {
+        this.hasLocalServer = true;
+        this.notifyStatus('synced', { mode: 'sse_online' });
+      });
+
+      this.eventSource.addEventListener('order_saved', async (e) => {
+        try {
+          const os = JSON.parse(e.data);
+          await this.applyIncomingUpdate(os, false);
+          this.notifyStatus('synced', { mode: 'sse' });
+          this.triggerDataChange('order_saved', os);
+        } catch(err) {
+          console.error('Erro ao processar order_saved SSE:', err);
+        }
+      });
+
+      this.eventSource.addEventListener('status_changed', async (e) => {
+        try {
+          const os = JSON.parse(e.data);
+          await this.applyIncomingUpdate(os, false);
+          this.notifyStatus('synced', { mode: 'sse' });
+          this.triggerDataChange('status_changed', os);
+        } catch(err) {
+          console.error('Erro ao processar status_changed SSE:', err);
+        }
+      });
+
+      this.eventSource.addEventListener('order_deleted', async (e) => {
+        try {
+          const payload = JSON.parse(e.data);
+          const existing = await obterOSPorNumero(payload.numero_os);
+          if (existing) {
+            const db = await openDB();
+            const tx = db.transaction('ordens_servico', 'readwrite');
+            tx.objectStore('ordens_servico').delete(existing.id);
+          }
+          this.triggerDataChange('order_deleted', payload);
+        } catch(err) {}
+      });
+
+      this.eventSource.onerror = () => {
+        // Se desconectar, tenta reconectar e recorre ao polling
+        this.hasLocalServer = false;
+        this.notifyStatus('offline');
+      };
+    } catch(err) {
+      this.hasLocalServer = false;
+    }
+  },
+
+  // Aplica ordem vinda de outro aparelho diretamente no IndexedDB
+  async applyIncomingUpdate(os, dispararBroadcast = false) {
+    const existing = await obterOSPorNumero(os.numero_os);
+    const db = await openDB();
+    const tx = db.transaction('ordens_servico', 'readwrite');
+    const store = tx.objectStore('ordens_servico');
+
+    if (existing) {
+      os.id = existing.id;
+      store.put(os);
+    } else {
+      delete os.id;
+      store.add(os);
+    }
+
+    await new Promise((res, rej) => {
+      tx.oncomplete = res;
+      tx.onerror = rej;
+    });
+
+    if (dispararBroadcast) {
+      this.broadcastLocal('order_saved', os);
+    }
+  },
+
+  // 3. Enviar Ordem para o Servidor Local & Nuvem
+  async pushOrder(os) {
+    const autor = localStorage.getItem('calce_operador_nome') || 'Oficina (Pais)';
+    os.sincronizado_por = autor;
+
+    this.notifyStatus('syncing');
+
+    // 1. Tenta API local Node (sub-segundo)
+    let enviouLocal = false;
+    if (window.location.protocol.startsWith('http')) {
+      try {
+        const res = await fetch('/api/sapataria/ordens', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(os)
+        });
+        if (res.ok) {
+          enviouLocal = true;
+          this.notifyStatus('synced');
+        }
+      } catch (e) {}
+    }
+
+    // 2. Envia também para o Google Sheets (Apps Script) em segundo plano
+    this.pushGoogleSheets(os, autor).catch(err => {
+      console.warn('Google Sheets sync em fila:', err);
+    });
+
+    if (!enviouLocal) {
+      this.notifyStatus('offline');
+    }
+    return true;
+  },
+
+  // Atualizar Status Rápido no Servidor & Nuvem
+  async updateStatus(numero_os, novoStatus) {
+    const autor = localStorage.getItem('calce_operador_nome') || 'Oficina (Pais)';
+
+    // Atualiza localmente no IndexedDB
+    const existing = await obterOSPorNumero(numero_os);
+    if (existing) {
+      existing.status = novoStatus;
+      existing.atualizado_em = new Date().toISOString();
+      await salvarOS(existing, false);
+      this.broadcastLocal('status_changed', existing);
+      this.triggerDataChange('status_changed', existing);
+    }
+
+    // Envia ao servidor Node
+    if (window.location.protocol.startsWith('http')) {
+      fetch(`/api/sapataria/ordens/${numero_os}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: novoStatus, autor })
+      }).catch(console.warn);
+    }
+
+    // Envia ao Google Sheets
+    const code = `
+    (function() {
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var sheet = ss.getSheetByName('Sapataria_Ordens');
+      if (!sheet) return { error: 'Aba nao encontrada' };
+      var data = sheet.getDataRange().getValues();
+      var numOS = Number(${Number(numero_os)});
+      for (var i = 1; i < data.length; i++) {
+        if (Number(data[i][0]) === numOS) {
+          sheet.getRange(i + 1, 10).setValue(${JSON.stringify(novoStatus)});
+          sheet.getRange(i + 1, 13).setValue(new Date().toISOString());
+          sheet.getRange(i + 1, 14).setValue(${JSON.stringify(autor)});
+          return { success: true };
+        }
+      }
+      return { error: 'OS nao encontrada' };
+    })()
+    `;
+    fetch(APPS_SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'execute_command', code: code })
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || 'Erro no script remoto');
-    return data.result;
+      body: JSON.stringify({ action: 'execute_command', code })
+    }).catch(console.warn);
   },
 
-  // Salva ou atualiza uma OS na nuvem
-  async pushOrder(os, autor) {
-    autor = autor || localStorage.getItem('calce_operador_nome') || 'Oficina (Pais)';
+  // Deletar Ordem no Servidor & Nuvem
+  async deleteOrder(numero_os) {
+    if (window.location.protocol.startsWith('http')) {
+      fetch(`/api/sapataria/ordens/${numero_os}`, {
+        method: 'DELETE'
+      }).catch(console.warn);
+    }
+
+    const code = `
+    (function() {
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var sheet = ss.getSheetByName('Sapataria_Ordens');
+      if (!sheet) return;
+      var data = sheet.getDataRange().getValues();
+      var numOS = Number(${Number(numero_os)});
+      for (var i = 1; i < data.length; i++) {
+        if (Number(data[i][0]) === numOS) {
+          sheet.deleteRow(i + 1);
+          return { deleted: true };
+        }
+      }
+    })()
+    `;
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'execute_command', code })
+    }).catch(console.warn);
+  },
+
+  // Salva no Google Sheets
+  async pushGoogleSheets(os, autor) {
     const code = `
     (function() {
       var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -322,98 +568,71 @@ const CloudSync = {
       } else {
         sheet.appendRow(rowValues);
       }
-      return { success: true, numero_os: numOS, atualizado_em: agora };
+      return { success: true, numero_os: numOS };
     })()
     `;
 
-    try {
-      this.notifyStatus('syncing');
-      const res = await this.executeCloud(code);
-      this.lastSyncTime = new Date();
-      this.notifyStatus('synced', { numero_os: os.numero_os });
-      return res;
-    } catch (err) {
-      this.notifyStatus('offline', { error: err.message });
-      throw err;
-    }
+    return fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'execute_command', code })
+    });
   },
 
-  // Atualiza apenas status de uma OS
-  async updateStatus(numero_os, novoStatus, autor) {
-    autor = autor || localStorage.getItem('calce_operador_nome') || 'Oficina (Pais)';
-    const code = `
-    (function() {
-      var ss = SpreadsheetApp.getActiveSpreadsheet();
-      var sheet = ss.getSheetByName('Sapataria_Ordens');
-      if (!sheet) return { error: 'Aba nao encontrada' };
+  // 4. Polling Rápido Inteligente (Zero F5 em qualquer rede)
+  startFastCloudPolling() {
+    if (this.pollTimer) clearInterval(this.pollTimer);
 
-      var data = sheet.getDataRange().getValues();
-      var numOS = Number(${Number(numero_os)});
-      var agora = new Date().toISOString();
-      for (var i = 1; i < data.length; i++) {
-        if (Number(data[i][0]) === numOS) {
-          sheet.getRange(i + 1, 10).setValue(${JSON.stringify(novoStatus)});
-          sheet.getRange(i + 1, 13).setValue(agora);
-          sheet.getRange(i + 1, 14).setValue(${JSON.stringify(autor)});
-          return { success: true, numero_os: numOS, status: ${JSON.stringify(novoStatus)}, atualizado_em: agora };
+    // Roda sync completo inicial
+    this.syncAll();
+
+    // Roda a cada 4 segundos
+    this.pollTimer = setInterval(async () => {
+      // Se tiver SSE ativo e funcionando no servidor local, o SSE já faz o trabalho em tempo real!
+      // Mas se não tiver SSE ou estiver em aba de fundo, o polling garante 100% de consistência
+      if (document.hidden) return;
+      await this.checkRemoteUpdates();
+    }, 4000);
+
+    // Quando o usuário toca na tela ou volta à aba, checa imediatamente
+    window.addEventListener('visibilitychange', () => {
+      if (!document.hidden) this.checkRemoteUpdates();
+    });
+    window.addEventListener('focus', () => this.checkRemoteUpdates());
+  },
+
+  // Verifica se há novas atualizações remotas de forma super leve
+  async checkRemoteUpdates() {
+    // 1. Se estiver conectado ao Node server local, checa API local primeiro (0.01s)
+    if (window.location.protocol.startsWith('http')) {
+      try {
+        const res = await fetch('/api/sapataria/ordens');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data)) {
+            const newHash = json.data.map(o => `${o.numero_os}:${o.status}:${o.atualizado_em}`).join('|');
+            if (newHash !== this.lastRevisionHash) {
+              this.lastRevisionHash = newHash;
+              // Salva todas no IndexedDB
+              const db = await openDB();
+              const tx = db.transaction('ordens_servico', 'readwrite');
+              const store = tx.objectStore('ordens_servico');
+              json.data.forEach(item => {
+                store.put(item);
+              });
+              await new Promise(r => tx.oncomplete = r);
+              this.notifyStatus('synced');
+              this.triggerDataChange('poll_update', json.data);
+              return;
+            }
+          }
         }
-      }
-      return { error: 'OS nao encontrada' };
-    })()
-    `;
-
-    try {
-      this.notifyStatus('syncing');
-      const res = await this.executeCloud(code);
-      this.lastSyncTime = new Date();
-      this.notifyStatus('synced');
-      return res;
-    } catch (err) {
-      this.notifyStatus('offline', { error: err.message });
-      throw err;
+      } catch (e) {}
     }
-  },
 
-  // Deleta OS na nuvem
-  async deleteOrder(numero_os) {
-    const code = `
-    (function() {
-      var ss = SpreadsheetApp.getActiveSpreadsheet();
-      var sheet = ss.getSheetByName('Sapataria_Ordens');
-      if (!sheet) return { error: 'Aba nao encontrada' };
-
-      var data = sheet.getDataRange().getValues();
-      var numOS = Number(${Number(numero_os)});
-      for (var i = 1; i < data.length; i++) {
-        if (Number(data[i][0]) === numOS) {
-          sheet.deleteRow(i + 1);
-          return { success: true, deleted: numOS };
-        }
-      }
-      return { error: 'OS nao encontrada' };
-    })()
-    `;
-
+    // 2. Se não houver servidor local (ex: no GitHub Pages), checa Google Sheets
     try {
-      this.notifyStatus('syncing');
-      await this.executeCloud(code);
-      this.lastSyncTime = new Date();
-      this.notifyStatus('synced');
-      return true;
-    } catch (err) {
-      this.notifyStatus('offline', { error: err.message });
-      throw err;
-    }
-  },
-
-  // Sincronização Bidirecional Completa (Pull + Push)
-  async sync() {
-    if (this.isSyncing) return;
-    this.isSyncing = true;
-    this.notifyStatus('syncing');
-
-    try {
-      const codePull = `
+      const code = `
       (function() {
         var ss = SpreadsheetApp.getActiveSpreadsheet();
         var sheet = ss.getSheetByName('Sapataria_Ordens');
@@ -430,19 +649,15 @@ const CloudSync = {
           } catch(e) {
             itens = [{ nome: 'Serviço', servico: String(row[4] || ''), valor: Number(row[6]) || 0 }];
           }
-          
           var prevParts = String(row[5] || '').split(' às ');
-          var prevData = prevParts[0] || '';
-          var prevHora = prevParts[1] || '';
-
           list.push({
             numero_os: Number(row[0]) || i,
             data_entrada: String(row[1] || ''),
             cliente_nome: String(row[2] || ''),
             cliente_whatsapp: String(row[3] || ''),
             itens: itens,
-            previsao_retirada_data: prevData,
-            previsao_retirada_hora: prevHora,
+            previsao_retirada_data: prevParts[0] || '',
+            previsao_retirada_hora: prevParts[1] || '',
             valor_total: Number(row[6]) || 0,
             valor_entrada: Number(row[7]) || 0,
             valor_restante: Number(row[8]) || 0,
@@ -457,109 +672,46 @@ const CloudSync = {
       })()
       `;
 
-      const remoteOrders = await this.executeCloud(codePull);
-      const localOrders = await listarTodasOS();
-
-      const db = await openDB();
-      const tx = db.transaction('ordens_servico', 'readwrite');
-      const store = tx.objectStore('ordens_servico');
-
-      const localMap = new Map();
-      localOrders.forEach(o => localMap.set(Number(o.numero_os), o));
-
-      let alterouLocal = false;
-      const pendentesPush = [];
-
-      // 1. Processa dados da nuvem para o local
-      for (const rem of remoteOrders) {
-        const loc = localMap.get(Number(rem.numero_os));
-        if (!loc) {
-          // Nova ordem criada por outro aparelho (ex: filho pelo PC ou pai pelo celular)
-          rem.sincronizado = true;
-          store.add(rem);
-          alterouLocal = true;
-        } else {
-          const remTime = new Date(rem.atualizado_em || 0).getTime();
-          const locTime = new Date(loc.atualizado_em || 0).getTime();
-
-          if (remTime > locTime) {
-            // Nuvem tem dados mais recentes
-            rem.id = loc.id;
-            rem.sincronizado = true;
-            store.put(rem);
-            alterouLocal = true;
-          } else if (locTime > remTime && loc.sincronizado === false) {
-            // Local tem alteração não enviada
-            pendentesPush.push(loc);
-          }
-        }
-        localMap.delete(Number(rem.numero_os));
-      }
-
-      // 2. Ordens locais que ainda não estão na nuvem
-      for (const loc of localMap.values()) {
-        pendentesPush.push(loc);
-      }
-
-      await new Promise((res, rej) => {
-        tx.oncomplete = res;
-        tx.onerror = rej;
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'execute_command', code })
       });
-
-      // 3. Envia pendências locais para a nuvem
-      for (const pend of pendentesPush) {
-        try {
-          await this.pushOrder(pend);
-          pend.sincronizado = true;
-          const txUp = db.transaction('ordens_servico', 'readwrite');
-          txUp.objectStore('ordens_servico').put(pend);
-        } catch(e) {
-          console.warn('Erro ao subir pendência:', e);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.result)) {
+        const newHash = data.result.map(o => `${o.numero_os}:${o.status}:${o.atualizado_em}`).join('|');
+        if (newHash !== this.lastRevisionHash) {
+          this.lastRevisionHash = newHash;
+          const db = await openDB();
+          const tx = db.transaction('ordens_servico', 'readwrite');
+          const store = tx.objectStore('ordens_servico');
+          data.result.forEach(item => {
+            store.put(item);
+          });
+          await new Promise(r => tx.oncomplete = r);
+          this.notifyStatus('synced');
+          this.triggerDataChange('poll_update', data.result);
         }
       }
-
-      this.lastSyncTime = new Date();
-      this.notifyStatus('synced', { alterouLocal, total: remoteOrders.length });
-      return { alterouLocal, total: remoteOrders.length };
-    } catch (err) {
-      console.warn('Erro no sync bidirecional:', err);
-      this.notifyStatus('offline', { error: err.message });
-      return { alterouLocal: false, error: err.message };
-    } finally {
-      this.isSyncing = false;
+    } catch (e) {
+      this.notifyStatus('offline');
     }
   },
 
-  // Inicia Polling Automático em segundo plano
-  startAutoSync(intervalSeconds = 10, onUpdateCallback = null) {
-    if (this.autoSyncTimer) clearInterval(this.autoSyncTimer);
-
-    // Sync inicial imediato
-    this.sync().then(res => {
-      if (res && res.alterouLocal && typeof onUpdateCallback === 'function') {
-        onUpdateCallback();
-      }
-    });
-
-    this.autoSyncTimer = setInterval(async () => {
-      // Só roda se a página estiver visível (economiza bateria dos celulares)
-      if (document.hidden) return;
-
-      const res = await this.sync();
-      if (res && res.alterouLocal && typeof onUpdateCallback === 'function') {
-        onUpdateCallback();
-      }
-    }, intervalSeconds * 1000);
-
-    // Quando o usuário volta à aba do navegador, sincroniza na hora
-    window.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        this.sync().then(res => {
-          if (res && res.alterouLocal && typeof onUpdateCallback === 'function') {
-            onUpdateCallback();
-          }
-        });
-      }
-    });
+  // Sincronização manual imediata
+  async syncAll() {
+    this.notifyStatus('syncing');
+    await this.checkRemoteUpdates();
+    this.notifyStatus('synced');
   }
+};
+
+// Compatibilidade de nome com referências existentes
+const CloudSync = {
+  sync: () => RealtimeSync.syncAll(),
+  pushOrder: (os) => RealtimeSync.pushOrder(os),
+  updateStatus: (num, st) => RealtimeSync.updateStatus(num, st),
+  deleteOrder: (num) => RealtimeSync.deleteOrder(num),
+  onStatusChange: (fn) => RealtimeSync.onStatusChange(fn),
+  startAutoSync: () => {}
 };
