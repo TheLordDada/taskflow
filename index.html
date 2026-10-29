@@ -770,13 +770,6 @@
                     <span id="feedback-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-purple-500 text-white font-extrabold animate-pulse shrink-0">0</span>
                 </button>
                 
-                <button type="button" id="main-switch-sapataria" onclick="window.switchMainView('sapataria')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-amber-300 transition" title="Gestão da Sapataria Calce Couro">
-                    <span class="flex items-center gap-2.5 min-w-0">
-                        <i class="fa-solid fa-shoe-prints w-4 text-xs text-amber-500"></i>
-                        <span class="truncate">Sapataria Calce Couro</span>
-                    </span>
-                    <span id="sapataria-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 font-extrabold shrink-0">0</span>
-                </button>
                 <button type="button" id="main-switch-schedule" onclick="window.switchMainView('schedule')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition" title="Escala Diária de Colaboradores & Turnos">
                     <span class="flex items-center gap-2.5 min-w-0">
                         <i class="fa-solid fa-calendar-days w-4 text-xs text-teal-400"></i>
@@ -881,11 +874,6 @@
                         <span id="topbar-schedule-badge" class="hidden text-[10px] px-1 rounded-full bg-teal-500 text-black font-extrabold ml-0.5">0</span>
                     </button>
                     
-                    <button type="button" id="topbar-switch-sapataria" onclick="window.switchMainView('sapataria')" class="px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative" title="Sapataria Calce Couro">
-                        <i class="fa-solid fa-shoe-prints text-[11px] text-amber-500"></i>
-                        <span>Sapataria</span>
-                        <span id="topbar-sapataria-badge" class="hidden text-[10px] px-1 rounded-full bg-amber-500 text-black font-extrabold ml-0.5">0</span>
-                    </button>
                     <button type="button" id="topbar-switch-reports" onclick="admin.openPanel(); admin.switchTab('reports');" class="px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative" title="Relatórios com Gráficos de Pizza">
                         <i class="fa-solid fa-chart-pie text-[11px] text-emerald-400"></i>
                         <span>Relatórios</span>
@@ -1673,113 +1661,7 @@
         </div>
 
         
-            <!-- ========================================== -->
-            <!-- MÓDULO 5: SAPATARIA CALCE COURO            -->
-            <!-- ========================================== -->
-            <div id="view-sapataria-container" class="hidden space-y-4 pb-32 md:pb-12">
-                <!-- Cabeçalho Informativo e Conexão em Nuvem -->
-                <div class="bg-gray-950/80 p-3 sm:p-4 rounded-xl border border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
-                            <i class="fa-solid fa-shoe-prints text-lg"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="flex items-center gap-2">
-                                <h3 class="font-bold text-sm text-gray-100">Sapataria Calce Couro</h3>
-                                <span id="sapataria-sync-pill" class="text-[10px] px-2 py-0.5 rounded-full bg-amber-950 border border-amber-800/80 text-amber-300 font-semibold flex items-center gap-1">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                                    <span id="sapataria-sync-pill-text">Nuvem Conectada</span>
-                                </span>
-                            </div>
-                            <p id="sapataria-last-sync-text" class="text-[11px] text-gray-400 truncate">Supervisão da bancada dos seus pais • Sincronização em tempo real</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0 flex-wrap">
-                        <a href="sapataria/" target="_blank" class="px-3 py-2 bg-amber-600 hover:bg-amber-500 active:scale-95 text-black rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow">
-                            <i class="fa-solid fa-mobile-screen"></i> Abrir Balcão dos Pais
-                        </a>
-                        <a href="https://docs.google.com/spreadsheets/d/1rGd_XLaMLsI6dwpped3eyB5IGidepyQPWw_kwzpWIzY/edit#gid=0" target="_blank" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 border border-gray-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow">
-                            <i class="fa-solid fa-table text-emerald-400"></i> Planilha Google
-                        </a>
-                        <button type="button" onclick="sapatariaApp.fetchOrders(true)" id="btn-sapataria-sync" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 active:scale-95 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow" title="Recarregar consertos">
-                            <i class="fa-solid fa-arrows-rotate" id="sapataria-sync-icon"></i> Sincronizar
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Painel de Indicadores Financeiros e Operacionais (KPIs) -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                    <div class="bg-gray-900/60 p-3.5 rounded-xl border border-gray-800 flex flex-col justify-between">
-                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider"><i class="fa-solid fa-box text-amber-500 mr-1"></i> Na Loja (Ativos)</span>
-                        <div class="flex items-baseline justify-between mt-2">
-                            <span class="text-xl sm:text-2xl font-black text-gray-100" id="sap-kpi-ativos">0</span>
-                            <span class="text-[10px] text-amber-400 font-semibold">calçados</span>
-                        </div>
-                    </div>
-                    <div class="bg-gray-900/60 p-3.5 rounded-xl border border-emerald-900/40 flex flex-col justify-between">
-                        <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider"><i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Prontos</span>
-                        <div class="flex items-baseline justify-between mt-2">
-                            <span class="text-xl sm:text-2xl font-black text-emerald-400" id="sap-kpi-prontos">0</span>
-                            <span class="text-[10px] text-emerald-500 font-semibold">retirar</span>
-                        </div>
-                    </div>
-                    <div class="bg-gray-900/60 p-3.5 rounded-xl border border-rose-900/40 flex flex-col justify-between">
-                        <span class="text-[10px] font-bold text-rose-400 uppercase tracking-wider"><i class="fa-solid fa-triangle-exclamation text-rose-400 mr-1"></i> Atrasados</span>
-                        <div class="flex items-baseline justify-between mt-2">
-                            <span class="text-xl sm:text-2xl font-black text-rose-400" id="sap-kpi-atrasados">0</span>
-                            <span class="text-[10px] text-rose-500 font-semibold">alerta</span>
-                        </div>
-                    </div>
-                    <div class="bg-gray-900/60 p-3.5 rounded-xl border border-teal-900/40 flex flex-col justify-between">
-                        <span class="text-[10px] font-bold text-teal-400 uppercase tracking-wider"><i class="fa-solid fa-wallet text-teal-400 mr-1"></i> Entrou Hoje</span>
-                        <div class="flex items-baseline justify-between mt-2">
-                            <span class="text-lg sm:text-xl font-black text-teal-300" id="sap-kpi-caixa-hoje">R$ 0,00</span>
-                        </div>
-                    </div>
-                    <div class="bg-gray-900/60 p-3.5 rounded-xl border border-yellow-900/40 flex flex-col justify-between col-span-2 sm:col-span-1">
-                        <span class="text-[10px] font-bold text-yellow-400 uppercase tracking-wider"><i class="fa-solid fa-hand-holding-dollar text-yellow-400 mr-1"></i> Saldo a Receber</span>
-                        <div class="flex items-baseline justify-between mt-2">
-                            <span class="text-lg sm:text-xl font-black text-yellow-300" id="sap-kpi-saldo-loja">R$ 0,00</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Barra de Filtros e Busca de Consertos -->
-                <div class="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between bg-gray-950/60 p-2.5 rounded-xl border border-gray-800/80">
-                    <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1 sm:pb-0">
-                        <button type="button" onclick="sapatariaApp.setFilter('ativos')" id="sap-filter-ativos" class="px-3 py-1.5 rounded-lg text-xs font-bold transition bg-amber-600 text-black shadow">
-                            Na Loja (<span id="sap-filter-count-ativos">0</span>)
-                        </button>
-                        <button type="button" onclick="sapatariaApp.setFilter('prontos')" id="sap-filter-prontos" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white hover:bg-gray-800">
-                            Prontos (<span id="sap-filter-count-prontos">0</span>)
-                        </button>
-                        <button type="button" onclick="sapatariaApp.setFilter('atrasados')" id="sap-filter-atrasados" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-rose-400 hover:text-white hover:bg-gray-800">
-                            Atrasados (<span id="sap-filter-count-atrasados">0</span>)
-                        </button>
-                        <button type="button" onclick="sapatariaApp.setFilter('finalizados')" id="sap-filter-finalizados" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white hover:bg-gray-800">
-                            Entregues (<span id="sap-filter-count-finalizados">0</span>)
-                        </button>
-                        <button type="button" onclick="sapatariaApp.setFilter('todos')" id="sap-filter-todos" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-gray-400 hover:text-white hover:bg-gray-800">
-                            Todos (<span id="sap-filter-count-todos">0</span>)
-                        </button>
-                    </div>
-
-                    <div class="relative min-w-[220px]">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-gray-500"></i>
-                        <input type="text" id="sap-search-input" oninput="sapatariaApp.onSearch(this.value)" placeholder="Buscar cliente, tel ou OS..." class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-amber-500">
-                    </div>
-                </div>
-
-                <!-- Lista de Consertos (Grid de Cards) -->
-                <div id="sapataria-orders-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    <div class="col-span-full text-center py-12 text-gray-500">
-                        <i class="fa-solid fa-circle-notch fa-spin text-2xl text-amber-500 mb-2"></i>
-                        <p class="text-xs">Carregando pedidos da sapataria...</p>
-                    </div>
-                </div>
-            </div>
-
-        <!-- Bottom Navigation Bar Mobile -->
+            <!-- Bottom Navigation Bar Mobile -->
         <nav id="app-bottom-nav-bar" class="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur border-t border-gray-800 px-3 py-2 flex items-center justify-around z-40 shadow-2xl pb-safe-bottom">
             <button onclick="window.switchMainView('tasks')" id="mob-nav-tasks" class="flex flex-col items-center gap-1 text-indigo-400 py-1 px-2.5 transition active:scale-90">
                 <i class="fa-solid fa-list-check text-base"></i>
@@ -1801,11 +1683,6 @@
                 <span id="mob-feedback-badge" class="hidden absolute top-0 right-2 w-2 h-2 rounded-full bg-purple-500 animate-ping"></span>
             </button>
             
-            <button onclick="window.switchMainView('sapataria')" id="mob-nav-sapataria" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1.5 transition active:scale-90 relative">
-                <i class="fa-solid fa-shoe-prints text-base text-amber-400"></i>
-                <span class="text-[9px] font-semibold">Sapataria</span>
-                <span id="mob-sapataria-badge" class="hidden absolute top-0 right-1 w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-            </button>
             <button onclick="app.setFilter('mine')" id="mob-nav-mine" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2.5 transition active:scale-90">
                 <i class="fa-solid fa-user-check text-base"></i>
                 <span class="text-[10px] font-semibold">Minhas</span>
@@ -5613,23 +5490,6 @@
                     } else {
                         feedbackApp.switchTab('history');
                     }
-                }
-            } else if (view === 'sapataria') {
-                if (mobFab) mobFab.classList.add('hidden');
-                const sapSec = document.getElementById('view-sapataria-container');
-                if (sapSec) sapSec.classList.remove('hidden');
-                if (viewTitle) viewTitle.innerText = "Sapataria Calce Couro";
-
-                const switchSap = document.getElementById('main-switch-sapataria');
-                const topbarSap = document.getElementById('topbar-switch-sapataria');
-                const mobSap = document.getElementById('mob-nav-sapataria');
-
-                if (switchSap) switchSap.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition bg-amber-600 text-black shadow-md shadow-amber-600/30";
-                if (topbarSap) topbarSap.className = "px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-600 text-black transition flex items-center gap-1 relative shadow-sm";
-                if (mobSap) mobSap.className = "flex flex-col items-center gap-1 text-amber-400 py-1 px-1.5 transition active:scale-90 relative";
-
-                if (window.sapatariaApp) {
-                    window.sapatariaApp.fetchOrders();
                 }
             } else if (view === 'schedule') {
                 if (mobFab) mobFab.classList.add('hidden');
