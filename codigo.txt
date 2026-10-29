@@ -12627,10 +12627,15 @@
                     else monthControls.classList.add('hidden');
                 }
 
+                const diasSemanaValidos = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+
                 if (mode === 'monthly') {
                     this.populateMonthSelect();
                     this.fetchMonthlyHistory();
                 } else {
+                    if (!diasSemanaValidos.includes(this.currentDay) || !this.data?.dias?.[this.currentDay]) {
+                        this.currentDay = this.getTodayDayName();
+                    }
                     this.renderDaysSelector();
                     this.renderStatsAndAbsences();
                     this.renderSlots();
@@ -12851,15 +12856,37 @@
                 }
             }
 
+            getSitType(item) {
+                if (!item) return "ausencia";
+                if (item.tipo === "folga") return "folga";
+                const s = String(item.situacao || "").toUpperCase();
+                if (s.includes("FERIADO") || item.isFeriado) return "feriado";
+                if (s.includes("ATESTADO") || s.includes("MEDICO") || s.includes("MÉDICO")) return "atestado";
+                if (s.includes("FÉRIAS") || s.includes("FERIAS")) return "ferias";
+                return "ausencia";
+            }
+
             switchDay(dayName) {
+                const diasSemanaValidos = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
                 if (this.periodMode === 'monthly') {
-                    this.currentMonthlyDay = parseInt(dayName, 10);
+                    this.currentMonthlyDay = parseInt(dayName, 10) || 1;
                     const curData = this.getCurrentDayData();
-                    if (curData && curData.diaSemana) {
+                    if (curData && curData.diaSemana && diasSemanaValidos.includes(curData.diaSemana)) {
                         this.currentDay = curData.diaSemana;
+                    } else {
+                        const parts = (this.selectedMonthYear || this.getDefaultMonthYear()).split('/');
+                        const mes = parseInt(parts[0], 10);
+                        const ano = parseInt(parts[1], 10);
+                        const dateObj = new Date(ano, mes - 1, this.currentMonthlyDay);
+                        const mapDias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                        this.currentDay = mapDias[dateObj.getDay()] || this.getTodayDayName();
                     }
                 } else {
-                    this.currentDay = dayName;
+                    if (diasSemanaValidos.includes(dayName)) {
+                        this.currentDay = dayName;
+                    } else {
+                        this.currentDay = this.getTodayDayName();
+                    }
                 }
                 this.render();
             }
@@ -14344,14 +14371,16 @@
             }
 
             getCurrentDayData() {
+                const diasSemanaValidos = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+
                 if (this.periodMode === 'monthly') {
                     const parts = (this.selectedMonthYear || this.getDefaultMonthYear()).split('/');
-                    const mes = parts[0];
-                    const ano = parts[1];
+                    const mes = parseInt(parts[0], 10);
+                    const ano = parseInt(parts[1], 10);
                     const diaFmt = (this.currentMonthlyDay < 10 ? '0' : '') + this.currentMonthlyDay;
-                    const dataStr = diaFmt + '/' + mes + '/' + ano;
+                    const dataStr = diaFmt + '/' + (mes < 10 ? '0' : '') + mes + '/' + ano;
 
-                    // 1. PRIORIDADE MÁXIMA: Se a data selecionada coincidir com um dos dias da escala viva (Diaria), retorna os dados ricos e completos ao vivo!
+                    // 1. PRIORIDADE MÁXIMA: Se a data coincidir com a escala viva (Diaria), retorna os dados ricos
                     if (this.data && this.data.dias) {
                         for (const diaNome of Object.keys(this.data.dias)) {
                             const dInfo = this.data.dias[diaNome];
@@ -14369,7 +14398,6 @@
                         const mDay = this.monthlyData[dataStr];
                         if (mDay.slots && Array.isArray(mDay.slots)) {
                             mDay.slots.forEach(slot => {
-                                // Se faltar escala, busca do cadastro de colaboradores
                                 if (!slot.escala && slot.nome && this.data && this.data.colaboradores) {
                                     const colabObj = this.data.colaboradores.find(c => c.nome && c.nome.toUpperCase() === slot.nome.toUpperCase());
                                     if (colabObj && colabObj.escala) slot.escala = colabObj.escala;
@@ -14379,10 +14407,14 @@
                         return mDay;
                     }
 
-                    // Se não tiver registro no histórico para essa data do mês, retorna objeto vazio estruturado
+                    // 3. Fallback seguro para dia do mês sem histórico
+                    const dateObj = new Date(ano, mes - 1, this.currentMonthlyDay);
+                    const mapDias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                    const realDiaSemana = mapDias[dateObj.getDay()] || 'Segunda';
+
                     return {
                         data: dataStr,
-                        diaSemana: 'Dia ' + diaFmt,
+                        diaSemana: realDiaSemana,
                         slots: [],
                         folgas: [],
                         ausencias: [],
@@ -14390,7 +14422,17 @@
                     };
                 }
 
-                // Modo Semanal padrão
+                // Modo Semanal padrão com auto-recuperação infalível
+                if (!this.currentDay || !diasSemanaValidos.includes(this.currentDay) || !this.data?.dias?.[this.currentDay]) {
+                    const hojeNome = this.getTodayDayName();
+                    if (this.data?.dias?.[hojeNome]) {
+                        this.currentDay = hojeNome;
+                    } else if (this.data?.dias) {
+                        const primeiroDisponivel = diasSemanaValidos.find(d => this.data.dias[d]);
+                        if (primeiroDisponivel) this.currentDay = primeiroDisponivel;
+                    }
+                }
+
                 return (this.data && this.data.dias && this.data.dias[this.currentDay]) ? this.data.dias[this.currentDay] : null;
             }
 
@@ -14399,7 +14441,8 @@
                 if (this.periodMode === 'monthly') {
                     diaInfo = this.getCurrentDayData();
                 } else {
-                    diaInfo = (this.data && this.data.dias && this.data.dias[diaName || this.currentDay]) ? this.data.dias[diaName || this.currentDay] : null;
+                    const diaAlvo = diaName || this.currentDay;
+                    diaInfo = (this.data && this.data.dias && this.data.dias[diaAlvo]) ? this.data.dias[diaAlvo] : this.getCurrentDayData();
                 }
                 if (!diaInfo || !diaInfo.slots) return [];
 
@@ -14495,6 +14538,8 @@
                 const badgeTotal = document.getElementById('schedule-absences-total-badge');
                 if (!absencesList) return;
 
+                const getSitType = (item) => this.getSitType(item);
+
                 const folgas = (diaInfo && diaInfo.folgas) ? diaInfo.folgas : [];
                 const ausenciasCompletas = (diaInfo && diaInfo.ausenciasCompletas) ? diaInfo.ausenciasCompletas : [];
 
@@ -14541,14 +14586,21 @@
                 }
 
                 // Atualiza contadores dos botões de filtro
+                const totalAtestados = effectiveAus.filter(a => getSitType(a) === 'atestado').length;
+                const totalFerias = effectiveAus.filter(a => getSitType(a) === 'ferias').length;
+
                 const cAll = document.getElementById('count-abs-all');
                 const cFolgas = document.getElementById('count-abs-folgas');
-                const cAus = document.getElementById('count-abs-ausencias');
+                const cAtestados = document.getElementById('count-abs-atestados');
+                const cFerias = document.getElementById('count-abs-ferias');
+                const cFeriados = document.getElementById('count-abs-feriados');
                 const cUnc = document.getElementById('count-abs-uncovered');
 
                 if (cAll) cAll.innerText = totalAll;
                 if (cFolgas) cFolgas.innerText = totalFolgas;
-                if (cAus) cAus.innerText = totalAusencias;
+                if (cAtestados) cAtestados.innerText = totalAtestados;
+                if (cFerias) cFerias.innerText = totalFerias;
+                if (cFeriados) cFeriados.innerText = totalFeriados;
                 if (cUnc) cUnc.innerText = totalUncovered;
                 const tbCount = document.getElementById('tb-count-abs');
                 if (tbCount) tbCount.innerText = totalAll;
