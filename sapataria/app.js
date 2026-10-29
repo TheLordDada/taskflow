@@ -1233,8 +1233,20 @@ function configurarCloudSyncEModos() {
   const perfilSalvo = localStorage.getItem('calce_operador_perfil') || 'oficina';
   aplicarPerfil(perfilSalvo);
 
-  // Monitor de Status de Sincronização em Nuvem
-  CloudSync.onStatusChange((status, details) => {
+  // Inicia motor de Tempo Real Instantâneo (Zero F5)
+  RealtimeSync.init();
+
+  // Quando qualquer aparelho mudar algo, a tela atualiza na hora sem recarregar!
+  RealtimeSync.onDataChange(async (reason, data) => {
+    await carregarOrdens();
+    // Notificação sutil sonora apenas para eventos novos
+    if (reason === 'order_saved') {
+      tocarSomSucesso();
+    }
+  });
+
+  // Monitor de Status de Sincronização
+  RealtimeSync.onStatusChange((status, details) => {
     if (!syncDot || !syncLabel || !syncPill) return;
 
     if (status === 'syncing') {
@@ -1246,23 +1258,23 @@ function configurarCloudSyncEModos() {
       syncDot.className = 'sync-dot pulse-green';
       const agora = new Date();
       const horaStr = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
-      syncLabel.textContent = `Nuvem OK às ${horaStr}`;
+      syncLabel.textContent = `Ao Vivo • OK ${horaStr}`;
     } else if (status === 'offline') {
       syncPill.classList.remove('is-syncing');
       syncDot.className = 'sync-dot offline';
-      syncLabel.textContent = 'Modo Offline (Salvo no aparelho)';
+      syncLabel.textContent = 'Salvo no Aparelho (Offline)';
     }
   });
 
   // Botão manual de Sincronizar Tudo
   async function dispararSincronizacaoManual() {
-    if (syncLabel) syncLabel.textContent = 'Atualizando Nuvem...';
+    if (syncLabel) syncLabel.textContent = 'Atualizando...';
     try {
-      await CloudSync.sync();
+      await RealtimeSync.syncAll();
       await carregarOrdens();
       tocarSomSucesso();
     } catch (e) {
-      alert('Aviso de conexão: Os dados estão salvos no aparelho e serão sincronizados automaticamente quando a internet reconectar.');
+      alert('Aviso de conexão: Os dados estão salvos no aparelho e serão sincronizados automaticamente.');
     }
   }
 
@@ -1274,11 +1286,6 @@ function configurarCloudSyncEModos() {
   if (btnAbrirConectar) {
     btnAbrirConectar.addEventListener('click', abrirModalConectar);
   }
-
-  // Inicia sincronização automática em segundo plano a cada 8 segundos
-  CloudSync.startAutoSync(8, async () => {
-    await carregarOrdens();
-  });
 }
 
 function abrirModalConectar() {
