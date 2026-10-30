@@ -651,11 +651,7 @@
             <!-- Rodapé da Tela de Auth -->
             <div class="mt-6 pt-4 border-t border-gray-800/80 flex flex-col items-center gap-3 text-xs text-gray-400 text-center">
                 <div class="flex flex-wrap items-center justify-center gap-3">
-                    <button type="button" onclick="syncManager.openChannelModal()" class="flex items-center gap-1.5 hover:text-indigo-400 transition font-medium">
-                        <i class="fa-solid fa-key text-indigo-400"></i>
-                        <span>Canal da Empresa</span>
-                    </button>
-                    <span class="text-gray-700">•</span>
+                    
                     <a href="instalar.html" class="flex items-center gap-1.5 text-indigo-300 hover:text-indigo-200 transition font-semibold">
                         <i class="fa-solid fa-book-open text-xs"></i>
                         <span>Guia de Instalação</span>
@@ -847,10 +843,10 @@
                     <span id="sync-pulse-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span id="sync-status-text" class="font-medium">Nuvem Conectada</span>
                 </span>
-                <button onclick="syncManager.openChannelModal()" title="Configurar Canal de Sincronização" class="text-[11px] px-2 py-0.5 rounded-lg bg-gray-900 hover:bg-gray-800 text-indigo-400 hover:text-indigo-300 border border-gray-800 font-mono flex items-center gap-1 transition">
-                    <i class="fa-solid fa-key text-[10px]"></i>
+                <div title="Canal Oficial Ativo" class="text-[11px] px-2.5 py-0.5 rounded-lg bg-gray-900/80 text-emerald-400 border border-emerald-900/40 font-mono flex items-center gap-1.5 select-none">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span id="sidebar-channel-label">rondon_2026</span>
-                </button>
+                </div>
             </div>
             <div class="flex items-center gap-1.5 pt-1 border-t border-gray-800/60 text-[11px]">
                 <button onclick="app.testNotificationSound()" title="Testar Som e Alerta" class="flex-1 py-1 px-2 rounded-lg bg-gray-900 hover:bg-gray-800/80 text-gray-400 hover:text-indigo-300 transition flex items-center justify-center gap-1.5">
@@ -12274,7 +12270,8 @@
         class CloudSyncManager {
             constructor() {
                 this.defaultChannel = 'taskflow_empresa_rondon_2026';
-                this.channel = localStorage.getItem('taskflow_cloud_channel') || this.defaultChannel;
+                this.channel = 'taskflow_empresa_rondon_2026'; // Canal único fixado em produção
+                localStorage.setItem('taskflow_cloud_channel', this.defaultChannel);
                 this.eventSource = null;
                 this.sessionId = 'ses_' + Math.random().toString(36).substring(2, 9);
                 this.pollingTimer = null;
