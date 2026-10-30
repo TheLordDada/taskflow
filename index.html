@@ -2624,6 +2624,70 @@
                         <input type="date" id="task-date" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition font-mono">
                     </div>
 
+                    <!-- SEÇÃO: TAREFA RECORRENTE COM VALIDAÇÕES PROGRAMADAS (HORA EM HORA / VALIDAÇÕES AO DIA) -->
+                    <div class="p-3.5 rounded-xl bg-indigo-950/30 border border-indigo-900/50 space-y-2.5">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" id="task-recurrent-toggle" onchange="app.toggleRecurrenceFields(this.checked)" class="accent-indigo-500 rounded w-4 h-4">
+                            <div>
+                                <span class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i> Programar Validações no Dia (Checklist de Horários)
+                                </span>
+                                <p class="text-[10px] text-gray-400">Ex: ronda a cada 1h ou 2h, contagem de estoque 3x ao dia com horários e status de atraso.</p>
+                            </div>
+                        </label>
+
+                        <div id="task-recurrent-fields" class="hidden space-y-2.5 pt-2 border-t border-indigo-900/40">
+                            <!-- Tipo de Programação -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-300 uppercase tracking-wider mb-1">Tipo de Intervalo</label>
+                                <select id="task-recurrence-mode" onchange="app.updateRecurrenceSummary()" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-indigo-200 font-semibold focus:outline-none focus:border-indigo-500 transition">
+                                    <option value="interval_1h">A cada 1 hora (1 em 1h)</option>
+                                    <option value="interval_2h" selected>A cada 2 horas (2 em 2h)</option>
+                                    <option value="interval_3h">A cada 3 horas (3 em 3h)</option>
+                                    <option value="interval_4h">A cada 4 horas (4 em 4h)</option>
+                                    <option value="interval_30m">A cada 30 minutos (30 em 30 min)</option>
+                                    <option value="times_2">2 vezes ao dia (Turnos)</option>
+                                    <option value="times_3">3 vezes ao dia (Início, Meio e Fim)</option>
+                                    <option value="times_4">4 vezes ao dia</option>
+                                    <option value="times_5">5 vezes ao dia</option>
+                                </select>
+                            </div>
+
+                            <!-- Janela de Horário Personalizada -->
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Horário de Início</label>
+                                    <input type="time" id="task-recurrence-start" value="07:00" onchange="app.updateRecurrenceSummary()" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-1.5 text-xs text-gray-100 font-mono focus:outline-none focus:border-indigo-500">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Horário de Término</label>
+                                    <input type="time" id="task-recurrence-end" value="19:00" onchange="app.updateRecurrenceSummary()" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-1.5 text-xs text-gray-100 font-mono focus:outline-none focus:border-indigo-500">
+                                </div>
+                            </div>
+
+                            <!-- Tolerância de Atraso -->
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Tolerância para Atraso</label>
+                                <select id="task-recurrence-tolerance" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-1.5 text-xs text-gray-200 focus:outline-none focus:border-indigo-500">
+                                    <option value="0">Sem tolerância (atrasa imediatamente após o horário)</option>
+                                    <option value="15" selected>15 minutos de tolerância (Padrão)</option>
+                                    <option value="30">30 minutos de tolerância</option>
+                                    <option value="60">1 hora de tolerância</option>
+                                </select>
+                            </div>
+
+                            <!-- Resumo dos Checkpoints Gerados -->
+                            <div class="p-2.5 rounded-lg bg-gray-950/80 border border-indigo-900/30">
+                                <span class="text-[10px] font-bold text-indigo-300 block mb-1">
+                                    <i class="fa-solid fa-list-ol text-[9px]"></i> Checkpoints que serão cobrados hoje:
+                                </span>
+                                <div id="task-recurrence-checkpoints-preview" class="flex flex-wrap gap-1.5 text-[10px]">
+                                    <!-- Injetado dinamicamente -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- SEÇÃO: GERAR INCONSISTÊNCIA OPERACIONAL PARA RELATÓRIOS -->
                     <div class="p-3.5 rounded-xl bg-amber-950/25 border border-amber-900/50 space-y-2.5">
                         <label class="flex items-center gap-2 cursor-pointer select-none">
@@ -3908,6 +3972,133 @@
                 this.render();
             }
 
+            
+            // ==========================================
+            // MÉTODOS DE TAREFAS RECORRENTES / CHECKPOINTS
+            // ==========================================
+            toggleRecurrenceFields(checked) {
+                const fields = document.getElementById('task-recurrent-fields');
+                if (fields) {
+                    fields.classList.toggle('hidden', !checked);
+                }
+                if (checked) {
+                    this.updateRecurrenceSummary();
+                }
+            }
+
+            calculateRecurrenceCheckpoints(mode, startTime, endTime) {
+                const list = [];
+                if (!startTime || !endTime) return list;
+
+                const [sH, sM] = startTime.split(':').map(Number);
+                const [eH, eM] = endTime.split(':').map(Number);
+
+                const startMinutes = sH * 60 + sM;
+                const endMinutes = eH * 60 + eM;
+
+                if (endMinutes <= startMinutes) {
+                    list.push(startTime);
+                    list.push(endTime);
+                    return list;
+                }
+
+                if (mode.startsWith('interval_')) {
+                    let step = 60;
+                    if (mode === 'interval_30m') step = 30;
+                    else if (mode === 'interval_1h') step = 60;
+                    else if (mode === 'interval_2h') step = 120;
+                    else if (mode === 'interval_3h') step = 180;
+                    else if (mode === 'interval_4h') step = 240;
+
+                    for (let m = startMinutes; m <= endMinutes; m += step) {
+                        const hh = String(Math.floor(m / 60)).padStart(2, '0');
+                        const mm = String(m % 60).padStart(2, '0');
+                        list.push(hh + ':' + mm);
+                    }
+                } else if (mode.startsWith('times_')) {
+                    const times = parseInt(mode.replace('times_', ''), 10) || 3;
+                    if (times <= 1) {
+                        list.push(startTime);
+                    } else {
+                        const totalSpan = endMinutes - startMinutes;
+                        const step = totalSpan / (times - 1);
+                        for (let i = 0; i < times; i++) {
+                            const curM = Math.round(startMinutes + (i * step));
+                            const hh = String(Math.floor(curM / 60)).padStart(2, '0');
+                            const mm = String(curM % 60).padStart(2, '0');
+                            list.push(hh + ':' + mm);
+                        }
+                    }
+                }
+
+                return list;
+            }
+
+            updateRecurrenceSummary() {
+                const mode = document.getElementById('task-recurrence-mode')?.value || 'interval_2h';
+                const start = document.getElementById('task-recurrence-start')?.value || '07:00';
+                const end = document.getElementById('task-recurrence-end')?.value || '19:00';
+                const preview = document.getElementById('task-recurrence-checkpoints-preview');
+
+                const points = this.calculateRecurrenceCheckpoints(mode, start, end);
+                if (preview) {
+                    if (points.length === 0) {
+                        preview.innerHTML = '<span class="text-rose-400">Nenhum horário válido.</span>';
+                    } else {
+                        preview.innerHTML = points.map(p => `
+                            <span class="bg-indigo-900/60 text-indigo-300 border border-indigo-700/60 px-2 py-0.5 rounded font-mono font-bold">
+                                ${p}
+                            </span>
+                        `).join('');
+                    }
+                }
+            }
+
+            toggleRecurrenceCheckpoint(taskId, checkpointTime) {
+                const task = this.tasks.find(t => t.id === taskId);
+                if (!task || !task.recurrence) return;
+
+                const user = (window.auth && auth.currentUser) ? auth.currentUser.displayName : 'Equipe';
+                
+                if (!Array.isArray(task.recurrence.checkpoints)) {
+                    task.recurrence.checkpoints = [];
+                }
+
+                const cp = task.recurrence.checkpoints.find(c => c.time === checkpointTime);
+                if (cp) {
+                    cp.completed = !cp.completed;
+                    cp.completedBy = cp.completed ? user : null;
+                    cp.completedAt = cp.completed ? Date.now() : null;
+                } else {
+                    task.recurrence.checkpoints.push({
+                        time: checkpointTime,
+                        completed: true,
+                        completedBy: user,
+                        completedAt: Date.now()
+                    });
+                }
+
+                // Se todos os checkpoints forem concluídos, marca a tarefa geral como concluída
+                const allDone = task.recurrence.checkpoints.length > 0 && task.recurrence.checkpoints.every(c => c.completed);
+                task.completed = allDone;
+                task.completedBy = allDone ? user : null;
+                task.updatedAt = Date.now();
+
+                this.saveLocally();
+                this.render();
+
+                if (window.syncManager) {
+                    syncManager.showToast(cp && cp.completed ? `✓ Validação das ${checkpointTime} concluída por ${user}!` : `Validação das ${checkpointTime} reaberta.`);
+                }
+
+                // Dispara sincronização em nuvem
+                try {
+                    if (window.syncManager && typeof syncManager.broadcastChange === 'function') {
+                        syncManager.broadcastChange('TASK_UPDATE', task);
+                    }
+                } catch(e) {}
+            }
+
             openModal(taskOrId = null) {
                 // Checa se o modo somente leitura para colaboradores está ativo
                 if (window.admin && admin.config && admin.config.adminOnlyCreate && (!auth.currentUser || !auth.currentUser.isAdmin)) {
@@ -5043,7 +5234,48 @@
                             createdAt: Date.now()
                         };
 
-                        // Registra no banco global de inconsistências para o Relatório do Administrador
+                        // Seção de Programação de Validações Recorrentes
+                    const recToggle = document.getElementById('task-recurrent-toggle');
+                    let recurrenceData = null;
+                    if (recToggle && recToggle.checked) {
+                        const recMode = document.getElementById('task-recurrence-mode')?.value || 'interval_2h';
+                        const recStart = document.getElementById('task-recurrence-start')?.value || '07:00';
+                        const recEnd = document.getElementById('task-recurrence-end')?.value || '19:00';
+                        const recTol = parseInt(document.getElementById('task-recurrence-tolerance')?.value || '15', 10);
+
+                        const points = this.calculateRecurrenceCheckpoints(recMode, recStart, recEnd);
+
+                        // Preserva checkpoints já marcados se for edição
+                        let existingCheckpoints = [];
+                        if (id) {
+                            const oldTask = this.tasks.find(t => t.id == id);
+                            if (oldTask && oldTask.recurrence && Array.isArray(oldTask.recurrence.checkpoints)) {
+                                existingCheckpoints = oldTask.recurrence.checkpoints;
+                            }
+                        }
+
+                        const builtCheckpoints = points.map(p => {
+                            const found = existingCheckpoints.find(c => c.time === p);
+                            return found ? found : {
+                                time: p,
+                                completed: false,
+                                completedBy: null,
+                                completedAt: null
+                            };
+                        });
+
+                        recurrenceData = {
+                            enabled: true,
+                            mode: recMode,
+                            startTime: recStart,
+                            endTime: recEnd,
+                            toleranceMinutes: recTol,
+                            checkpoints: builtCheckpoints,
+                            updatedAt: Date.now()
+                        };
+                    }
+
+                    // Registra no banco global de inconsistências para o Relatório do Administrador
                         const incRecord = {
                             id: 'inc_task_' + (id || ('task_' + Date.now())),
                             source: 'tarefa',
@@ -5072,6 +5304,7 @@
                             task.image = firstImage;
                             task.images = finalImages;
                             task.inconsistency = inconsistencyData;
+                            task.recurrence = recurrenceData;
                             task.updatedAt = Date.now();
                             taskToBroadcast = task;
                         }
@@ -5086,6 +5319,7 @@
                             image: firstImage,
                             images: finalImages,
                             inconsistency: inconsistencyData,
+                            recurrence: recurrenceData,
                             comments: [],
                             authorName,
                             authorEmail: (auth.currentUser ? auth.currentUser.email : ''),
@@ -5445,6 +5679,66 @@
                             <input type="checkbox" ${isCompleted ? 'checked' : ''} onclick="app.toggleTask('${t.id}')" class="w-5 h-5 rounded-md accent-indigo-600 cursor-pointer shrink-0 mt-0.5 sm:mt-0">
                             <div class="flex-1 min-w-0 space-y-1">
                                 <p class="text-sm font-semibold ${isCompleted ? 'line-through text-gray-500' : 'text-gray-100'} break-words leading-snug">${t.title}</p>
+                                
+                                ${t.recurrence && t.recurrence.enabled && Array.isArray(t.recurrence.checkpoints) && t.recurrence.checkpoints.length > 0 ? (() => {
+                                    const now = new Date();
+                                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                                    const tol = t.recurrence.toleranceMinutes || 15;
+                                    const totalCount = t.recurrence.checkpoints.length;
+                                    const doneCount = t.recurrence.checkpoints.filter(c => c.completed).length;
+
+                                    let hasDelayed = false;
+
+                                    const checkpointsHtml = t.recurrence.checkpoints.map(cp => {
+                                        const [h, m] = cp.time.split(':').map(Number);
+                                        const cpMinutes = h * 60 + m;
+                                        const isDelayed = !cp.completed && (currentMinutes > (cpMinutes + tol));
+                                        if (isDelayed) hasDelayed = true;
+
+                                        let btnClass = "";
+                                        let iconClass = "";
+                                        let statusBadge = "";
+
+                                        if (cp.completed) {
+                                            btnClass = "bg-emerald-950/70 border-emerald-700/80 text-emerald-300 hover:bg-emerald-900/80";
+                                            iconClass = "fa-solid fa-circle-check text-emerald-400";
+                                            statusBadge = cp.completedBy ? `<span class="text-[9px] opacity-75 truncate max-w-[80px]">(${cp.completedBy.split(' ')[0]})</span>` : '';
+                                        } else if (isDelayed) {
+                                            btnClass = "bg-rose-950/80 border-rose-600 text-rose-300 hover:bg-rose-900 animate-pulse";
+                                            iconClass = "fa-solid fa-triangle-exclamation text-rose-400";
+                                            statusBadge = '<span class="text-[9px] font-black uppercase text-rose-400">ATRASADO</span>';
+                                        } else {
+                                            btnClass = "bg-gray-900 border-gray-700 text-gray-300 hover:border-indigo-500 hover:text-white";
+                                            iconClass = "fa-regular fa-clock text-indigo-400";
+                                            statusBadge = '<span class="text-[9px] text-gray-400">Pendente</span>';
+                                        }
+
+                                        return `
+                                            <button type="button" onclick="event.stopPropagation(); app.toggleRecurrenceCheckpoint('${t.id}', '${cp.time}')" title="Clique para validar horário (${cp.time})" class="px-2.5 py-1 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shadow-sm ${btnClass}">
+                                                <i class="${iconClass} text-[10px]"></i>
+                                                <span class="font-mono">${cp.time}</span>
+                                                ${statusBadge}
+                                            </button>
+                                        `;
+                                    }).join('');
+
+                                    return `
+                                        <div class="mt-2 p-2.5 rounded-xl bg-gray-950/70 border ${hasDelayed ? 'border-rose-900/60 bg-rose-950/20' : 'border-indigo-900/40'} space-y-1.5">
+                                            <div class="flex items-center justify-between text-[11px] font-bold">
+                                                <span class="flex items-center gap-1.5 text-indigo-300">
+                                                    <i class="fa-solid fa-clock-rotate-left text-xs ${hasDelayed ? 'text-rose-400 animate-spin' : 'text-indigo-400'}"></i>
+                                                    <span>Ronda / Validações Programadas</span>
+                                                </span>
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-black ${doneCount === totalCount ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : (hasDelayed ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse' : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40')}">
+                                                    ${doneCount}/${totalCount} Concluídas ${hasDelayed ? '• Atrasos detectados' : ''}
+                                                </span>
+                                            </div>
+                                            <div class="flex flex-wrap gap-1.5 pt-0.5">
+                                                ${checkpointsHtml}
+                                            </div>
+                                        </div>
+                                    `;
+                                })() : ''}
                                 <div class="flex flex-wrap items-center gap-1.5 text-xs text-gray-400">
                                     ${t.assignee ? `<span class="bg-gray-800 text-indigo-300 px-2 py-0.5 rounded-md text-[10px] font-medium inline-flex items-center gap-1"><i class="fa-solid fa-user text-[9px]"></i><span>${t.assignee}</span></span>` : ''}
                                     ${t.date ? `<span class="bg-gray-800/60 text-gray-300 px-2 py-0.5 rounded-md text-[10px] inline-flex items-center gap-1"><i class="fa-regular fa-calendar text-[9px]"></i><span>${t.date}</span></span>` : ''}
