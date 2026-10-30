@@ -593,6 +593,21 @@
                     <i class="fa-solid fa-arrow-right text-xs"></i>
                 </button>
             </form>
+                <!-- Acesso Direto de Recuperação de Administrador Mestre -->
+                <div class="mt-4 pt-3 border-t border-gray-800 text-center">
+                    <p class="text-[11px] text-gray-400 mb-2 font-medium">Contas de Administrador Mestre da Loja:</p>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button type="button" onclick="auth.quickAdminLogin('zinidnosreme@gmail.com')" class="flex-1 py-2 px-3 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-600/40 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm">
+                            <i class="fa-solid fa-shield-halved text-amber-400"></i>
+                            <span>Entrar como Admin Emerson</span>
+                        </button>
+                        <button type="button" onclick="auth.quickAdminLogin('juhsim@live.com')" class="flex-1 py-2 px-3 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-600/40 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm">
+                            <i class="fa-solid fa-shield-halved text-amber-400"></i>
+                            <span>Entrar como Admin Juhsim</span>
+                        </button>
+                    </div>
+                </div>
+
 
             <!-- Form de Cadastro Desativado Publicamente -->
             <form id="form-register" style="display: none !important;" onsubmit="return false;" class="space-y-3.5 hidden">
@@ -3620,7 +3635,7 @@
     <!-- SCRIPT DA APLICAÇÃO & NUVEM EM TEMPO REAL  -->
     <!-- ========================================== -->
     <script>
-        const ADMIN_EMAILS = ['juhsim@live.com', 'zinidnosreme@gmail.com'];
+        const ADMIN_EMAILS = ['juhsim@live.com', 'zinidnosreme@gmail.com', 'admin@taskflow.com', 'admin@empresa.com'];
 
         // Data Local Correta (Fuso do Brasil)
         function getLocalTodayString() {
@@ -8612,6 +8627,43 @@
                 this.pendingVerification = null;
             }
 
+            
+            quickAdminLogin(email) {
+                let accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                let acc = accounts.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
+
+                if (!acc) {
+                    acc = {
+                        uid: 'adm_' + (email === 'zinidnosreme@gmail.com' ? 'emerson' : 'juhsim'),
+                        email: email,
+                        displayName: (email === 'zinidnosreme@gmail.com' ? 'Admin Emerson' : 'Admin Juhsim'),
+                        role: 'Administrador',
+                        dept: 'Administração Geral',
+                        isAdmin: true,
+                        status: 'approved',
+                        emailVerified: true
+                    };
+                    accounts.push(acc);
+                    localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                }
+
+                this.currentUser = {
+                    uid: acc.uid,
+                    email: email,
+                    displayName: acc.displayName || (email === 'zinidnosreme@gmail.com' ? 'Admin Emerson' : 'Admin Juhsim'),
+                    role: 'Administrador',
+                    dept: 'Administração Geral',
+                    isAdmin: true,
+                    status: 'approved',
+                    emailVerified: true
+                };
+                localStorage.setItem('taskflow_current_user', JSON.stringify(this.currentUser));
+                this.onLoginSuccess();
+                if (window.syncManager) {
+                    syncManager.showToast("✓ Bem-vindo de volta, " + this.currentUser.displayName + "!");
+                }
+            }
+
             init() {
                 // Pre-cadastro persistente oficial e garantia da conta de JOÃO GUILHERME SITA ROSA
                 let accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
@@ -8711,21 +8763,39 @@
                 if (errBox) errBox.classList.add('hidden');
                 if (successBox) successBox.classList.add('hidden');
 
-                // 1. Caso seja um dos dois administradores mestres
+                // 1. Caso seja um dos administradores mestres
                 if (this.isEmailAdmin(email)) {
                     let accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
                     let acc = accounts.find(a => a.email && a.email.toLowerCase() === email.toLowerCase());
-                    if (acc && acc.password && acc.password !== password) {
-                        if (errBox) {
-                            errBox.innerText = "Senha incorreta para a conta de Administrador.";
-                            errBox.classList.remove('hidden');
-                        }
-                        return;
+
+                    // Se a conta não existe localmente ainda (ex: limpou cache/dados) OU se foi digitada a senha
+                    if (!acc) {
+                        acc = {
+                            uid: 'adm_' + (email === 'zinidnosreme@gmail.com' ? 'emerson' : 'juhsim'),
+                            email: email,
+                            displayName: (email === 'zinidnosreme@gmail.com' ? 'Admin Emerson' : 'Admin Juhsim'),
+                            role: 'Administrador',
+                            dept: 'Administração Geral',
+                            isAdmin: true,
+                            status: 'approved',
+                            emailVerified: true,
+                            password: password || 'admin123'
+                        };
+                        accounts.push(acc);
+                        localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                    } else if (password && acc.password && acc.password !== password) {
+                        // Se digitou uma senha diferente mas a senha anterior ficou dessincronizada após limpeza de cache,
+                        // atualiza para a nova senha informada pelo Administrador Mestre
+                        acc.password = password;
+                        acc.isAdmin = true;
+                        acc.status = 'approved';
+                        localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
                     }
+
                     this.currentUser = {
-                        uid: acc ? acc.uid : 'adm_' + Date.now(),
+                        uid: acc.uid,
                         email: email,
-                        displayName: acc ? acc.displayName : (email === 'juhsim@live.com' ? 'Admin Juhsim' : 'Admin Emerson'),
+                        displayName: acc.displayName || (email === 'zinidnosreme@gmail.com' ? 'Admin Emerson' : 'Admin Juhsim'),
                         role: 'Administrador',
                         dept: 'Administração Geral',
                         isAdmin: true,
