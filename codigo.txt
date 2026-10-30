@@ -12927,13 +12927,13 @@
             }
 
             // 3.5. Modal de Chat Dedicado da Tarefa
-            const taskChatModal = document.getElementById('modal-task-chat');
-            if (taskChatModal && !taskChatModal.classList.contains('hidden') && taskChatModal.style.display !== 'none') {
-                if (window.app && typeof window.app.closeTaskChat === 'function') {
-                    window.app.closeTaskChat();
+            const viewTaskModal = document.getElementById('task-view-modal');
+            if (viewTaskModal && !viewTaskModal.classList.contains('hidden') && viewTaskModal.style.display !== 'none') {
+                if (window.app && typeof window.app.closeViewTaskModal === 'function') {
+                    window.app.closeViewTaskModal();
                 } else {
-                    taskChatModal.classList.add('hidden');
-                    taskChatModal.style.display = 'none';
+                    viewTaskModal.classList.add('hidden');
+                    viewTaskModal.style.display = 'none';
                 }
                 return true;
             }
