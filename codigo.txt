@@ -1793,7 +1793,7 @@
                         <!-- Descrição do Produto -->
                         <div>
                             <label class="block text-[11px] font-bold text-gray-300 mb-1">Nome / Descrição do Produto *</label>
-                            <input type="text" id="poster-input-title" oninput="posterApp.updateLivePreview()" placeholder="Ex: LEITE CONDENSADO MOÇA 395G" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs font-bold text-white uppercase focus:outline-none focus:border-amber-500 transition placeholder:text-gray-600">
+                            <input type="text" id="poster-input-title" oninput="posterApp.updateLivePreview()" value="CEBOLA ROXA COMUM KG" placeholder="Ex: CEBOLA ROXA COMUM KG" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs font-bold text-white uppercase focus:outline-none focus:border-amber-500 transition placeholder:text-gray-600">
                         </div>
 
                         <!-- Setor / Departamento -->
@@ -1804,7 +1804,7 @@
                                     <option value="Mercearia">Mercearia</option>
                                     <option value="Laticínios">Laticínios</option>
                                     <option value="Carnes & Açougue">Carnes & Açougue</option>
-                                    <option value="Hortifruti">Hortifruti</option>
+                                    <option value="Hortifruti" selected>Hortifruti</option>
                                     <option value="Fiambreria & Queijos">Fiambreria & Queijos</option>
                                     <option value="Bebidas">Bebidas</option>
                                     <option value="Padaria & Confeitaria">Padaria</option>
@@ -1818,7 +1818,7 @@
                                 <label class="block text-[11px] font-bold text-gray-300 mb-1">Unidade de Medida</label>
                                 <select id="poster-input-unit" onchange="posterApp.updateLivePreview()" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-2.5 py-2 text-xs text-gray-200 font-bold focus:outline-none focus:border-amber-500 cursor-pointer">
                                     <option value="CADA">CADA / UN</option>
-                                    <option value="KG">KG (Quilo)</option>
+                                    <option value="KG" selected>KG (Quilo)</option>
                                     <option value="PCT">PCT (Pacote)</option>
                                     <option value="100G">100G</option>
                                     <option value="CX">CX (Caixa)</option>
@@ -17435,7 +17435,7 @@
             constructor() {
                 this.posters = [];
                 this.currentTab = 'creator';
-                this.currentType = 'vencimento';
+                this.currentType = 'oferta';
                 this.currentSize = 'a4';
                 this.editingId = null;
                 this.isSyncing = false;
@@ -17624,14 +17624,14 @@
                 const card = document.getElementById('poster-preview-card');
                 if (!card) return;
 
-                const title = (document.getElementById('poster-input-title')?.value || '').trim() || 'NOME DO PRODUTO AQUI';
-                const dept = document.getElementById('poster-input-dept')?.value || 'Mercearia';
-                const unit = document.getElementById('poster-input-unit')?.value || 'CADA';
+                const title = (document.getElementById('poster-input-title')?.value || '').trim() || 'CEBOLA ROXA COMUM KG';
+                const dept = document.getElementById('poster-input-dept')?.value || 'Hortifruti';
+                const unit = document.getElementById('poster-input-unit')?.value || 'KG';
                 const priceFromStr = (document.getElementById('poster-input-price-from')?.value || '').trim();
-                const priceToStr = (document.getElementById('poster-input-price-to')?.value || '').trim() || '0,00';
+                const priceToStr = (document.getElementById('poster-input-price-to')?.value || '').trim() || '19,90';
                 const expiry = document.getElementById('poster-input-expiry')?.value || '';
                 const atacadoCond = (document.getElementById('poster-input-atacado-cond')?.value || '').trim() || 'A partir de 3 unidades';
-                const footer = (document.getElementById('poster-input-footer')?.value || '').trim() || 'Preço válido enquanto durar o estoque • Supermercados Rondon';
+                const footer = (document.getElementById('poster-input-footer')?.value || '').trim() || 'Oferta válida enquanto durar o estoque • Supermercados Rondon';
 
                 const pFrom = this.parseMoney(priceFromStr);
                 const pTo = this.parseMoney(priceToStr);
@@ -17641,9 +17641,7 @@
                     const diff = pFrom - pTo;
                     const pct = Math.round((diff / pFrom) * 100);
                     discountBadgeHtml = `
-                        <div class="inline-flex items-center gap-1 bg-[#D90429] text-white px-2.5 py-1 rounded-md font-black text-xs sm:text-sm uppercase tracking-wide shadow-md">
-                            <i class="fa-solid fa-arrow-down"></i> ${pct}% OFF • ECONOMIZE R$ ${diff.toFixed(2).replace('.', ',')}
-                        </div>
+                        <span class="bg-[#E51920] text-white text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-full shadow-sm">${pct}% OFF</span>
                     `;
                 }
 
@@ -17651,57 +17649,39 @@
                 const reais = parts[0] || '0';
                 const centavos = parts[1] || '00';
 
-                let headerBanner = '';
+                // Chamada de categoria superior (estilo Canva: "HORTIFRUTI EM")
+                let categoryCall = dept.toUpperCase() + ' EM';
+                let badgeTitle = 'OFERTA';
+
+                if (this.currentType === 'vencimento') {
+                    categoryCall = 'PRODUTO PRÓXIMO AO';
+                    badgeTitle = 'VENCIMENTO';
+                } else if (this.currentType === 'atacado') {
+                    categoryCall = atacadoCond.toUpperCase();
+                    badgeTitle = 'LEVE + PAGUE -';
+                } else if (this.currentType === 'normal') {
+                    categoryCall = dept.toUpperCase() + ' EM';
+                    badgeTitle = 'DESTAQUE';
+                }
+
+                // Tarja de vencimento
+                let expiryBannerHtml = '';
                 if (this.currentType === 'vencimento') {
                     const expBr = this.formatDateBR(expiry) || 'DATA NA EMBALAGEM';
-                    headerBanner = `
-                        <div class="bg-[#D90429] text-white text-center py-2.5 px-3 border-b-4 border-black">
-                            <span class="block text-sm sm:text-base font-black uppercase tracking-wider leading-tight">
-                                ⚠️ OPORTUNIDADE • PRÓXIMO AO VENCIMENTO
-                            </span>
-                        </div>
-                        <div class="bg-black text-[#FFE500] text-center py-1.5 px-3 border-b-2 border-black flex items-center justify-center gap-2">
-                            <span class="text-[11px] sm:text-xs font-extrabold uppercase tracking-wider">CONSUMIR PREFERENCIALMENTE ATÉ:</span>
-                            <span class="text-white text-xs sm:text-sm font-black underline bg-black px-1.5 py-0.5 rounded">${expBr}</span>
-                        </div>
-                    `;
-                } else if (this.currentType === 'oferta') {
-                    headerBanner = `
-                        <div class="bg-[#D90429] text-white text-center py-3 px-3 border-b-4 border-black">
-                            <span class="block text-base sm:text-lg font-black uppercase tracking-wider leading-tight">
-                                🔥 SUPER OFERTA DO DIA 🔥
-                            </span>
-                            <span class="block text-[10px] font-bold text-amber-200 uppercase tracking-widest mt-0.5">
-                                ${dept.toUpperCase()}
-                            </span>
-                        </div>
-                    `;
-                } else if (this.currentType === 'atacado') {
-                    headerBanner = `
-                        <div class="bg-[#059669] text-white text-center py-3 px-3 border-b-4 border-black">
-                            <span class="block text-base sm:text-lg font-black uppercase tracking-wider leading-tight">
-                                📦 PREÇO ESPECIAL DE ATACADO
-                            </span>
-                            <span class="block text-xs font-black text-amber-300 uppercase mt-0.5">
-                                ${atacadoCond.toUpperCase()}
-                            </span>
-                        </div>
-                    `;
-                } else {
-                    headerBanner = `
-                        <div class="bg-[#1D4ED8] text-white text-center py-3 px-3 border-b-4 border-black">
-                            <span class="block text-base sm:text-lg font-black uppercase tracking-wider leading-tight">
-                                ⭐ OFERTA ESPECIAL • ${dept.toUpperCase()}
-                            </span>
+                    expiryBannerHtml = `
+                        <div class="w-full bg-black text-[#FFE600] border-2 border-black rounded-lg py-1 px-2.5 my-1 shadow-md flex items-center justify-center gap-2">
+                            <span class="text-[11px] sm:text-xs font-black uppercase tracking-wider">⚠️ CONSUMIR ATÉ:</span>
+                            <span class="bg-[#E51920] text-white px-2 py-0.5 rounded font-black text-xs sm:text-sm">${expBr}</span>
                         </div>
                     `;
                 }
 
+                // Preço De / Desconto
                 let dePorHtml = '';
                 if (pFrom > 0) {
                     dePorHtml = `
-                        <div class="flex items-center justify-center gap-2 mb-1">
-                            <span class="text-gray-800 font-extrabold text-sm sm:text-base line-through">DE: R$ ${priceFromStr}</span>
+                        <div class="flex items-center justify-center gap-2 my-1">
+                            <span class="text-black font-extrabold text-sm sm:text-base line-through opacity-75">DE: R$ ${priceFromStr}</span>
                             ${discountBadgeHtml}
                         </div>
                     `;
@@ -17711,60 +17691,94 @@
                 const wrapper = document.getElementById('poster-preview-card');
                 if (wrapper) {
                     if (isLandscape) {
-                        wrapper.className = "w-full max-w-lg aspect-[1.414/1] bg-[#FFE500] text-black border-4 border-black rounded-lg shadow-2xl flex flex-col justify-between overflow-hidden select-none transition-all";
+                        wrapper.className = "w-full max-w-lg aspect-[1.414/1] bg-[#FFE500] text-black border-4 border-black rounded-2xl shadow-2xl flex flex-col justify-between overflow-hidden select-none transition-all";
                     } else {
-                        wrapper.className = "w-full max-w-md aspect-[1/1.414] bg-[#FFE500] text-black border-4 border-black rounded-lg shadow-2xl flex flex-col justify-between overflow-hidden select-none transition-all";
+                        wrapper.className = "w-full max-w-md aspect-[1/1.414] bg-[#FFE500] text-black border-4 border-black rounded-2xl shadow-2xl flex flex-col justify-between overflow-hidden select-none transition-all";
                     }
                 }
 
                 card.innerHTML = `
-                    <!-- Cabeçalho de Destaque -->
-                    <div class="w-full shrink-0">
-                        ${headerBanner}
-                    </div>
+                    <!-- TOPO BRANCO COM TRAÇOS DE IMPACTO E PLACA CANVA -->
+                    <div class="w-full bg-white pt-3 pb-2 px-3 flex flex-col items-center justify-center relative border-b-4 border-black shrink-0">
+                        <!-- Três traços pretos de impacto estilizados (\ | /) -->
+                        <div class="flex items-end justify-center gap-1.5 mb-0.5">
+                            <div style="width: 5px; height: 16px; background: #000; border-radius: 999px; transform: rotate(-25deg); transform-origin: bottom center;"></div>
+                            <div style="width: 5px; height: 24px; background: #000; border-radius: 999px;"></div>
+                            <div style="width: 5px; height: 16px; background: #000; border-radius: 999px; transform: rotate(25deg); transform-origin: bottom center;"></div>
+                        </div>
 
-                    <!-- Nome do Produto -->
-                    <div class="p-3 sm:p-4 text-center flex-1 flex flex-col justify-center items-center">
-                        <h2 class="text-xl sm:text-2xl md:text-3xl font-black text-black uppercase tracking-tight leading-tight line-clamp-3 font-sans">
-                            ${title}
-                        </h2>
-                        <span class="text-[10px] sm:text-xs font-extrabold text-gray-800 uppercase tracking-widest mt-1">
-                            SETOR: ${dept}
-                        </span>
-                    </div>
+                        <!-- Categoria em destaque -->
+                        <div class="text-black font-black uppercase text-xs sm:text-sm tracking-wider text-center leading-none mb-1.5" style="font-family: 'Arial Black', Impact, sans-serif;">
+                            ${categoryCall}
+                        </div>
 
-                    <!-- Área Gigante de Preço -->
-                    <div class="p-2 sm:p-3 text-center bg-white/40 border-y-2 border-black/40 shrink-0">
-                        ${dePorHtml}
-                        <div class="flex items-baseline justify-center">
-                            <span class="text-sm sm:text-base font-black text-black mr-1 uppercase">POR R$</span>
-                            <span class="text-5xl sm:text-6xl md:text-7xl font-black text-[#D90429] tracking-tighter leading-none" style="font-family: Impact, sans-serif;">
-                                ${reais}
+                        <!-- Placa Vermelha com contorno e texto amarelo -->
+                        <div class="bg-[#E51920] border-3 sm:border-4 border-black rounded-xl sm:rounded-2xl py-1 sm:py-1.5 px-6 sm:px-8 shadow-[0_4px_0_#000] text-center transform -rotate-1 max-w-[90%]">
+                            <span class="text-[#FFE600] font-black uppercase text-2xl sm:text-3xl tracking-wide block leading-none" style="font-family: Impact, Arial Black, sans-serif; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;">
+                                ${badgeTitle}
                             </span>
-                            <div class="flex flex-col items-start ml-1 leading-none self-start mt-1">
-                                <span class="text-2xl sm:text-3xl font-black text-[#D90429]" style="font-family: Impact, sans-serif;">,${centavos}</span>
-                                <span class="text-[10px] sm:text-xs font-extrabold text-black uppercase tracking-wider">${unit}</span>
-                            </div>
                         </div>
                     </div>
 
-                    <!-- Rodapé do Cartaz -->
-                    <div class="bg-black text-white text-center py-2 px-3 shrink-0 flex items-center justify-between text-[9px] sm:text-[10px] font-bold">
-                        <span class="truncate max-w-[70%] text-amber-300 uppercase">${footer}</span>
-                        <span class="text-gray-400 font-mono">SUPERMERCADOS RONDON</span>
+                    <!-- CORPO AMARELO COM DEGRADÊ VIBRANTE -->
+                    <div class="flex-1 w-full p-3 sm:p-4 flex flex-col justify-between items-center text-center overflow-hidden" style="background: radial-gradient(circle at 50% 25%, #FFF64B 0%, #FFE500 70%, #F5C800 100%);">
+                        
+                        <!-- Tarja de Vencimento -->
+                        ${expiryBannerHtml}
+
+                        <!-- Nome do Produto -->
+                        <div class="my-auto w-full px-1">
+                            <h2 class="text-black font-black uppercase tracking-tight leading-tight text-xl sm:text-2xl md:text-3xl" style="font-family: 'Arial Black', Impact, sans-serif; word-break: break-word;">
+                                ${title}
+                            </h2>
+                        </div>
+
+                        <!-- Preço DE (se houver) -->
+                        ${dePorHtml}
+
+                        <!-- BLOCO DE PREÇO CANVA ULTRA IMPACTANTE -->
+                        <div class="my-auto w-full flex items-center justify-center gap-2 sm:gap-3">
+                            <!-- Círculo R$ -->
+                            <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#E51920] border-2 sm:border-3 border-black text-[#FFE600] font-black flex items-center justify-center text-xs sm:text-sm shadow-[0_3px_0_#000] shrink-0" style="font-family: Impact, sans-serif;">
+                                R$
+                            </div>
+
+                            <!-- Valor Reais Gigante -->
+                            <div class="flex items-start">
+                                <span class="text-[#E51920] font-black text-6xl sm:text-7xl md:text-8xl leading-none" style="font-family: Impact, Arial Black, sans-serif; filter: drop-shadow(4px 4px 0 #000000); letter-spacing: -2px;">
+                                    ${reais}
+                                </span>
+
+                                <!-- Centavos e Unidade -->
+                                <div class="flex flex-col items-start ml-1 leading-none self-start pt-1">
+                                    <span class="text-[#E51920] font-black text-2xl sm:text-3xl md:text-4xl leading-none" style="font-family: Impact, Arial Black, sans-serif; filter: drop-shadow(2px 2px 0 #000000);">
+                                        ,${centavos}
+                                    </span>
+                                    <span class="bg-black text-[#FFE600] font-black text-[9px] sm:text-[10px] uppercase px-1.5 py-0.5 rounded border border-black mt-1.5 shadow-sm">
+                                        ${unit}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rodapé Supermercados Rondon -->
+                        <div class="w-full pt-2 border-t-2 border-black/40 text-[9px] sm:text-[10px] font-bold text-black uppercase tracking-wider flex items-center justify-between">
+                            <span class="truncate max-w-[70%] text-left font-sans">${footer}</span>
+                            <span class="font-mono font-black shrink-0">SUPERMERCADOS RONDON</span>
+                        </div>
                     </div>
                 `;
             }
 
             buildPrintableHtml(item, isSingle = true) {
                 const title = item.title || 'PRODUTO';
-                const dept = item.dept || 'Geral';
-                const unit = item.unit || 'CADA';
+                const dept = item.dept || 'Hortifruti';
+                const unit = item.unit || 'KG';
                 const priceFromStr = item.priceFrom || '';
-                const priceToStr = item.priceTo || '0,00';
+                const priceToStr = item.priceTo || '19,90';
                 const expiry = item.expiry || '';
                 const atacadoCond = item.atacadoCond || '';
-                const footer = item.footer || 'Preço válido enquanto durar o estoque • Supermercados Rondon';
+                const footer = item.footer || 'Oferta válida enquanto durar o estoque • Supermercados Rondon';
 
                 const pFrom = this.parseMoney(priceFromStr);
                 const pTo = this.parseMoney(priceToStr);
@@ -17774,9 +17788,7 @@
                     const diff = pFrom - pTo;
                     const pct = Math.round((diff / pFrom) * 100);
                     discountBadgeHtml = `
-                        <div style="background-color: #D90429; color: #ffffff; padding: 4px 12px; border-radius: 6px; font-weight: 900; font-size: 16px; text-transform: uppercase;">
-                            ${pct}% DE DESCONTO • ECONOMIZE R$ ${diff.toFixed(2).replace('.', ',')}
-                        </div>
+                        <span style="background-color: #E51920; color: #ffffff; padding: 4px 12px; border-radius: 999px; font-weight: 900; font-size: 22px; font-family: 'Arial Black', sans-serif;">${pct}% OFF</span>
                     `;
                 }
 
@@ -17784,102 +17796,123 @@
                 const reais = parts[0] || '0';
                 const centavos = parts[1] || '00';
 
-                let headerBanner = '';
+                // Chamada de categoria superior (estilo Canva: "HORTIFRUTI EM")
+                let categoryCall = dept.toUpperCase() + ' EM';
+                let badgeTitle = 'OFERTA';
+
+                if (item.type === 'vencimento') {
+                    categoryCall = 'PRODUTO PRÓXIMO AO';
+                    badgeTitle = 'VENCIMENTO';
+                } else if (item.type === 'atacado') {
+                    categoryCall = atacadoCond.toUpperCase();
+                    badgeTitle = 'LEVE + PAGUE -';
+                } else if (item.type === 'normal') {
+                    categoryCall = dept.toUpperCase() + ' EM';
+                    badgeTitle = 'DESTAQUE';
+                }
+
+                // Tarja de vencimento
+                let expiryBannerHtml = '';
                 if (item.type === 'vencimento') {
                     const expBr = this.formatDateBR(expiry) || 'DATA NA EMBALAGEM';
-                    headerBanner = `
-                        <div style="background-color: #D90429; color: #ffffff; text-align: center; padding: 14px 10px; border-bottom: 6px solid #000000;">
-                            <span style="font-size: 26px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; display: block; line-height: 1.1;">
-                                ⚠️ OPORTUNIDADE • PRÓXIMO AO VENCIMENTO
-                            </span>
-                        </div>
-                        <div style="background-color: #000000; color: #FFE500; text-align: center; padding: 8px 10px; border-bottom: 3px solid #000000;">
-                            <span style="font-size: 16px; font-weight: 800; text-transform: uppercase;">CONSUMIR PREFERENCIALMENTE ATÉ: </span>
-                            <span style="color: #ffffff; font-size: 20px; font-weight: 900; text-decoration: underline;">${expBr}</span>
-                        </div>
-                    `;
-                } else if (item.type === 'oferta') {
-                    headerBanner = `
-                        <div style="background-color: #D90429; color: #ffffff; text-align: center; padding: 18px 10px; border-bottom: 6px solid #000000;">
-                            <span style="font-size: 32px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; display: block;">
-                                🔥 SUPER OFERTA DO DIA 🔥
-                            </span>
-                            <span style="font-size: 14px; font-weight: 800; color: #fef08a; text-transform: uppercase; display: block; margin-top: 4px;">
-                                ${dept.toUpperCase()}
-                            </span>
-                        </div>
-                    `;
-                } else if (item.type === 'atacado') {
-                    headerBanner = `
-                        <div style="background-color: #059669; color: #ffffff; text-align: center; padding: 18px 10px; border-bottom: 6px solid #000000;">
-                            <span style="font-size: 30px; font-weight: 900; text-transform: uppercase; display: block;">
-                                📦 PREÇO ESPECIAL DE ATACADO
-                            </span>
-                            <span style="font-size: 16px; font-weight: 900; color: #fde047; text-transform: uppercase; display: block; margin-top: 4px;">
-                                ${atacadoCond.toUpperCase()}
-                            </span>
-                        </div>
-                    `;
-                } else {
-                    headerBanner = `
-                        <div style="background-color: #1D4ED8; color: #ffffff; text-align: center; padding: 18px 10px; border-bottom: 6px solid #000000;">
-                            <span style="font-size: 30px; font-weight: 900; text-transform: uppercase; display: block;">
-                                ⭐ OFERTA ESPECIAL • ${dept.toUpperCase()}
-                            </span>
+                    expiryBannerHtml = `
+                        <div style="width: 90%; background-color: #000000; color: #FFE600; border: 3px solid #000000; border-radius: 12px; padding: 10px 16px; margin: 12px auto; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 4px 0 rgba(0,0,0,0.3);">
+                            <span style="font-size: 24px; font-weight: 900; text-transform: uppercase; font-family: 'Arial Black', sans-serif;">⚠️ CONSUMIR ATÉ:</span>
+                            <span style="background-color: #E51920; color: #ffffff; padding: 4px 14px; border-radius: 6px; font-size: 28px; font-weight: 900; font-family: 'Arial Black', sans-serif;">${expBr}</span>
                         </div>
                     `;
                 }
 
+                // Preço De / Desconto
                 let dePorHtml = '';
                 if (pFrom > 0) {
                     dePorHtml = `
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px;">
-                            <span style="color: #1f2937; font-weight: 800; font-size: 20px; text-decoration: line-through;">DE: R$ ${priceFromStr}</span>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 8px;">
+                            <span style="color: #222222; font-size: 32px; font-weight: 900; text-decoration: line-through; font-family: 'Arial Black', sans-serif; opacity: 0.8;">DE: R$ ${priceFromStr}</span>
                             ${discountBadgeHtml}
                         </div>
                     `;
                 }
 
-                const isLandscape = (item.size === 'a4_landscape');
+                const pageBreakClass = isSingle ? '' : 'poster-page-break';
 
                 return `
-                    <div class="${isSingle ? '' : 'poster-page-break'}" style="width: 100vw; height: 100vh; box-sizing: border-box; padding: 10mm; background: #ffffff; display: flex; align-items: center; justify-content: center;">
-                        <div style="width: 100%; height: 100%; background-color: #FFE500; border: 8px solid #000000; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; box-sizing: border-box;">
-                            <!-- Topo Banner -->
-                            <div style="width: 100%; flex-shrink: 0;">
-                                ${headerBanner}
-                            </div>
+                    <div class="${pageBreakClass}" style="width: 100%; min-height: 100vh; background-color: #ffffff; padding: 0; margin: 0; display: flex; flex-direction: column; justify-content: space-between; page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box;">
+                        
+                        <!-- MOLDURA DO CARTAZ CANVA (A4 / A5) -->
+                        <div style="width: 100%; flex: 1; border: 12px solid #000000; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; background: radial-gradient(circle at 50% 30%, #FFF855 0%, #FFE500 65%, #F5C600 100%);">
+                            
+                            <!-- TOPO BRANCO COM TRAÇOS DE IMPACTO E PLACA CANVA -->
+                            <div style="width: 100%; background-color: #ffffff; padding: 30px 20px 22px 20px; border-bottom: 8px solid #000000; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                
+                                <!-- Três traços pretos de impacto estilizados (\ | /) -->
+                                <div style="display: flex; align-items: flex-end; justify-content: center; gap: 10px; margin-bottom: 8px;">
+                                    <div style="width: 12px; height: 38px; background-color: #000000; border-radius: 999px; transform: rotate(-25deg); transform-origin: bottom center;"></div>
+                                    <div style="width: 12px; height: 56px; background-color: #000000; border-radius: 999px;"></div>
+                                    <div style="width: 12px; height: 38px; background-color: #000000; border-radius: 999px; transform: rotate(25deg); transform-origin: bottom center;"></div>
+                                </div>
 
-                            <!-- Nome Produto -->
-                            <div style="padding: 20px; text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                                <h1 style="font-size: ${isLandscape ? '38px' : '44px'}; font-weight: 900; color: #000000; text-transform: uppercase; margin: 0; line-height: 1.15; font-family: Impact, Arial Black, sans-serif;">
-                                    ${title}
-                                </h1>
-                                <span style="font-size: 16px; font-weight: 800; color: #1f2937; text-transform: uppercase; margin-top: 8px; letter-spacing: 2px;">
-                                    SETOR: ${dept}
-                                </span>
-                            </div>
+                                <!-- Categoria em destaque (ex: HORTIFRUTI EM) -->
+                                <div style="font-family: 'Arial Black', Impact, sans-serif; font-size: 38px; font-weight: 900; color: #000000; text-transform: uppercase; letter-spacing: 2px; line-height: 1; margin-bottom: 12px;">
+                                    ${categoryCall}
+                                </div>
 
-                            <!-- Caixa do Preço -->
-                            <div style="padding: 16px 20px; text-align: center; background-color: rgba(255,255,255,0.45); border-top: 4px solid rgba(0,0,0,0.4); border-bottom: 4px solid rgba(0,0,0,0.4); flex-shrink: 0;">
-                                ${dePorHtml}
-                                <div style="display: flex; align-items: baseline; justify-content: center;">
-                                    <span style="font-size: 24px; font-weight: 900; color: #000000; margin-right: 8px; text-transform: uppercase;">POR R$</span>
-                                    <span style="font-size: ${isLandscape ? '110px' : '135px'}; font-weight: 900; color: #D90429; line-height: 0.9; font-family: Impact, Arial Black, sans-serif; letter-spacing: -3px;">
-                                        ${reais}
+                                <!-- Placa Vermelha com borda preta e texto amarelo -->
+                                <div style="background-color: #E51920; border: 8px solid #000000; border-radius: 36px; padding: 10px 60px; box-shadow: 0 10px 0 #000000; transform: rotate(-1deg); display: inline-block;">
+                                    <span style="font-family: Impact, 'Arial Black', sans-serif; font-size: 88px; font-weight: 900; color: #FFE600; text-transform: uppercase; letter-spacing: 4px; display: block; line-height: 1; text-shadow: 4px 4px 0 #000000, -2px -2px 0 #000000, 2px -2px 0 #000000, -2px 2px 0 #000000;">
+                                        ${badgeTitle}
                                     </span>
-                                    <div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 4px; line-height: 1; align-self: flex-start; margin-top: 6px;">
-                                        <span style="font-size: ${isLandscape ? '50px' : '65px'}; font-weight: 900; color: #D90429; font-family: Impact, Arial Black, sans-serif;">,${centavos}</span>
-                                        <span style="font-size: 20px; font-weight: 900; color: #000000; text-transform: uppercase;">${unit}</span>
+                                </div>
+                            </div>
+
+                            <!-- CORPO DO CARTAZ COM NOME E PREÇO GIGANTE -->
+                            <div style="flex: 1; padding: 25px 35px; display: flex; flex-direction: column; justify-content: space-around; align-items: center; text-align: center;">
+                                
+                                <!-- Tarja de Vencimento -->
+                                ${expiryBannerHtml}
+
+                                <!-- Nome do Produto -->
+                                <div style="margin: 15px 0;">
+                                    <h2 style="font-family: 'Arial Black', Impact, sans-serif; font-size: 58px; font-weight: 900; color: #000000; text-transform: uppercase; line-height: 1.1; letter-spacing: -1px; word-break: break-word;">
+                                        ${title}
+                                    </h2>
+                                </div>
+
+                                <!-- Preço DE (se houver) -->
+                                ${dePorHtml}
+
+                                <!-- BLOCO DE PREÇO CANVA GIGANTESCO -->
+                                <div style="display: flex; align-items: center; justify-content: center; gap: 18px; margin: 20px 0;">
+                                    <!-- Círculo R$ -->
+                                    <div style="width: 110px; height: 110px; border-radius: 999px; background-color: #E51920; border: 6px solid #000000; color: #FFE600; font-family: Impact, sans-serif; font-weight: 900; font-size: 42px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 0 #000000; flex-shrink: 0;">
+                                        R$
+                                    </div>
+
+                                    <!-- Valor Reais Gigante -->
+                                    <div style="display: flex; align-items: flex-start;">
+                                        <span style="font-family: Impact, 'Arial Black', sans-serif; font-size: 210px; font-weight: 900; color: #E51920; line-height: 0.82; letter-spacing: -6px; filter: drop-shadow(8px 8px 0 #000000);">
+                                            ${reais}
+                                        </span>
+
+                                        <!-- Centavos e Unidade -->
+                                        <div style="display: flex; flex-direction: column; align-items: flex-start; margin-left: 6px; padding-top: 10px;">
+                                            <span style="font-family: Impact, 'Arial Black', sans-serif; font-size: 92px; font-weight: 900; color: #E51920; line-height: 0.85; filter: drop-shadow(5px 5px 0 #000000);">
+                                                ,${centavos}
+                                            </span>
+                                            <span style="background-color: #000000; color: #FFE600; font-family: 'Arial Black', sans-serif; font-weight: 900; font-size: 26px; text-transform: uppercase; padding: 4px 14px; border-radius: 8px; margin-top: 12px; letter-spacing: 1px; box-shadow: 0 3px 0 rgba(0,0,0,0.4);">
+                                                ${unit}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Rodapé -->
-                            <div style="background-color: #000000; color: #ffffff; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; flex-shrink: 0;">
-                                <span style="color: #FFE500; text-transform: uppercase;">${footer}</span>
-                                <span style="color: #d1d5db; letter-spacing: 1px;">SUPERMERCADOS RONDON</span>
+                            <!-- RODAPÉ SUPERMERCADOS RONDON -->
+                            <div style="background-color: #000000; color: #ffffff; padding: 12px 25px; display: flex; align-items: center; justify-content: space-between; font-size: 16px; font-weight: 800; text-transform: uppercase; border-top: 6px solid #000000;">
+                                <span style="color: #FFE600; font-family: sans-serif; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${footer}</span>
+                                <span style="font-family: monospace; font-weight: 900; color: #ffffff; letter-spacing: 2px;">SUPERMERCADOS RONDON</span>
                             </div>
+
                         </div>
                     </div>
                 `;
