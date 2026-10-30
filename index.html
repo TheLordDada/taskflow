@@ -17635,37 +17635,39 @@
                     // 1. Desenhar a arte oficial original do Canva em 1131x1600
                     ctx.drawImage(this.baseCanvaImg, 0, 0, 1131, 1600);
 
-                    // 2. Limpar a área inferior (produto e preço) com o gradiente amarelo radial idêntico do Canva
-                    const grad = ctx.createRadialGradient(565, 1150, 40, 565, 1150, 750);
+                    // 2. Limpar a área inferior (produto e preço) a partir de Y = 770 até 1600
+                    // A placa vermelha original e contorno terminam em Y = 765
+                    const grad = ctx.createRadialGradient(565, 1180, 50, 565, 1180, 800);
                     grad.addColorStop(0, '#FFF54B');
                     grad.addColorStop(0.5, '#FFE500');
                     grad.addColorStop(1, '#F7CA00');
 
                     ctx.fillStyle = grad;
-                    ctx.fillRect(0, 755, 1131, 845);
+                    ctx.fillRect(0, 770, 1131, 830);
 
-                    // 3. Se o setor for diferente de Hortifruti ou for Vencimento:
+                    // 3. Categoria no topo:
+                    // Se o setor for DIFERENTE de Hortifruti (ex: Mercearia, Açougue, etc.) ou se for Vencimento:
+                    // Cobrir o "HORTIFRUTI EM" original (Y: 320..425) com branco e escrever a nova categoria
                     if (dept !== 'Hortifruti' || item.type === 'vencimento') {
-                        // Desenhar faixa branca em cima de "HORTIFRUTI EM"
                         ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(150, 275, 831, 85);
+                        ctx.fillRect(175, 315, 781, 110);
 
                         ctx.fillStyle = '#000000';
-                        ctx.font = '900 48px "Montserrat", "Arial Black", sans-serif';
+                        ctx.font = '900 50px "Montserrat", "Arial Black", sans-serif';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
                         const catCall = item.type === 'vencimento' ? 'PRODUTO PRÓXIMO AO' : (dept.toUpperCase() + ' EM');
-                        ctx.fillText(catCall, 565, 318);
+                        ctx.fillText(catCall, 565, 375);
                     }
 
                     // Se for vencimento, desenhar a pílula de vencimento
-                    let prodCenterY = 930;
+                    let prodCenterY = 910;
                     if (item.type === 'vencimento') {
                         const expBr = this.formatDateBR(expiry) || 'DATA NA EMBALAGEM';
                         ctx.save();
                         ctx.fillStyle = '#000000';
                         ctx.beginPath();
-                        ctx.roundRect(165, 785, 801, 75, 40);
+                        ctx.roundRect(175, 785, 781, 75, 40);
                         ctx.fill();
 
                         ctx.fillStyle = '#FFE500';
@@ -17675,26 +17677,29 @@
                         ctx.fillText('⚠️ CONSUMIR ATÉ: ' + expBr, 565, 822);
                         ctx.restore();
 
-                        prodCenterY = 970;
+                        prodCenterY = 960;
                     }
 
-                    // Se tiver preço De / Desconto:
-                    if (pFrom > 0) {
+                    // Preço DE / Desconto: SÓ EXIBE SE O PREÇO DE FOR REALMENTE MAIOR QUE O PREÇO POR!
+                    // Jamais exibir 0% OFF
+                    if (pFrom > pTo && pTo > 0) {
                         const diff = pFrom - pTo;
                         const pct = Math.round((diff / pFrom) * 100);
-                        ctx.save();
-                        ctx.font = '900 38px "Montserrat", sans-serif';
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillStyle = '#333333';
-                        ctx.fillText('DE: R$ ' + priceFromStr + '   (' + pct + '% OFF)', 565, 1050);
-                        ctx.restore();
+                        if (pct > 0) {
+                            ctx.save();
+                            ctx.font = '900 38px "Montserrat", sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillStyle = '#333333';
+                            ctx.fillText('DE: R$ ' + priceFromStr + '   (' + pct + '% OFF)', 565, 1045);
+                            ctx.restore();
+                        }
                     }
 
-                    // 4. Desenhar o Nome do Produto (em 2 linhas, bem visível e grande como na foto)
+                    // 4. Desenhar o Nome do Produto (em 1 ou 2 linhas bem distribuído no centro)
                     ctx.save();
                     ctx.fillStyle = '#000000';
-                    ctx.font = '900 66px "Montserrat", "Arial Black", sans-serif';
+                    ctx.font = '900 64px "Montserrat", "Arial Black", sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
 
@@ -17718,7 +17723,7 @@
                     ctx.restore();
 
                     // 5. Desenhar o Bloco de Preço Idêntico ao da Foto
-                    const priceY = 1270;
+                    const priceBaselineY = 1380;
 
                     ctx.save();
                     ctx.font = '900 330px "Impact", "Arial Black", sans-serif';
@@ -17727,16 +17732,16 @@
                     ctx.font = '900 150px "Impact", "Arial Black", sans-serif';
                     const centavosWidth = ctx.measureText(',' + centavos).width;
 
-                    const totalBlockWidth = 140 + 25 + reaisWidth + 10 + centavosWidth;
-                    const startX = Math.max(70, (1131 - totalBlockWidth) / 2);
+                    const circleDiam = 150;
+                    const totalBlockWidth = circleDiam + 25 + reaisWidth + 10 + centavosWidth;
+                    const startX = Math.max(50, (1131 - totalBlockWidth) / 2);
 
-                    // A) Bolinha Vermelha com R$ Amarelo
-                    const circleCenterX = startX + 70;
-                    const circleCenterY = priceY - 90;
-                    const circleRadius = 68;
+                    // A) Círculo Vermelho com R$ Amarelo
+                    const circleCenterX = startX + (circleDiam / 2);
+                    const circleCenterY = priceBaselineY - 140;
 
                     ctx.beginPath();
-                    ctx.arc(circleCenterX, circleCenterY, circleRadius, 0, Math.PI * 2);
+                    ctx.arc(circleCenterX, circleCenterY, circleDiam / 2, 0, Math.PI * 2);
                     ctx.fillStyle = '#E51920';
                     ctx.fill();
                     ctx.lineWidth = 6;
@@ -17744,27 +17749,29 @@
                     ctx.stroke();
 
                     ctx.fillStyle = '#FFE500';
-                    ctx.font = '900 56px "Impact", sans-serif';
+                    ctx.font = '900 58px "Impact", sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText('R$', circleCenterX, circleCenterY + 3);
 
-                    // B) Número Reais ("19") em Vermelho com Sombra Dura Preta
-                    const reaisX = startX + 165;
-                    const reaisBaselineY = priceY + 95;
+                    // B) Número Reais (ex: "10" ou "19") em Vermelho com Sombra Dura Preta
+                    const reaisX = startX + circleDiam + 25;
 
                     ctx.font = '900 330px "Impact", "Arial Black", sans-serif';
                     ctx.textAlign = 'left';
                     ctx.textBaseline = 'alphabetic';
+
+                    // Sombra dura preta
                     ctx.fillStyle = '#000000';
-                    ctx.fillText(reais, reaisX + 16, reaisBaselineY + 16);
+                    ctx.fillText(reais, reaisX + 16, priceBaselineY + 16);
 
+                    // Número Vermelho
                     ctx.fillStyle = '#E51920';
-                    ctx.fillText(reais, reaisX, reaisBaselineY);
+                    ctx.fillText(reais, reaisX, priceBaselineY);
 
-                    // C) Centavos (",90") com Sombra Dura Preta
+                    // C) Centavos (ex: ",00" ou ",90") com Sombra Dura Preta
                     const centavosX = reaisX + reaisWidth + 10;
-                    const centavosBaselineY = reaisBaselineY - 135;
+                    const centavosBaselineY = priceBaselineY - 140;
 
                     ctx.font = '900 150px "Impact", "Arial Black", sans-serif';
                     ctx.fillStyle = '#000000';
