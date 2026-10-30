@@ -593,20 +593,7 @@
                     <i class="fa-solid fa-arrow-right text-xs"></i>
                 </button>
             </form>
-                <!-- Acesso Direto de Recuperação de Administrador Mestre -->
-                <div class="mt-4 pt-3 border-t border-gray-800 text-center">
-                    <p class="text-[11px] text-gray-400 mb-2 font-medium">Contas de Administrador Mestre da Loja:</p>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <button type="button" onclick="auth.quickAdminLogin('zinidnosreme@gmail.com')" class="flex-1 py-2 px-3 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-600/40 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm">
-                            <i class="fa-solid fa-shield-halved text-amber-400"></i>
-                            <span>Entrar como Admin Emerson</span>
-                        </button>
-                        <button type="button" onclick="auth.quickAdminLogin('juhsim@live.com')" class="flex-1 py-2 px-3 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 border border-amber-600/40 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-sm">
-                            <i class="fa-solid fa-shield-halved text-amber-400"></i>
-                            <span>Entrar como Admin Juhsim</span>
-                        </button>
-                    </div>
-                </div>
+                                </div>
 
 
             <!-- Form de Cadastro Desativado Publicamente -->
@@ -12997,13 +12984,13 @@
             }
 
             // 3.5. Modal de Chat Dedicado da Tarefa
-            const viewTaskModal = document.getElementById('task-view-modal');
-            if (viewTaskModal && !viewTaskModal.classList.contains('hidden') && viewTaskModal.style.display !== 'none') {
+            const chatTaskModal = document.getElementById('task-view-modal');
+            if (chatTaskModal && !chatTaskModal.classList.contains('hidden') && chatTaskModal.style.display !== 'none') {
                 if (window.app && typeof window.app.closeViewTaskModal === 'function') {
                     window.app.closeViewTaskModal();
                 } else {
-                    viewTaskModal.classList.add('hidden');
-                    viewTaskModal.style.display = 'none';
+                    chatTaskModal.classList.add('hidden');
+                    chatTaskModal.style.display = 'none';
                 }
                 return true;
             }
