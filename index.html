@@ -17636,21 +17636,21 @@
                     ctx.drawImage(this.baseCanvaImg, 0, 0, 1131, 1600);
 
                     // 2. Limpar a área inferior (produto e preço) a partir de Y = 770 até 1600
-                    // A placa vermelha original e contorno terminam em Y = 765
-                    const grad = ctx.createRadialGradient(565, 1180, 50, 565, 1180, 800);
-                    grad.addColorStop(0, '#FFF54B');
-                    grad.addColorStop(0.5, '#FFE500');
-                    grad.addColorStop(1, '#F7CA00');
+                    // Usando o gradiente vertical linear idêntico ao original do Canva (#fef155 -> #ffe32a)
+                    const grad = ctx.createLinearGradient(0, 770, 0, 1600);
+                    grad.addColorStop(0, '#fef155');
+                    grad.addColorStop(0.3, '#feee51');
+                    grad.addColorStop(0.7, '#fee73c');
+                    grad.addColorStop(1, '#ffe32a');
 
                     ctx.fillStyle = grad;
-                    ctx.fillRect(0, 770, 1131, 830);
+                    ctx.fillRect(0, 768, 1131, 832);
 
                     // 3. Categoria no topo:
-                    // Se o setor for DIFERENTE de Hortifruti (ex: Mercearia, Açougue, etc.) ou se for Vencimento:
-                    // Cobrir o "HORTIFRUTI EM" original (Y: 320..425) com branco e escrever a nova categoria
+                    // Se o setor for DIFERENTE de Hortifruti ou se for Vencimento:
                     if (dept !== 'Hortifruti' || item.type === 'vencimento') {
                         ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(175, 315, 781, 110);
+                        ctx.fillRect(160, 315, 811, 115);
 
                         ctx.fillStyle = '#000000';
                         ctx.font = '900 50px "Montserrat", "Arial Black", sans-serif';
@@ -17660,14 +17660,14 @@
                         ctx.fillText(catCall, 565, 375);
                     }
 
-                    // Se for vencimento, desenhar a pílula de vencimento
+                    // Se for vencimento, desenhar a pílula de vencimento com espaçamento perfeito
                     let prodCenterY = 910;
                     if (item.type === 'vencimento') {
                         const expBr = this.formatDateBR(expiry) || 'DATA NA EMBALAGEM';
                         ctx.save();
                         ctx.fillStyle = '#000000';
                         ctx.beginPath();
-                        ctx.roundRect(175, 785, 781, 75, 40);
+                        ctx.roundRect(165, 785, 801, 74, 37);
                         ctx.fill();
 
                         ctx.fillStyle = '#FFE500';
@@ -17677,11 +17677,10 @@
                         ctx.fillText('⚠️ CONSUMIR ATÉ: ' + expBr, 565, 822);
                         ctx.restore();
 
-                        prodCenterY = 960;
+                        prodCenterY = 965;
                     }
 
                     // Preço DE / Desconto: SÓ EXIBE SE O PREÇO DE FOR REALMENTE MAIOR QUE O PREÇO POR!
-                    // Jamais exibir 0% OFF
                     if (pFrom > pTo && pTo > 0) {
                         const diff = pFrom - pTo;
                         const pct = Math.round((diff / pFrom) * 100);
@@ -17690,8 +17689,8 @@
                             ctx.font = '900 38px "Montserrat", sans-serif';
                             ctx.textAlign = 'center';
                             ctx.textBaseline = 'middle';
-                            ctx.fillStyle = '#333333';
-                            ctx.fillText('DE: R$ ' + priceFromStr + '   (' + pct + '% OFF)', 565, 1045);
+                            ctx.fillStyle = '#222222';
+                            ctx.fillText('DE: R$ ' + priceFromStr + '   (' + pct + '% OFF)', 565, 1055);
                             ctx.restore();
                         }
                     }
@@ -17715,7 +17714,7 @@
                     }
 
                     if (line2) {
-                        ctx.fillText(line1, 565, prodCenterY - 42);
+                        ctx.fillText(line1, 565, prodCenterY - 40);
                         ctx.fillText(line2, 565, prodCenterY + 42);
                     } else {
                         ctx.fillText(line1, 565, prodCenterY);
@@ -17723,22 +17722,26 @@
                     ctx.restore();
 
                     // 5. Desenhar o Bloco de Preço Idêntico ao da Foto
-                    const priceBaselineY = 1380;
+                    // Ajuste de tamanho dinâmico para caber perfeitamente se for 100 ou mais
+                    const isThreeDigits = reais.length >= 3;
+                    const reaisFontSize = isThreeDigits ? 280 : 330;
+                    const centavosFontSize = isThreeDigits ? 130 : 150;
+                    const circleDiam = isThreeDigits ? 130 : 150;
+                    const priceBaselineY = 1390;
 
                     ctx.save();
-                    ctx.font = '900 330px "Impact", "Arial Black", sans-serif';
+                    ctx.font = '900 ' + reaisFontSize + 'px "Impact", "Arial Black", sans-serif';
                     const reaisWidth = ctx.measureText(reais).width;
 
-                    ctx.font = '900 150px "Impact", "Arial Black", sans-serif';
+                    ctx.font = '900 ' + centavosFontSize + 'px "Impact", "Arial Black", sans-serif';
                     const centavosWidth = ctx.measureText(',' + centavos).width;
 
-                    const circleDiam = 150;
                     const totalBlockWidth = circleDiam + 25 + reaisWidth + 10 + centavosWidth;
-                    const startX = Math.max(50, (1131 - totalBlockWidth) / 2);
+                    const startX = Math.max(40, (1131 - totalBlockWidth) / 2);
 
                     // A) Círculo Vermelho com R$ Amarelo
                     const circleCenterX = startX + (circleDiam / 2);
-                    const circleCenterY = priceBaselineY - 140;
+                    const circleCenterY = priceBaselineY - (isThreeDigits ? 115 : 135);
 
                     ctx.beginPath();
                     ctx.arc(circleCenterX, circleCenterY, circleDiam / 2, 0, Math.PI * 2);
@@ -17749,19 +17752,19 @@
                     ctx.stroke();
 
                     ctx.fillStyle = '#FFE500';
-                    ctx.font = '900 58px "Impact", sans-serif';
+                    ctx.font = '900 ' + (isThreeDigits ? 50 : 58) + 'px "Impact", sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText('R$', circleCenterX, circleCenterY + 3);
 
-                    // B) Número Reais (ex: "10" ou "19") em Vermelho com Sombra Dura Preta
+                    // B) Número Reais (ex: "100" ou "19") em Vermelho com Sombra Dura Preta
                     const reaisX = startX + circleDiam + 25;
 
-                    ctx.font = '900 330px "Impact", "Arial Black", sans-serif';
+                    ctx.font = '900 ' + reaisFontSize + 'px "Impact", "Arial Black", sans-serif';
                     ctx.textAlign = 'left';
                     ctx.textBaseline = 'alphabetic';
 
-                    // Sombra dura preta
+                    // Sombra dura preta (offset)
                     ctx.fillStyle = '#000000';
                     ctx.fillText(reais, reaisX + 16, priceBaselineY + 16);
 
@@ -17771,9 +17774,9 @@
 
                     // C) Centavos (ex: ",00" ou ",90") com Sombra Dura Preta
                     const centavosX = reaisX + reaisWidth + 10;
-                    const centavosBaselineY = priceBaselineY - 140;
+                    const centavosBaselineY = priceBaselineY - (isThreeDigits ? 120 : 140);
 
-                    ctx.font = '900 150px "Impact", "Arial Black", sans-serif';
+                    ctx.font = '900 ' + centavosFontSize + 'px "Impact", "Arial Black", sans-serif';
                     ctx.fillStyle = '#000000';
                     ctx.fillText(',' + centavos, centavosX + 8, centavosBaselineY + 8);
 
