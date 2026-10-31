@@ -984,11 +984,7 @@
             <div id="view-tasks-container" class="space-y-2.5 pb-28 md:pb-6">
                 <!-- Barra Rápida de Filtros de Tarefas (Sticky para Listas Extensas) -->
                 <div class="sticky top-0 z-20 flex overflow-x-auto custom-scrollbar scrollbar-none bg-gray-950/95 backdrop-blur p-1.5 rounded-xl border border-gray-800 gap-1.5 shadow-lg shrink-0">
-                    <button type="button" onclick="window.switchMainView('tools'); if(window.posterApp) posterApp.switchTab('creator');" class="shrink-0 whitespace-nowrap py-1.5 px-3 text-xs font-bold rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40 transition flex items-center gap-1.5 shadow-sm active:scale-95" title="Abrir Gerador de Cartazes de Loja">
-                        <i class="fa-solid fa-tags text-xs text-amber-400"></i>
-                        <span>Cartazes</span>
-                        <span class="text-[8px] bg-amber-500 text-black px-1 rounded font-black uppercase">NOVO</span>
-                    </button>
+                    
                     <button type="button" onclick="app.setFilter('all')" id="task-filter-all" class="shrink-0 whitespace-nowrap py-1.5 px-3 text-xs font-bold rounded-xl bg-indigo-600 text-white transition flex items-center gap-1.5 shadow-md">
                         <i class="fa-solid fa-list-check text-xs"></i>
                         <span>Todas as Tarefas</span>
@@ -1881,13 +1877,17 @@
 
                         <!-- Botões de Ação -->
                         <div class="pt-2 flex flex-col sm:flex-row gap-2">
-                            <button type="button" onclick="posterApp.printCurrent()" class="flex-1 bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer">
+                            <button type="button" onclick="posterApp.printCurrent()" class="flex-1 bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-black py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer" title="Imprimir no navegador">
                                 <i class="fa-solid fa-print text-sm"></i>
-                                <span>Imprimir Colorido Agora</span>
+                                <span>Imprimir</span>
                             </button>
-                            <button type="button" onclick="posterApp.saveToQueue()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 cursor-pointer">
+                            <button type="button" onclick="posterApp.downloadCurrent()" class="p-2.5 bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-200 hover:text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 border border-gray-700 shadow-sm cursor-pointer" title="Baixar imagem em PNG alta resolução">
+                                <i class="fa-solid fa-download text-sm text-amber-400"></i>
+                                <span>Baixar PNG</span>
+                            </button>
+                            <button type="button" onclick="posterApp.saveToQueue()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold py-2.5 px-3 rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/20 cursor-pointer" title="Salvar para imprimir no computador da loja">
                                 <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
-                                <span>Salvar na Fila (PC Impressora)</span>
+                                <span>Fila da Loja</span>
                             </button>
                         </div>
                     </div>
@@ -5223,7 +5223,24 @@
                             createdAt: Date.now()
                         };
 
-                        // Seção de Programação de Validações Recorrentes
+                        // Registra no banco global de inconsistências para o Relatório do Administrador
+                        const incRecord = {
+                            id: 'inc_task_' + (id || ('task_' + Date.now())),
+                            source: 'tarefa',
+                            type: 'Inconsistência em Tarefa / Ruptura',
+                            taskId: (id || ('task_' + Date.now())),
+                            taskTitle: title,
+                            departamento: sector,
+                            reason: reason,
+                            notes: notes || title,
+                            date: date,
+                            author: authorName,
+                            createdAt: Date.now()
+                        };
+                        this.saveInconsistency(incRecord);
+                    }
+
+                    // Seção de Programação de Validações Recorrentes (fora do if de inconsistência)
                     const recToggle = document.getElementById('task-recurrent-toggle');
                     let recurrenceData = null;
                     if (recToggle && recToggle.checked) {
@@ -5262,23 +5279,6 @@
                             checkpoints: builtCheckpoints,
                             updatedAt: Date.now()
                         };
-                    }
-
-                    // Registra no banco global de inconsistências para o Relatório do Administrador
-                        const incRecord = {
-                            id: 'inc_task_' + (id || ('task_' + Date.now())),
-                            source: 'tarefa',
-                            type: 'Inconsistência em Tarefa / Ruptura',
-                            taskId: (id || ('task_' + Date.now())),
-                            taskTitle: title,
-                            departamento: sector,
-                            reason: reason,
-                            notes: notes || title,
-                            date: date,
-                            author: authorName,
-                            createdAt: Date.now()
-                        };
-                        this.saveInconsistency(incRecord);
                     }
 
                     let taskToBroadcast = null;
@@ -17990,6 +17990,16 @@
                 this.updateLivePreview();
             }
 
+            downloadCurrent() {
+                const title = (document.getElementById('poster-input-title')?.value || 'cartaz').trim();
+                const liveCanvas = document.getElementById('poster-live-canvas');
+                if (!liveCanvas) return;
+                const link = document.createElement('a');
+                link.download = `cartaz_${title.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'loja'}.png`;
+                link.href = liveCanvas.toDataURL('image/png');
+                link.click();
+            }
+
             renderToCanvas(canvas, item) {
                 if (!canvas) return;
                 const ctx = canvas.getContext('2d');
@@ -18000,6 +18010,8 @@
                 const priceFromStr = item.priceFrom || '';
                 const priceToStr = item.priceTo || '0,00';
                 const expiry = item.expiry || '';
+                const atacadoCond = item.atacadoCond || '';
+                const footerText = item.footer || '';
                 const unitText = item.unit ? item.unit.toUpperCase() : '';
 
                 const { reais, centavos } = this.formatPriceForCanvas(priceToStr);
@@ -18016,7 +18028,12 @@
                     // 2. Texto do Topo (Categoria ou Chamada)
                     ctx.save();
                     ctx.fillStyle = '#000000';
-                    ctx.font = '900 48px "Montserrat", "Arial Black", sans-serif';
+                    let topFontSize = 48;
+                    const rawDept = (dept || 'Hortifruti').toUpperCase();
+                    if (rawDept.length > 18) topFontSize = 38;
+                    else if (rawDept.length > 14) topFontSize = 42;
+
+                    ctx.font = '900 ' + topFontSize + 'px "Montserrat", "Arial Black", sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.letterSpacing = '1px';
@@ -18029,7 +18046,7 @@
                     } else if (item.type === 'destaque') {
                         topText = 'SUPER DESTAQUE';
                     } else {
-                        topText = (dept || 'Hortifruti').toUpperCase() + ' EM';
+                        topText = rawDept + ' EM';
                     }
                     ctx.fillText(topText, W / 2, 350);
                     ctx.restore();
@@ -18117,9 +18134,17 @@
                     });
                     ctx.restore();
 
-                    // 5. Preço DE (se houver desconto real)
+                    // 5. Preço DE (se houver desconto real) OU Condição de Atacado
                     const priceBaselineY = 1430;
-                    if (pFrom > pTo && pTo > 0) {
+                    if (item.type === 'atacado' && atacadoCond) {
+                        ctx.save();
+                        ctx.font = '900 38px "Montserrat", "Arial Black", sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillStyle = '#111111';
+                        ctx.fillText(atacadoCond.toUpperCase(), W / 2, prodCenterY + (totalH / 2) + 60);
+                        ctx.restore();
+                    } else if (pFrom > pTo && pTo > 0) {
                         ctx.save();
                         const pct = Math.round(((pFrom - pTo) / pFrom) * 100);
                         ctx.font = '900 42px "Montserrat", "Arial Black", sans-serif';
@@ -18196,6 +18221,17 @@
                         ctx.fillText(unitText, centavosX + 5, priceBaselineY - 45);
                     }
                     ctx.restore();
+
+                    // 7. Rodapé / Observação do Cartaz
+                    if (footerText && footerText.trim()) {
+                        ctx.save();
+                        ctx.font = '700 24px "Montserrat", sans-serif';
+                        ctx.fillStyle = '#444444';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(footerText.trim(), W / 2, 1540);
+                        ctx.restore();
+                    }
                 };
 
                 if (this.baseCanvaImg && this.baseCanvaImg.complete) {
