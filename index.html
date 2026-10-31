@@ -5391,7 +5391,7 @@
                 }
             }
 
-            dismissTaskForMe(id) {
+            async dismissTaskForMe(id) {
                 const user = (window.auth && auth.currentUser) ? auth.currentUser : null;
                 if (!user) {
                     alert("Por favor, faça login para excluir a tarefa da sua lista pessoal.");
@@ -5401,7 +5401,7 @@
                 const task = this.tasks.find(t => t.id == id);
                 if (!task) return;
 
-                if (!confirm(`Deseja excluir esta tarefa apenas para você?\n\n• Ela sumirá da sua lista.\n• Continuará visível para os outros colaboradores vinculados e para os administradores no painel.`)) {
+                if (!await dialogs.confirm(`Deseja excluir esta tarefa apenas para você?\n\n• Ela sumirá da sua lista.\n• Continuará visível para os outros colaboradores vinculados e para os administradores no painel.`, { title: "Remover da Minha Lista", confirmText: "Remover", type: "warning" })) {
                     return;
                 }
 
@@ -5430,8 +5430,8 @@
                 if (window.toast) toast.info("Tarefa excluída da sua lista pessoal.");
             }
 
-            deleteTask(id) {
-                if (!confirm("Deseja realmente excluir esta tarefa?")) return;
+            async deleteTask(id) {
+                if (!await dialogs.confirm("Deseja realmente excluir esta tarefa?", { title: "Excluir Tarefa", confirmText: "Sim, Excluir", type: "danger" })) return;
                 this.tasks = this.tasks.filter(t => t.id != id);
                 this.saveLocally();
 
@@ -6586,8 +6586,8 @@
                 syncManager.showToast("✓ Ocorrência concluída!");
             }
 
-            deleteOccurrence(occId) {
-                if (!confirm("Deseja realmente excluir este registro de ocorrência?")) return;
+            async deleteOccurrence(occId) {
+                if (!await dialogs.confirm("Deseja realmente excluir este registro de ocorrência?", { title: "Excluir Ocorrência", confirmText: "Sim, Excluir", type: "danger" })) return;
                 this.occurrences = this.occurrences.filter(o => o.id !== occId);
                 this.saveLocally();
                 if (window.syncManager) {
@@ -8302,8 +8302,8 @@
                 window.print();
             }
 
-            deleteFeedback(id) {
-                if (!confirm("Tem certeza que deseja excluir este registro de feedback? Esta ação não pode ser desfeita.")) return;
+            async deleteFeedback(id) {
+                if (!await dialogs.confirm("Tem certeza que deseja excluir este registro de feedback? Esta ação não pode ser desfeita.", { title: "Excluir Feedback", confirmText: "Sim, Excluir", type: "danger" })) return;
 
                 this.feedbacks = this.feedbacks.filter(f => f.id !== id);
                 this.saveFeedbacks(true);
@@ -8537,8 +8537,8 @@
                 }
             }
 
-            deleteCategory(catId) {
-                if (!confirm("Tem certeza que deseja excluir este tópico de diretrizes?")) return;
+            async deleteCategory(catId) {
+                if (!await dialogs.confirm("Tem certeza que deseja excluir este tópico de diretrizes?", { title: "Excluir Tópico", confirmText: "Sim, Excluir", type: "danger" })) return;
 
                 this.templates = this.templates.filter(c => c.id !== catId);
                 this.saveTemplates(true);
@@ -8572,8 +8572,8 @@
                 this.saveTemplates(true);
             }
 
-            resetDefaultTemplates() {
-                if (!confirm("Deseja restaurar as diretrizes e tópicos para o padrão corporativo recomendado?")) return;
+            async resetDefaultTemplates() {
+                if (!await dialogs.confirm("Deseja restaurar as diretrizes e tópicos para o padrão corporativo recomendado?", { title: "Restaurar Diretrizes", confirmText: "Restaurar", type: "warning" })) return;
 
                 this.templates = this.getDefaultTemplates();
                 this.saveTemplates(true);
@@ -9421,8 +9421,8 @@
                 }
             }
 
-            logout() {
-                if (confirm("Deseja realmente sair da sua conta?")) {
+            async logout() {
+                if (await dialogs.confirm("Deseja realmente sair da sua conta?", { title: "Sair da Conta", confirmText: "Sair", cancelText: "Permanecer", type: "warning" })) {
                     localStorage.removeItem('taskflow_current_user');
                     this.currentUser = null;
                     this.showAuthScreen();
@@ -9864,8 +9864,8 @@
                 }
             }
 
-            blockUser(email) {
-                if (!confirm(`Deseja bloquear/rejeitar o acesso de ${email}?`)) return;
+            async blockUser(email) {
+                if (!await dialogs.confirm(`Deseja bloquear/rejeitar o acesso de ${email}?`, { title: "Bloquear Acesso", confirmText: "Bloquear", type: "danger" })) return;
                 const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
                 const acc = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
                 if (acc) {
@@ -9888,8 +9888,8 @@
                 }
             }
 
-            deleteUser(email) {
-                if (!confirm(`Deseja excluir permanentemente o cadastro de ${email}?`)) return;
+            async deleteUser(email) {
+                if (!await dialogs.confirm(`Deseja excluir permanentemente o cadastro de ${email}?`, { title: "Excluir Usuário", confirmText: "Sim, Excluir", type: "danger" })) return;
                 let accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
                 accounts = accounts.filter(a => a.email.toLowerCase() !== email.toLowerCase());
                 localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
@@ -11092,8 +11092,8 @@
                 }
             }
 
-            clearCompletedTasks() {
-                if (!confirm("Deseja remover todas as tarefas já concluídas?")) return;
+            async clearCompletedTasks() {
+                if (!await dialogs.confirm("Deseja remover todas as tarefas já concluídas?", { title: "Limpar Concluídas", confirmText: "Remover Concluídas", type: "warning" })) return;
                 const uncompleted = app.tasks.filter(t => !t.completed);
                 const removedCount = app.tasks.length - uncompleted.length;
                 app.tasks = uncompleted;
@@ -11377,12 +11377,12 @@
                 syncManager.showToast(`✓ Cargo renomeado para "${clean}"!`);
             }
 
-            deleteRole(roleName) {
+            async deleteRole(roleName) {
                 if (roleName === 'Administrador' || roleName === 'Colaborador') {
                     alert("Os cargos base 'Administrador' e 'Colaborador' não podem ser excluídos.");
                     return;
                 }
-                if (!confirm(`Deseja realmente excluir o cargo "${roleName}"? Os colaboradores com este cargo continuarão no sistema, mas o cargo será removido da lista.`)) return;
+                if (!await dialogs.confirm(`Deseja realmente excluir o cargo "${roleName}"? Os colaboradores com este cargo continuarão no sistema, mas o cargo será removido da lista.`, { title: "Excluir Cargo", confirmText: "Sim, Excluir", type: "danger" })) return;
                 let roles = this.getRoles().filter(r => r !== roleName);
                 this.saveRoles(roles);
                 this.renderAdminUsers();
@@ -11474,12 +11474,12 @@
                 syncManager.showToast(`✓ Setor renomeado para "${clean}"!`);
             }
 
-            deleteDepartment(deptName) {
+            async deleteDepartment(deptName) {
                 if (deptName === 'Geral') {
                     alert("O setor 'Geral' não pode ser excluído.");
                     return;
                 }
-                if (!confirm(`Deseja realmente excluir o setor "${deptName}"?`)) return;
+                if (!await dialogs.confirm(`Deseja realmente excluir o setor "${deptName}"?`, { title: "Excluir Setor", confirmText: "Sim, Excluir", type: "danger" })) return;
                 let depts = this.getDepartments().filter(d => d !== deptName);
                 this.saveDepartments(depts);
                 syncManager.showToast(`Setor "${deptName}" excluído.`);
@@ -12146,8 +12146,8 @@
                 syncManager.showToast(`✓ Acesso de ${newAccount.displayName} APROVADO diretamente!`);
             }
 
-            cancelPendingCode(email) {
-                if (!confirm(`Deseja cancelar o pedido de cadastro de ${email}?`)) return;
+            async cancelPendingCode(email) {
+                if (!await dialogs.confirm(`Deseja cancelar o pedido de cadastro de ${email}?`, { title: "Cancelar Pedido", confirmText: "Sim, Cancelar", type: "warning" })) return;
                 const pendingCodes = JSON.parse(localStorage.getItem('taskflow_pending_codes') || '{}');
                 delete pendingCodes[email.toLowerCase()];
                 localStorage.setItem('taskflow_pending_codes', JSON.stringify(pendingCodes));
@@ -15933,7 +15933,7 @@
                 if (!this.editingAbsence) return;
                 const { tipo, linha, nome } = this.editingAbsence;
 
-                if (!confirm(`Deseja realmente remover o registro de ${nome} (Linha ${linha}) e limpar esta linha na planilha?`)) {
+                if (!await dialogs.confirm(`Deseja realmente remover o registro de ${nome} (Linha ${linha}) e limpar esta linha na planilha?`, { title: "Remover da Planilha", confirmText: "Sim, Remover", type: "danger" })) {
                     return;
                 }
 
@@ -17468,7 +17468,7 @@
 
                 const qtdTarget = Math.max(1, Math.round((slots.length * percent) / 100));
                 const confirmMsg = `Deseja programar saída antecipada (-1:00) para ${qtdTarget} colaborador(es) na ${dia} (${percent}% da equipe)?`;
-                if (!confirm(confirmMsg)) return;
+                if (!await dialogs.confirm(confirmMsg, { title: "Saída Antecipada", confirmText: "Programar", type: "warning" })) return;
 
                 const updates = [];
                 for (let i = 0; i < qtdTarget; i++) {
@@ -17632,8 +17632,8 @@
                 this.renderAiDrawer();
             }
 
-            clearSeniorBh() {
-                if (confirm('Deseja limpar todos os saldos do Senior salvos neste aparelho?')) {
+            async clearSeniorBh() {
+                if (await dialogs.confirm('Deseja limpar todos os saldos do Senior salvos neste aparelho?', { title: "Limpar Saldos", confirmText: "Limpar", type: "warning" })) {
                     localStorage.removeItem('taskflow_senior_bh');
                     if (window.notifications) notifications.showToast('Saldos do Senior limpos.', 'info');
                     this.renderAiDrawer();
@@ -18403,8 +18403,8 @@
                 this.switchTab('queue');
             }
 
-            deletePoster(id) {
-                if (!confirm('Deseja realmente excluir esta solicitação de cartaz?')) return;
+            async deletePoster(id) {
+                if (!await dialogs.confirm('Deseja realmente excluir esta solicitação de cartaz?', { title: "Excluir Cartaz", confirmText: "Sim, Excluir", type: "danger" })) return;
                 this.posters = this.posters.filter(p => p.id !== id);
                 this.saveToStorage();
                 this.renderQueue();
@@ -18560,7 +18560,151 @@
         });
 
 
-    </script>
+    
+    // ==========================================================================
+    // SISTEMA DE DIÁLOGOS ESTILIZADOS (SUBSTITUI ALERT E CONFIRM DO NAVEGADOR)
+    // ==========================================================================
+    window.dialogs = {
+        _resolve: null,
+
+        init() {
+            const btnCancel = document.getElementById('custom-dialog-btn-cancel');
+            const btnConfirm = document.getElementById('custom-dialog-btn-confirm');
+            const modal = document.getElementById('custom-dialog-modal');
+
+            if (btnCancel) {
+                btnCancel.onclick = () => {
+                    this.close(false);
+                };
+            }
+            if (btnConfirm) {
+                btnConfirm.onclick = () => {
+                    this.close(true);
+                };
+            }
+            if (modal) {
+                modal.onclick = (e) => {
+                    if (e.target === modal && btnCancel && !btnCancel.classList.contains('hidden') && btnCancel.style.display !== 'none') {
+                        this.close(false);
+                    }
+                };
+            }
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal && modal.style.display !== 'none' && !modal.classList.contains('hidden')) {
+                    this.close(false);
+                }
+            });
+        },
+
+        close(result) {
+            const modal = document.getElementById('custom-dialog-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.classList.add('hidden');
+            }
+            if (this._resolve) {
+                const r = this._resolve;
+                this._resolve = null;
+                r(result);
+            }
+        },
+
+        show({ title, message, type = 'info', confirmText = 'OK', cancelText = 'Cancelar', isConfirm = false }) {
+            return new Promise(resolve => {
+                this._resolve = resolve;
+                const modal = document.getElementById('custom-dialog-modal');
+                const iconWrap = document.getElementById('custom-dialog-icon-wrapper');
+                const icon = document.getElementById('custom-dialog-icon');
+                const titleEl = document.getElementById('custom-dialog-title');
+                const msgEl = document.getElementById('custom-dialog-message');
+                const btnCancel = document.getElementById('custom-dialog-btn-cancel');
+                const btnConfirm = document.getElementById('custom-dialog-btn-confirm');
+
+                if (!modal) {
+                    if (isConfirm) resolve(window.confirm(message));
+                    else { window.alert(message); resolve(true); }
+                    return;
+                }
+
+                if (titleEl) titleEl.textContent = title || (isConfirm ? 'Confirmar Ação' : 'Aviso');
+                if (msgEl) msgEl.textContent = String(message || '');
+
+                if (iconWrap && icon && btnConfirm) {
+                    if (type === 'danger') {
+                        iconWrap.className = 'w-14 h-14 rounded-2xl flex items-center justify-center mb-3 text-2xl shadow-inner bg-rose-500/20 text-rose-400 border border-rose-500/30';
+                        icon.className = 'fa-solid fa-trash-can';
+                        btnConfirm.className = 'flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-bold rounded-xl text-xs sm:text-sm transition cursor-pointer shadow-lg shadow-rose-600/30';
+                    } else if (type === 'warning') {
+                        iconWrap.className = 'w-14 h-14 rounded-2xl flex items-center justify-center mb-3 text-2xl shadow-inner bg-amber-500/20 text-amber-400 border border-amber-500/30';
+                        icon.className = 'fa-solid fa-triangle-exclamation';
+                        btnConfirm.className = 'flex-1 py-2.5 px-4 bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-extrabold rounded-xl text-xs sm:text-sm transition cursor-pointer shadow-lg shadow-amber-500/30';
+                    } else if (type === 'success') {
+                        iconWrap.className = 'w-14 h-14 rounded-2xl flex items-center justify-center mb-3 text-2xl shadow-inner bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+                        icon.className = 'fa-solid fa-circle-check';
+                        btnConfirm.className = 'flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold rounded-xl text-xs sm:text-sm transition cursor-pointer shadow-lg shadow-emerald-600/30';
+                    } else {
+                        iconWrap.className = 'w-14 h-14 rounded-2xl flex items-center justify-center mb-3 text-2xl shadow-inner bg-indigo-500/20 text-indigo-400 border border-indigo-500/30';
+                        icon.className = 'fa-solid fa-circle-info';
+                        btnConfirm.className = 'flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold rounded-xl text-xs sm:text-sm transition cursor-pointer shadow-lg shadow-indigo-600/30';
+                    }
+
+                    btnConfirm.textContent = confirmText;
+                }
+
+                if (btnCancel) {
+                    if (isConfirm) {
+                        btnCancel.textContent = cancelText;
+                        btnCancel.classList.remove('hidden');
+                        btnCancel.style.display = 'block';
+                    } else {
+                        btnCancel.classList.add('hidden');
+                        btnCancel.style.display = 'none';
+                    }
+                }
+
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                if (btnConfirm) btnConfirm.focus();
+            });
+        },
+
+        alert(message, options = {}) {
+            return this.show({
+                title: options.title || 'Aviso do Sistema',
+                message: String(message),
+                type: options.type || 'info',
+                confirmText: options.confirmText || 'Entendido',
+                isConfirm: false
+            });
+        },
+
+        confirm(message, options = {}) {
+            return this.show({
+                title: options.title || 'Confirmar Ação',
+                message: String(message),
+                type: options.type || (options.danger ? 'danger' : 'warning'),
+                confirmText: options.confirmText || (options.danger ? 'Sim, Excluir' : 'Confirmar'),
+                cancelText: options.cancelText || 'Cancelar',
+                isConfirm: true
+            });
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.dialogs) window.dialogs.init();
+    });
+
+    // Sobrescrever alert global nativo do navegador para usar o modal estilizado
+    window.nativeAlert = window.alert;
+    window.alert = function(msg) {
+        if (window.dialogs && typeof window.dialogs.alert === 'function') {
+            window.dialogs.alert(msg);
+        } else {
+            window.nativeAlert(msg);
+        }
+    };
+
+</script>
 
 
     <!-- ========================================== -->
@@ -19294,5 +19438,34 @@
         </div>
         <p id="lightbox-caption" class="mt-3 text-xs text-gray-300 font-medium text-center bg-gray-900/80 px-3 py-1 rounded-full border border-gray-800"></p>
     </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL DE DIÁLOGO / CONFIRMAÇÃO ESTILIZADO (SEM "A PÁGINA DIZ") -->
+    <!-- ======================================================== -->
+    <div id="custom-dialog-modal" style="display: none; z-index: 100020;" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4 select-none">
+        <div id="custom-dialog-card" class="bg-gray-900 border border-gray-700/80 rounded-2xl w-full max-w-sm sm:max-w-md shadow-2xl p-5 text-center flex flex-col items-center animate-in fade-in zoom-in-95 duration-150">
+            <!-- Ícone Dinâmico -->
+            <div id="custom-dialog-icon-wrapper" class="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 text-2xl shadow-inner bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                <i id="custom-dialog-icon" class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+
+            <!-- Título -->
+            <h3 id="custom-dialog-title" class="text-base sm:text-lg font-black text-white leading-tight">Confirmar Ação</h3>
+
+            <!-- Mensagem -->
+            <p id="custom-dialog-message" class="text-xs sm:text-sm text-gray-300 mt-2.5 leading-relaxed whitespace-pre-line text-center max-h-60 overflow-y-auto custom-scrollbar px-1"></p>
+
+            <!-- Botões de Ação -->
+            <div id="custom-dialog-actions" class="w-full mt-5 flex items-center gap-2.5">
+                <button type="button" id="custom-dialog-btn-cancel" class="flex-1 py-2.5 px-4 bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 hover:text-white font-bold rounded-xl text-xs sm:text-sm transition cursor-pointer border border-gray-700">
+                    Cancelar
+                </button>
+                <button type="button" id="custom-dialog-btn-confirm" class="flex-1 py-2.5 px-4 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-bold rounded-xl text-xs sm:text-sm transition cursor-pointer shadow-lg shadow-rose-600/30">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
