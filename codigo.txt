@@ -593,8 +593,6 @@
                     <i class="fa-solid fa-arrow-right text-xs"></i>
                 </button>
             </form>
-                                </div>
-
 
             <!-- Form de Cadastro Desativado Publicamente -->
             <form id="form-register" style="display: none !important;" onsubmit="return false;" class="space-y-3.5 hidden">
@@ -948,15 +946,15 @@
                 </button>
                 <button id="topbar-new-occurrence-btn" onclick="occApp.openNewModal()" class="hidden sm:flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-black font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-amber-600/30 whitespace-nowrap">
                     <i class="fa-solid fa-plus text-xs"></i>
-                    <span>+ Nova Ocorrência</span>
+                    <span>Nova Ocorrência</span>
                 </button>
                 <button id="topbar-new-poster-btn" onclick="window.switchMainView('tools'); if(window.posterApp) posterApp.switchTab('creator');" class="hidden sm:flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-amber-500/30 whitespace-nowrap cursor-pointer" title="Criar Novo Cartaz de Supermercado">
                     <i class="fa-solid fa-plus text-xs"></i>
-                    <span>+ Novo Cartaz</span>
+                    <span>Novo Cartaz</span>
                 </button>
                 <button id="topbar-new-feedback-btn" onclick="feedbackApp.openNewFeedbackModal()" class="hidden sm:flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-purple-600/30 whitespace-nowrap">
                     <i class="fa-solid fa-plus text-xs"></i>
-                    <span>+ Novo Feedback</span>
+                    <span>Novo Feedback</span>
                 </button>
                 <button onclick="auth.logout()" title="Sair da Conta" class="md:hidden p-2 text-gray-400 hover:text-red-400 rounded-xl bg-gray-800 active:scale-95">
                     <i class="fa-solid fa-right-from-bracket text-xs"></i>
@@ -1015,7 +1013,7 @@
                     <!-- Botão de Criação em Destaque na Barra de Tarefas -->
                     <button type="button" onclick="app.openModal()" class="ml-auto shrink-0 whitespace-nowrap py-1.5 px-3.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 active:scale-95 cursor-pointer" title="Criar Nova Tarefa para a Equipe">
                         <i class="fa-solid fa-plus text-xs"></i>
-                        <span>+ Nova Tarefa</span>
+                        <span>Nova Tarefa</span>
                     </button>
                 </div>
                 <div id="tasks-container" class="space-y-2.5">
@@ -1973,38 +1971,31 @@
 
         <!-- Bottom Navigation Bar Mobile -->
         <nav id="app-bottom-nav-bar" class="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur border-t border-gray-800 px-2 py-1.5 flex items-center justify-around z-40 shadow-2xl pb-safe-bottom">
-            <button onclick="window.switchMainView('tasks')" id="mob-nav-tasks" class="flex flex-col items-center gap-1 text-indigo-400 py-1 px-1.5 transition active:scale-90">
+            <button onclick="window.switchMainView('tasks')" id="mob-nav-tasks" class="flex-1 flex flex-col items-center gap-1 text-indigo-400 py-1 px-1 transition active:scale-90">
                 <i class="fa-solid fa-list-check text-base"></i>
                 <span class="text-[9px] font-semibold">Tarefas</span>
             </button>
-            <button onclick="window.switchMainView('schedule')" id="mob-nav-schedule" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1.5 transition active:scale-90 relative">
+            <button onclick="window.switchMainView('schedule')" id="mob-nav-schedule" class="flex-1 flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1 transition active:scale-90 relative">
                 <i class="fa-solid fa-calendar-days text-base text-teal-400"></i>
                 <span class="text-[9px] font-semibold">Escala</span>
                 <span id="mob-schedule-badge" class="hidden absolute top-0 right-1 w-2 h-2 rounded-full bg-teal-500 animate-ping"></span>
             </button>
-            <button onclick="window.switchMainView('tools')" id="mob-nav-tools" class="flex flex-col items-center gap-1 text-amber-400 hover:text-amber-300 py-1 px-1.5 transition active:scale-90 relative" title="Gerador de Cartazes de Oferta">
+            <button onclick="window.switchMainView('tools')" id="mob-nav-tools" class="flex-1 flex flex-col items-center gap-1 text-amber-400 hover:text-amber-300 py-1 px-1 transition active:scale-90 relative" title="Gerador de Cartazes de Oferta">
                 <i class="fa-solid fa-tags text-base text-amber-400"></i>
                 <span class="text-[9px] font-bold text-amber-400">Cartazes</span>
                 <span id="mob-tools-badge" class="hidden absolute top-0 right-1 w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
             </button>
-            <button onclick="window.switchMainView('occurrences')" id="mob-nav-occurrences" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1.5 transition active:scale-90 relative">
+            <button onclick="window.switchMainView('occurrences')" id="mob-nav-occurrences" class="flex-1 flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1 transition active:scale-90 relative">
                 <i class="fa-solid fa-clipboard-user text-base text-amber-400"></i>
                 <span class="text-[9px] font-semibold">Processos</span>
                 <span id="mob-occurrences-badge" class="hidden absolute top-0 right-1 w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
             </button>
-            <button onclick="window.switchMainView('feedback')" id="mob-nav-feedback" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1.5 transition active:scale-90 relative">
+            <button onclick="window.switchMainView('feedback')" id="mob-nav-feedback" class="flex-1 flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1 transition active:scale-90 relative">
                 <i class="fa-solid fa-comments text-base text-purple-400"></i>
                 <span class="text-[9px] font-semibold">Feedback</span>
                 <span id="mob-feedback-badge" class="hidden absolute top-0 right-1 w-2 h-2 rounded-full bg-purple-500 animate-ping"></span>
             </button>
-            <button onclick="app.setFilter('mine')" id="mob-nav-mine" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1.5 transition active:scale-90">
-                <i class="fa-solid fa-user-check text-base"></i>
-                <span class="text-[9px] font-semibold">Minhas</span>
-            </button>
-            <button onclick="app.openPomodoro()" id="mob-nav-pomo" class="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1.5 transition active:scale-90">
-                <i class="fa-solid fa-stopwatch text-base text-indigo-400"></i>
-                <span class="text-[9px] font-semibold">Pomo</span>
-            </button>
+
 
             <!-- Floating Action Button (FAB) Mobile -->
             <button type="button" id="mob-fab-action-btn" onclick="window.triggerActiveFAB()" title="Criar Novo Item" class="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 active:scale-90 text-white rounded-xl shadow-2xl shadow-indigo-600/50 flex items-center justify-center text-xl transition border border-indigo-400/40">
@@ -2091,7 +2082,7 @@
                     <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto">
                         <button type="button" onclick="admin.openNewUserModal()" class="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-lg shadow-sm active:scale-95">
                             <i class="fa-solid fa-user-plus"></i>
-                            <span>+ Cadastrar Colaborador</span>
+                            <span>Cadastrar Colaborador</span>
                         </button>
                     </div>
                 </div>
@@ -6040,22 +6031,29 @@
             if (schedSec) schedSec.classList.add('hidden');
             if (toolsSec) toolsSec.classList.add('hidden');
 
-            // Controle de Botões de Criação no Topbar (Aparecem no Desktop, Ocultos no Mobile para usar o FAB)
+            // Exibir filtros de tarefas na sidebar apenas na view de Tarefas
+            const sidebarTaskFilters = document.getElementById('sidebar-task-filters');
+            if (sidebarTaskFilters) {
+                sidebarTaskFilters.classList.toggle('hidden', view !== 'tasks');
+            }
+
+            // Controle de Botões de Criação no Topbar (Aparecem no Desktop sm:flex, Ocultos no Mobile para usar o FAB)
+            const isDesktop = window.innerWidth >= 640;
             if (btnNewTask) {
-                btnNewTask.style.display = (view === 'tasks') ? 'flex' : 'none';
-                btnNewTask.className = "items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg shadow-sm whitespace-nowrap cursor-pointer";
+                btnNewTask.style.display = (view === 'tasks' && isDesktop) ? 'flex' : 'none';
+                btnNewTask.className = "hidden sm:flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg shadow-sm whitespace-nowrap cursor-pointer";
             }
             if (btnNewOcc) {
-                btnNewOcc.style.display = (view === 'occurrences') ? 'flex' : 'none';
-                btnNewOcc.className = "items-center gap-1.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-black font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-amber-600/30 whitespace-nowrap cursor-pointer";
+                btnNewOcc.style.display = (view === 'occurrences' && isDesktop) ? 'flex' : 'none';
+                btnNewOcc.className = "hidden sm:flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-black font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-amber-600/30 whitespace-nowrap cursor-pointer";
             }
             if (btnNewFb) {
-                btnNewFb.style.display = (view === 'feedback') ? 'flex' : 'none';
-                btnNewFb.className = "items-center gap-1.5 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-purple-600/30 whitespace-nowrap cursor-pointer";
+                btnNewFb.style.display = (view === 'feedback' && isDesktop) ? 'flex' : 'none';
+                btnNewFb.className = "hidden sm:flex items-center gap-1.5 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-purple-600/30 whitespace-nowrap cursor-pointer";
             }
             if (btnNewPoster) {
-                btnNewPoster.style.display = (view === 'tools') ? 'flex' : 'none';
-                btnNewPoster.className = "items-center gap-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-amber-500/30 whitespace-nowrap cursor-pointer";
+                btnNewPoster.style.display = (view === 'tools' && isDesktop) ? 'flex' : 'none';
+                btnNewPoster.className = "hidden sm:flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-amber-500/30 whitespace-nowrap cursor-pointer";
             }
 
             // Estilos padrão inativos (Sidebar Vertical e Topbar)
@@ -6157,6 +6155,9 @@
 
                 if (window.posterApp) {
                     posterApp.init();
+                    setTimeout(() => {
+                        if (window.posterApp) posterApp.updateLivePreview();
+                    }, 50);
                 }
             }
         };
@@ -13226,7 +13227,7 @@
                 this.viewMode = savedViewMode || (window.innerWidth < 768 ? 'cards' : 'table');
                 this.currentFilter = 'all';
                 this.currentDeptFilter = 'all';
-                this.folgasCollapsed = localStorage.getItem('taskflow_folgas_collapsed') === 'true';
+                this.folgasCollapsed = localStorage.getItem('taskflow_folgas_collapsed') !== 'false';
                 this.searchQuery = '';
                 this.isSyncing = false;
                 this.showFolgas = (localStorage.getItem('taskflow_schedule_show_folgas') === 'true');
