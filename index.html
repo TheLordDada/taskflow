@@ -531,6 +531,8 @@
         }
 
     </style>
+    <!-- SheetJS (Leitura e Escrita de Planilhas Excel Multi-abas) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col md:flex-row selection:bg-indigo-500 selection:text-white">
 
@@ -795,7 +797,15 @@
                     </span>
                     <span id="schedule-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-teal-500 text-black font-extrabold shrink-0">0</span>
                 </button>
-                <button type="button" id="main-switch-tools" onclick="window.switchMainView('tools')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-amber-300 bg-amber-950/20 border border-amber-500/20 hover:bg-amber-900/30 hover:border-amber-500/40 transition group" title="Gerador de Cartazes de Ofertas e Produtos Próximos do Vencimento">
+                <!-- Botão Tabloides & Códigos (Exclusivo Administrador) -->
+                        <button type="button" id="main-switch-tabloid" onclick="window.switchMainView('tabloid')" class="hidden w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-emerald-400 bg-emerald-950/20 border border-emerald-500/20 hover:bg-emerald-900/30 hover:border-emerald-500/40 transition group" title="Cruzador de Tabloides & Códigos ERP (Exclusivo Administrador)">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-file-excel text-emerald-400 text-sm"></i>
+                                <span>Tabloides & Códigos</span>
+                            </div>
+                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">ADM</span>
+                        </button>
+                        <button type="button" id="main-switch-tools" onclick="window.switchMainView('tools')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-amber-300 bg-amber-950/20 border border-amber-500/20 hover:bg-amber-900/30 hover:border-amber-500/40 transition group" title="Gerador de Cartazes de Ofertas e Produtos Próximos do Vencimento">
                     <span class="flex items-center gap-2.5 min-w-0">
                         <span class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 group-hover:bg-amber-500 group-hover:text-black transition">
                             <i class="fa-solid fa-tags text-xs"></i>
@@ -899,6 +909,11 @@
                         <i class="fa-solid fa-calendar-days text-[11px] text-teal-400"></i>
                         <span>Escala</span>
                         <span id="topbar-schedule-badge" class="hidden text-[10px] px-1 rounded-full bg-teal-500 text-black font-extrabold ml-0.5">0</span>
+                    </button>
+                    <button type="button" id="topbar-switch-tabloid" onclick="window.switchMainView('tabloid')" class="hidden px-2.5 py-1 text-xs font-bold rounded-lg text-emerald-400 bg-emerald-950/40 border border-emerald-500/40 hover:bg-emerald-900/50 hover:text-emerald-200 transition flex items-center gap-1.5 relative shadow-sm" title="Cruzador de Tabloides & Códigos (Exclusivo Administrador)">
+                        <i class="fa-solid fa-file-excel text-emerald-400 text-xs"></i>
+                        <span>Tabloides</span>
+                        <span class="text-[9px] font-extrabold px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">ADM</span>
                     </button>
                     <button type="button" id="topbar-switch-tools" onclick="window.switchMainView('tools')" class="px-2.5 py-1 text-xs font-bold rounded-lg text-amber-300 bg-amber-950/40 border border-amber-500/40 hover:bg-amber-900/50 hover:text-amber-200 transition flex items-center gap-1.5 relative shadow-sm" title="Gerador de Cartazes de Ofertas e Vencimento">
                         <i class="fa-solid fa-tags text-[11px] text-amber-400"></i>
@@ -1963,6 +1978,180 @@
                 </div>
             </div>
 
+            
+            <!-- ======================================================== -->
+            <!-- MÓDULO 6: CRUZADOR DE TABLOIDES (EXCLUSIVO ADMINISTRADOR)-->
+            <!-- ======================================================== -->
+            <div id="view-tabloid-container" class="hidden space-y-4 pb-28 md:pb-6">
+                <!-- Cabeçalho do Módulo de Tabloides -->
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-file-excel text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                                Cruzador Inteligente de Tabloides
+                                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Exclusivo ADM</span>
+                            </h3>
+                            <p class="text-xs text-gray-400">Insere automaticamente a coluna de Código do ERP em todas as abas da planilha do tabloide com filtro estrito de gramatura.</p>
+                        </div>
+                    </div>
+
+                    <!-- Indicador da Base de Dados & Atualização -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                        <span id="tabloid-catalog-badge" class="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold bg-emerald-950/40 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span id="tabloid-catalog-count">13.693 Produtos na Memória</span>
+                        </span>
+                        <button type="button" onclick="tabloidApp.triggerCatalogUpload()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-xl border border-gray-700 flex items-center gap-1.5 transition active:scale-95 cursor-pointer" title="Subir nova planilha de Produtos.xlsx com códigos da loja">
+                            <i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i>
+                            <span>Atualizar Base</span>
+                        </button>
+                        <input type="file" id="tabloid-catalog-input" accept=".xlsx,.xls,.csv" class="hidden" onchange="tabloidApp.handleCatalogUpload(event)">
+                    </div>
+                </div>
+
+                <!-- Painel de Carregamento do Tabloide & Configuração -->
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 sm:p-5 shadow-sm space-y-4">
+                    <!-- Dropzone -->
+                    <div id="tabloid-dropzone" class="border-2 border-dashed border-gray-700 hover:border-emerald-500/70 rounded-2xl p-6 sm:p-8 text-center transition cursor-pointer bg-gray-950/50 hover:bg-emerald-950/10 group" onclick="document.getElementById('tabloid-file-input').click()">
+                        <input type="file" id="tabloid-file-input" accept=".xlsx,.xls,.csv" class="hidden" onchange="tabloidApp.handleTabloidFile(event)">
+                        <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-2xl group-hover:scale-110 transition mb-3">
+                            <i class="fa-solid fa-file-arrow-up"></i>
+                        </div>
+                        <h4 class="text-sm sm:text-base font-bold text-white mb-1">Arraste a Planilha do Tabloide aqui</h4>
+                        <p class="text-xs text-gray-400 max-w-md mx-auto mb-3">Suporta arquivos Excel (.xlsx, .xls) com 2, 3 ou mais abas. O sistema insere a coluna CÓDIGO à esquerda do produto em todas as abas.</p>
+                        <div class="inline-flex items-center gap-2">
+                            <span class="px-3 py-1 rounded-lg bg-gray-800 text-gray-300 text-xs font-semibold border border-gray-700">Ou clique para selecionar</span>
+                            <button type="button" onclick="event.stopPropagation(); tabloidApp.loadDemoTabloid();" class="px-3 py-1 rounded-lg bg-emerald-950 text-emerald-300 text-xs font-bold border border-emerald-800/60 hover:bg-emerald-900 transition active:scale-95">
+                                <i class="fa-solid fa-play text-[10px] mr-1"></i> Carregar Exemplo do Encarte
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Informações do Arquivo Carregado & Seletor de Abas -->
+                    <div id="tabloid-file-info-bar" class="hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3 bg-gray-950 rounded-xl border border-gray-800">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-file-circle-check text-emerald-400 text-lg"></i>
+                            <div>
+                                <span class="text-xs font-bold text-gray-200 block" id="tabloid-loaded-filename">Tabloide.xlsx</span>
+                                <span class="text-[11px] text-gray-400" id="tabloid-loaded-sheets-count">3 Abas Encontradas</span>
+                            </div>
+                        </div>
+
+                        <!-- Abas Filter Pills -->
+                        <div class="flex items-center gap-1.5 flex-wrap w-full md:w-auto" id="tabloid-sheet-pills">
+                            <!-- Injetado dinamicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard de Estatísticas & Ações de Exportação -->
+                <div id="tabloid-results-section" class="hidden space-y-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+                        <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 text-center">
+                            <span class="text-[11px] uppercase font-bold text-gray-400 block mb-0.5">Total de Itens</span>
+                            <span class="text-xl sm:text-2xl font-black text-white" id="stat-tabloid-total">0</span>
+                        </div>
+                        <div class="bg-gray-900 border border-emerald-500/20 rounded-xl p-3 text-center">
+                            <span class="text-[11px] uppercase font-bold text-emerald-400 block mb-0.5">🟢 Alta Certeza</span>
+                            <span class="text-xl sm:text-2xl font-black text-emerald-300" id="stat-tabloid-high">0</span>
+                        </div>
+                        <div class="bg-gray-900 border border-amber-500/20 rounded-xl p-3 text-center">
+                            <span class="text-[11px] uppercase font-bold text-amber-400 block mb-0.5">🟡 Variações / Família</span>
+                            <span class="text-xl sm:text-2xl font-black text-amber-300" id="stat-tabloid-family">0</span>
+                        </div>
+                        <div class="bg-gray-900 border border-rose-500/20 rounded-xl p-3 text-center">
+                            <span class="text-[11px] uppercase font-bold text-rose-400 block mb-0.5">🔴 Não Localizados</span>
+                            <span class="text-xl sm:text-2xl font-black text-rose-300" id="stat-tabloid-missing">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Ações & Filtros -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row items-center justify-between gap-3">
+                        <!-- Busca rápida no resultado -->
+                        <div class="relative w-full md:w-72">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-gray-500"></i>
+                            <input type="text" id="tabloid-search-filter" oninput="tabloidApp.filterResults()" placeholder="Filtrar por nome ou código..." class="w-full bg-gray-950 border border-gray-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-gray-200 placeholder-gray-500 focus:outline-none focus:border-emerald-500">
+                        </div>
+
+                        <!-- Filtros por Status -->
+                        <div class="inline-flex p-1 rounded-xl bg-gray-950 border border-gray-800 text-xs font-semibold w-full md:w-auto justify-around">
+                            <button type="button" onclick="tabloidApp.setStatusFilter('all')" id="filter-tab-all" class="px-2.5 py-1 rounded-lg text-emerald-400 font-bold bg-emerald-950/70 border border-emerald-800/40">Todos</button>
+                            <button type="button" onclick="tabloidApp.setStatusFilter('high')" id="filter-tab-high" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-gray-200">🟢 Certos</button>
+                            <button type="button" onclick="tabloidApp.setStatusFilter('family')" id="filter-tab-family" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-gray-200">🟡 Família</button>
+                            <button type="button" onclick="tabloidApp.setStatusFilter('missing')" id="filter-tab-missing" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-gray-200">🔴 Pendentes</button>
+                        </div>
+
+                        <!-- Botões de Ação Principal -->
+                        <div class="flex items-center gap-2 w-full md:w-auto">
+                            <button type="button" onclick="tabloidApp.exportProcessedExcel()" class="flex-1 md:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer">
+                                <i class="fa-solid fa-download"></i>
+                                <span>Baixar Excel com Códigos (.xlsx)</span>
+                            </button>
+                            <button type="button" onclick="tabloidApp.copyTableToClipboard()" title="Copiar Tabela" class="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl border border-gray-700 transition active:scale-95 cursor-pointer">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Resultados -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
+                        <div class="overflow-x-auto max-h-[60vh] scrollbar-thin scrollbar-thumb-gray-800">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead class="bg-gray-950/90 text-gray-400 uppercase font-semibold sticky top-0 z-10 border-b border-gray-800 backdrop-blur">
+                                    <tr>
+                                        <th class="py-2.5 px-3 w-12 text-center">Status</th>
+                                        <th class="py-2.5 px-3 w-28">Código ERP</th>
+                                        <th class="py-2.5 px-3">Produto no Tabloide</th>
+                                        <th class="py-2.5 px-3 w-24">Preço</th>
+                                        <th class="py-2.5 px-3">Correspondência no Sistema (ERP)</th>
+                                        <th class="py-2.5 px-3 w-16 text-center">Certeza</th>
+                                        <th class="py-2.5 px-3 w-20 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabloid-table-body" class="divide-y divide-gray-800/60 font-medium">
+                                    <!-- Linhas injetadas dinamicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal de Busca Manual de Produto no Catálogo -->
+                <div id="tabloid-manual-search-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-lg p-5 space-y-4 shadow-2xl">
+                        <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+                            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-magnifying-glass text-emerald-400"></i>
+                                Localizar Código Manualmente
+                            </h4>
+                            <button type="button" onclick="tabloidApp.closeManualSearch()" class="text-gray-400 hover:text-white text-base">✕</button>
+                        </div>
+
+                        <div>
+                            <span class="text-xs text-gray-400 block mb-1">Item do Tabloide:</span>
+                            <span class="text-xs font-bold text-emerald-300 block bg-gray-950 p-2.5 rounded-xl border border-gray-800" id="manual-search-item-label">-</span>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-gray-300 block mb-1">Buscar no Catálogo (13 mil produtos):</label>
+                            <input type="text" id="manual-search-input" oninput="tabloidApp.handleManualSearchType()" placeholder="Digite parte do nome, marca ou gramatura..." class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                        </div>
+
+                        <!-- Lista de Sugestões Instantâneas -->
+                        <div class="max-h-60 overflow-y-auto space-y-1.5 scrollbar-thin" id="manual-search-results">
+                            <!-- Injetado dinamicamente -->
+                        </div>
+
+                        <div class="flex justify-end pt-2 border-t border-gray-800">
+                            <button type="button" onclick="tabloidApp.closeManualSearch()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold rounded-xl transition">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- CONTAINER OCULTO DE IMPRESSÃO REAL (@media print) -->
             <div id="poster-printable-area" style="display: none;"></div>
 
@@ -1979,6 +2168,10 @@
                 <i class="fa-solid fa-calendar-days text-base text-teal-400"></i>
                 <span class="text-[9px] font-semibold">Escala</span>
                 <span id="mob-schedule-badge" class="hidden absolute top-0 right-1 w-2 h-2 rounded-full bg-teal-500 animate-ping"></span>
+            </button>
+            <button onclick="window.switchMainView('tabloid')" id="mob-nav-tabloid" class="hidden flex-1 flex flex-col items-center gap-1 text-gray-400 hover:text-emerald-300 py-1 px-1 transition active:scale-90 relative" title="Cruzador de Tabloides (ADM)">
+                <i class="fa-solid fa-file-excel text-base text-emerald-400"></i>
+                <span class="text-[9px] font-semibold">Tabloide</span>
             </button>
             <button onclick="window.switchMainView('tools')" id="mob-nav-tools" class="flex-1 flex flex-col items-center gap-1 text-amber-400 hover:text-amber-300 py-1 px-1 transition active:scale-90 relative" title="Gerador de Cartazes de Oferta">
                 <i class="fa-solid fa-tags text-base text-amber-400"></i>
@@ -5996,6 +6189,7 @@
             const fbSec = document.getElementById('view-feedback-container');
             const schedSec = document.getElementById('view-schedule-container');
             const toolsSec = document.getElementById('view-tools-container');
+            const tabloidSec = document.getElementById('view-tabloid-container');
 
             const viewTitle = document.getElementById('current-view-title');
             const btnNewTask = document.getElementById('topbar-new-task-btn');
@@ -6009,6 +6203,7 @@
             const switchFb = document.getElementById('main-switch-feedback');
             const switchSched = document.getElementById('main-switch-schedule');
             const switchTools = document.getElementById('main-switch-tools');
+            const switchTabloid = document.getElementById('main-switch-tabloid');
 
             // Botões topbar
             const topbarTasks = document.getElementById('topbar-switch-tasks');
@@ -6016,6 +6211,7 @@
             const topbarFb = document.getElementById('topbar-switch-feedback');
             const topbarSched = document.getElementById('topbar-switch-schedule');
             const topbarTools = document.getElementById('topbar-switch-tools');
+            const topbarTabloid = document.getElementById('topbar-switch-tabloid');
 
             // Botões mobile
             const mobTasks = document.getElementById('mob-nav-tasks');
@@ -6023,6 +6219,7 @@
             const mobFb = document.getElementById('mob-nav-feedback');
             const mobSched = document.getElementById('mob-nav-schedule');
             const mobTools = document.getElementById('mob-nav-tools');
+            const mobTabloid = document.getElementById('mob-nav-tabloid');
 
             // Oculta todas as seções primeiro
             if (tasksSec) tasksSec.classList.add('hidden');
@@ -6030,6 +6227,7 @@
             if (fbSec) fbSec.classList.add('hidden');
             if (schedSec) schedSec.classList.add('hidden');
             if (toolsSec) toolsSec.classList.add('hidden');
+            if (tabloidSec) tabloidSec.classList.add('hidden');
 
             // Exibir filtros de tarefas na sidebar apenas na view de Tarefas
             const sidebarTaskFilters = document.getElementById('sidebar-task-filters');
@@ -6062,18 +6260,21 @@
             if (switchFb) switchFb.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition";
             if (switchSched) switchSched.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition";
             if (switchTools) switchTools.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition";
+            if (switchTabloid) switchTabloid.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-emerald-400 bg-emerald-950/20 border border-emerald-500/20 hover:bg-emerald-900/30 hover:border-emerald-500/40 transition group";
 
             if (topbarTasks) topbarTasks.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1";
             if (topbarOcc) topbarOcc.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative";
             if (topbarFb) topbarFb.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative";
             if (topbarSched) topbarSched.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative";
             if (topbarTools) topbarTools.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative";
+            if (topbarTabloid) topbarTabloid.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-emerald-400 bg-emerald-950/40 border border-emerald-500/40 hover:bg-emerald-900/50 hover:text-emerald-200 transition flex items-center gap-1.5 relative shadow-sm";
 
             if (mobTasks) mobTasks.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2 transition active:scale-90";
             if (mobOcc) mobOcc.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2.5 transition active:scale-90 relative";
             if (mobFb) mobFb.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-2 transition active:scale-90 relative";
             if (mobSched) mobSched.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1.5 transition active:scale-90 relative";
             if (mobTools) mobTools.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1.5 transition active:scale-90 relative";
+            if (mobTabloid) mobTabloid.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-emerald-300 py-1 px-1 transition active:scale-90 relative";
 
             const mobFab = document.getElementById('mob-fab-action-btn');
             if (view === 'tasks') {
@@ -6158,6 +6359,33 @@
                     setTimeout(() => {
                         if (window.posterApp) posterApp.updateLivePreview();
                     }, 50);
+                }
+            } else if (view === 'tabloid') {
+                if (!window.auth || !auth.currentUser || !auth.currentUser.isAdmin) {
+                    if (typeof showCustomAlert === 'function') {
+                        showCustomAlert('Acesso Restrito', 'O Cruzador de Tabloides é de uso exclusivo do Administrador.', 'warning');
+                    } else {
+                        alert('Acesso restrito ao Administrador.');
+                    }
+                    window.switchMainView('tasks');
+                    return;
+                }
+
+                if (mobFab) mobFab.classList.add('hidden');
+                const tabloidSec = document.getElementById('view-tabloid-container');
+                if (tabloidSec) tabloidSec.classList.remove('hidden');
+                if (viewTitle) viewTitle.innerText = "Cruzador de Tabloides & Códigos ERP";
+
+                const switchTabloid = document.getElementById('main-switch-tabloid');
+                const topbarTabloid = document.getElementById('topbar-switch-tabloid');
+                const mobTabloid = document.getElementById('mob-nav-tabloid');
+
+                if (switchTabloid) switchTabloid.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition bg-emerald-600 text-white shadow-md shadow-emerald-600/30";
+                if (topbarTabloid) topbarTabloid.className = "px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-600 text-white transition flex items-center gap-1.5 relative shadow-sm";
+                if (mobTabloid) mobTabloid.className = "flex flex-col items-center gap-1 text-emerald-400 py-1 px-1 transition active:scale-90 relative font-bold";
+
+                if (window.tabloidApp) {
+                    tabloidApp.init();
                 }
             }
         };
@@ -9258,12 +9486,22 @@
                 // Se for Administrador, exibe botões exclusivos do Painel (Sidebar e Topbar)
                 const adminContainer = document.getElementById('admin-panel-btn-container');
                 const adminTopbarBtn = document.getElementById('admin-topbar-btn');
+                const switchTabloid = document.getElementById('main-switch-tabloid');
+                const topbarTabloid = document.getElementById('topbar-switch-tabloid');
+                const mobTabloid = document.getElementById('mob-nav-tabloid');
+
                 if (this.currentUser.isAdmin) {
                     if (adminContainer) adminContainer.classList.remove('hidden');
                     if (adminTopbarBtn) {
                         adminTopbarBtn.classList.remove('hidden');
                         adminTopbarBtn.style.display = 'flex';
                     }
+                    if (switchTabloid) switchTabloid.classList.remove('hidden');
+                    if (topbarTabloid) {
+                        topbarTabloid.classList.remove('hidden');
+                        topbarTabloid.style.display = 'flex';
+                    }
+                    if (mobTabloid) mobTabloid.classList.remove('hidden');
                     if (window.admin) {
                         admin.updatePendingBadge();
                     }
@@ -9273,6 +9511,12 @@
                         adminTopbarBtn.classList.add('hidden');
                         adminTopbarBtn.style.display = 'none';
                     }
+                    if (switchTabloid) switchTabloid.classList.add('hidden');
+                    if (topbarTabloid) {
+                        topbarTabloid.classList.add('hidden');
+                        topbarTabloid.style.display = 'none';
+                    }
+                    if (mobTabloid) mobTabloid.classList.add('hidden');
                 }
 
                 if ('Notification' in window && Notification.permission === 'default') {
@@ -18558,6 +18802,886 @@
         document.addEventListener('DOMContentLoaded', () => {
             if (window.posterApp) window.posterApp.init();
         });
+
+        // ==========================================================================
+        // MÓDULO: CRUZADOR INTELIGENTE DE TABLOIDES & LOCALIZADOR DE CÓDIGOS (ADM)
+        // ==========================================================================
+        // TabloidApp - Cruzador Inteligente de Tabloides & Localizador de Códigos ERP
+class TabloidApp {
+    constructor() {
+        this.catalog = [];
+        this.currentWorkbook = null;
+        this.tabloidFileName = 'Tabloide.xlsx';
+        this.activeSheetName = 'all';
+        this.sheetResults = {}; // sheetName -> array of processed items
+        this.currentFilter = 'all';
+        this.searchQuery = '';
+        this.editingItemRef = null;
+        this.dbName = 'TaskFlowCatalogDB';
+        this.dbVersion = 1;
+        this.isCatalogLoading = false;
+
+        this.retailSynonyms = {
+            'achoc': 'achocolatado', 'achocolatado': 'achoc',
+            'bisc': 'biscoito', 'biscoito': 'bisc',
+            'refrig': 'refrigerante', 'ref': 'refrigerante', 'refrigerante': 'ref',
+            'cerv': 'cerveja', 'cerveja': 'cerv',
+            'amad': 'amaciante', 'amac': 'amaciante', 'amaciante': 'amac',
+            'lava': 'sabao', 'sabao': 'lava',
+            'limp': 'limpador', 'limpador': 'limp',
+            'desc': 'descartavel', 'descartavel': 'desc',
+            'conc': 'concentrado', 'concentrado': 'conc',
+            'int': 'integral', 'integral': 'int',
+            'desn': 'desnatado', 'desnatado': 'desn',
+            'semid': 'semidesnatado', 'semidesnatado': 'semid',
+            'suav': 'suave', 'suave': 'suav',
+            'sc': 'sache', 'sache': 'sc',
+            'cx': 'caixa', 'caixa': 'cx',
+            'pcte': 'pacote', 'pct': 'pacote', 'pacote': 'pcte',
+            'pt': 'pote', 'pote': 'pt',
+            'tto': 'tinto', 'tinto': 'tto',
+            'gf': 'garrafa', 'garrafa': 'gf',
+            'lt': 'lata', 'lata': 'lt',
+            'whisky': 'whisky', 'uisque': 'whisky',
+            'aguard': 'aguardente', 'aguardente': 'aguard'
+        };
+    }
+
+    async init() {
+        this.setupDragAndDrop();
+        await this.loadCatalog();
+    }
+
+    setupDragAndDrop() {
+        const dropzone = document.getElementById('tabloid-dropzone');
+        if (!dropzone) return;
+
+        ['dragenter', 'dragover'].forEach(name => {
+            dropzone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('border-emerald-500', 'bg-emerald-950/20');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(name => {
+            dropzone.addEventListener(name, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('border-emerald-500', 'bg-emerald-950/20');
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length > 0) {
+                this.loadTabloidFile(files[0]);
+            }
+        }, false);
+    }
+
+    // Normalizador de Texto
+    normalizeText(str) {
+        if (!str) return '';
+        return str.toString()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/^\*\*+/, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9,.]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    // Extrator de Gramatura / Unidade
+    extractWeight(str) {
+        const norm = this.normalizeText(str).replace(',', '.');
+        const m = norm.match(/(?:cx|sc|pt|vd|lt|gf|pcte)?\s*(\d+(?:\.\d+)?)\s*(kg|g|l|ml|mts|un)\b/i);
+        if (m) {
+            let val = parseFloat(m[1]);
+            let unit = m[2].toLowerCase();
+            if (unit === 'kg') { val *= 1000; unit = 'g'; }
+            if (unit === 'l') { val *= 1000; unit = 'ml'; }
+            return { val, unit, raw: m[0] };
+        }
+        return null;
+    }
+
+    levenshtein(a, b) {
+        const an = a.length, bn = b.length;
+        if (an === 0) return bn;
+        if (bn === 0) return an;
+        const matrix = Array.from({ length: bn + 1 }, (_, i) => [i]);
+        for (let j = 0; j <= an; j++) matrix[0][j] = j;
+        for (let i = 1; i <= bn; i++) {
+            for (let j = 1; j <= an; j++) {
+                if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                    matrix[i][j] = matrix[i - 1][j - 1];
+                } else {
+                    matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+                }
+            }
+        }
+        return matrix[bn][an];
+    }
+
+    tokenSimilarity(t1, t2) {
+        if (t1 === t2) return 1.0;
+        if (this.retailSynonyms[t1] === t2 || this.retailSynonyms[t2] === t1) return 0.98;
+        if (t1.length >= 4 && t2.startsWith(t1)) return 0.90;
+        if (t2.length >= 4 && t1.startsWith(t2)) return 0.90;
+        const maxLen = Math.max(t1.length, t2.length);
+        if (maxLen <= 2) return 0;
+        const dist = this.levenshtein(t1, t2);
+        const sim = 1.0 - (dist / maxLen);
+        return sim >= 0.7 ? sim : 0;
+    }
+
+    // Acesso ao IndexedDB para alta performance de 13.000+ produtos offline
+    openDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(this.dbName, this.dbVersion);
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('products')) {
+                    db.createObjectStore('products', { keyPath: 'c' });
+                }
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async loadCatalog() {
+        if (this.catalog.length > 0) return;
+        this.updateCatalogBadge('Carregando base...', false);
+
+        try {
+            const db = await this.openDB();
+            const tx = db.transaction('products', 'readonly');
+            const store = tx.objectStore('products');
+            const getAllReq = store.getAll();
+
+            const cached = await new Promise((resolve) => {
+                getAllReq.onsuccess = () => resolve(getAllReq.result || []);
+                getAllReq.onerror = () => resolve([]);
+            });
+
+            if (cached && cached.length > 0) {
+                this.indexCatalog(cached);
+                this.updateCatalogBadge(`${this.catalog.length.toLocaleString('pt-BR')} Produtos na Memória`, true);
+                return;
+            }
+
+            // Tenta buscar o arquivo padrão produtos_base.json
+            try {
+                const res = await fetch('produtos_base.json');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        await this.saveCatalogToDB(data);
+                        this.indexCatalog(data);
+                        this.updateCatalogBadge(`${this.catalog.length.toLocaleString('pt-BR')} Produtos na Memória`, true);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('[TabloidApp] produtos_base.json não disponível via fetch local.');
+            }
+
+            this.updateCatalogBadge('Base vazia (Clique em Atualizar Base)', false);
+        } catch (e) {
+            console.error('[TabloidApp] Erro ao carregar catálogo:', e);
+            this.updateCatalogBadge('Erro ao carregar catálogo', false);
+        }
+    }
+
+    async saveCatalogToDB(items) {
+        const db = await this.openDB();
+        const tx = db.transaction('products', 'readwrite');
+        const store = tx.objectStore('products');
+        store.clear();
+        for (const item of items) {
+            store.put(item);
+        }
+        return new Promise((resolve) => {
+            tx.oncomplete = () => resolve();
+        });
+    }
+
+    indexCatalog(rawItems) {
+        this.catalog = rawItems.filter(r => r.c && r.d).map(r => {
+            const raw = r.d;
+            const norm = this.normalizeText(raw);
+            const weight = this.extractWeight(raw);
+            const tokens = norm.split(' ').filter(t => t.length > 1);
+            const isFortBrand = norm.includes('fort') && !norm.includes('confort');
+            return {
+                code: r.c,
+                raw,
+                norm,
+                weight,
+                tokens,
+                isFortBrand
+            };
+        });
+    }
+
+    updateCatalogBadge(text, isReady = true) {
+        const el = document.getElementById('tabloid-catalog-count');
+        const badge = document.getElementById('tabloid-catalog-badge');
+        if (el) el.innerText = text;
+        if (badge) {
+            badge.className = isReady 
+                ? "flex items-center gap-1.5 text-xs text-emerald-400 font-semibold bg-emerald-950/40 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl"
+                : "flex items-center gap-1.5 text-xs text-amber-400 font-semibold bg-amber-950/40 border border-amber-500/30 px-2.5 py-1.5 rounded-xl";
+        }
+    }
+
+    triggerCatalogUpload() {
+        const input = document.getElementById('tabloid-catalog-input');
+        if (input) input.click();
+    }
+
+    async handleCatalogUpload(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        this.updateCatalogBadge('Importando planilha...', false);
+        try {
+            const buffer = await file.arrayBuffer();
+            const wb = XLSX.read(buffer, { type: 'array' });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet);
+
+            let mapped = [];
+            for (const r of rows) {
+                const code = r['Código Produto'] || r['Codigo Produto'] || r['CODIGO'] || r['codigo'] || r['Código'];
+                const desc = r['Nome Do Produto no sistema'] || r['Descricao'] || r['DESCRICAO'] || r['Produto'] || r['Nome'];
+                if (code && desc) {
+                    mapped.push({ c: code, d: desc });
+                }
+            }
+
+            if (mapped.length === 0) {
+                alert('Não foi possível identificar as colunas de "Código Produto" e "Nome do Produto".');
+                this.updateCatalogBadge('Erro na planilha', false);
+                return;
+            }
+
+            await this.saveCatalogToDB(mapped);
+            this.indexCatalog(mapped);
+            this.updateCatalogBadge(`${mapped.length.toLocaleString('pt-BR')} Produtos na Memória`, true);
+            if (window.syncManager) {
+                syncManager.showToast(`✓ Base da loja atualizada com ${mapped.length.toLocaleString('pt-BR')} produtos!`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Erro ao processar arquivo: ' + err.message);
+            this.updateCatalogBadge('Erro na importação', false);
+        } finally {
+            e.target.value = '';
+        }
+    }
+
+    handleTabloidFile(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        this.loadTabloidFile(file);
+    }
+
+    async loadTabloidFile(file) {
+        this.tabloidFileName = file.name;
+        try {
+            const buffer = await file.arrayBuffer();
+            const wb = XLSX.read(buffer, { type: 'array' });
+            this.currentWorkbook = wb;
+            this.processWorkbook();
+        } catch (err) {
+            console.error(err);
+            alert('Erro ao ler planilha: ' + err.message);
+        }
+    }
+
+    // Carregar encarte de demonstração (baseado na foto real enviada)
+    loadDemoTabloid() {
+        this.tabloidFileName = 'Tabloide_Ofertas_Encarte.xlsx';
+        const demoData = {
+            'Bebidas e Vinhos': [
+                { 'Produto': 'Aguardente Velho Barreiro Lata 350ml', 'Preço': 'R$ 2,29' },
+                { 'Produto': 'Whisky Old Parr 12 Anos 1 Litro', 'Preço': 'R$ 129,98' },
+                { 'Produto': "Whisky Ballantine's Finest 1 Litro", 'Preço': 'R$ 69,98' },
+                { 'Produto': 'Vinho Chileno Concha y Toro Reservado 750ml', 'Preço': 'R$ 22,98' },
+                { 'Produto': 'Vinho Chileno Casillero del Diablo 750ml', 'Preço': 'R$ 39,98' },
+                { 'Produto': 'Vinho Nacional Girola Bordo Tinto Suave 1 Litro', 'Preço': 'R$ 18,98' },
+                { 'Produto': 'Suco Concentrado Maguary Maracuja 500ml', 'Preço': 'R$ 8,98' },
+                { 'Produto': 'Suco de Laranja Life Garrafa 1,5 Litro', 'Preço': 'R$ 13,98' },
+                { 'Produto': 'Cerveja Heineken 0,0% Lata 350ml', 'Preço': 'R$ 5,78' },
+                { 'Produto': 'Cerveja Heineken Ultimate Lata 350ml sem Gluten', 'Preço': 'R$ 5,78' },
+                { 'Produto': 'Kit Coca-Cola PET 2 Litros + Fanta Guarana PET 2 Litros', 'Preço': 'R$ 14,98' },
+                { 'Produto': 'Coca-Cola PET 200ml Original/Sem Acucar', 'Preço': 'R$ 1,69' },
+                { 'Produto': 'Coca-Cola PET 1,5 Litro Original/Sem Acucar', 'Preço': 'R$ 7,99' },
+                { 'Produto': 'Coca-Cola Lata 350ml Original/Sem Acucar', 'Preço': 'R$ 3,69' },
+                { 'Produto': 'Sprite Lemon Fresh PET 1,5 Litro', 'Preço': 'R$ 5,99' },
+                { 'Produto': 'Guarana Kuat PET 2 Litros', 'Preço': 'R$ 4,99' }
+            ],
+            'Biscoitos e Cereais': [
+                { 'Produto': 'Biscoito Recheado Zoo Cartoon 85g Sabores', 'Preço': 'R$ 1,59' },
+                { 'Produto': 'Biscoito Wafer Minueto 73g/81g Sabores', 'Preço': 'R$ 1,99' },
+                { 'Produto': 'Biscoito Wafer Minueto Supremo 83g', 'Preço': 'R$ 2,79' },
+                { 'Produto': 'Biscoito Bauducco Choco Biscuit 80g Ao Leite/Branco', 'Preço': 'R$ 5,89' },
+                { 'Produto': 'Pao de Forma Bauducco 390g Tradicional', 'Preço': 'R$ 6,98' },
+                { 'Produto': 'Pao de Forma Bauducco 390g Integral', 'Preço': 'R$ 7,98' },
+                { 'Produto': "Cereal Sucrilhos Kellogg's Original/Chocolate Caixa 690g", 'Preço': 'R$ 21,98' }
+            ],
+            'Cafés e Matinais': [
+                { 'Produto': 'Cafe 3 Coracoes 500g', 'Preço': 'R$ 20,98' },
+                { 'Produto': 'Cafe Brasileiro/Itamaraty/Fort 500g', 'Preço': 'R$ 17,98' },
+                { 'Produto': 'Filtro de Papel 3 Coracoes 103 com 30 Unidades', 'Preço': 'R$ 2,99' },
+                { 'Produto': 'Capsulas de Cafe 3 Coracoes Nespresso Caixa com 10 Unidades', 'Preço': 'R$ 12,98' },
+                { 'Produto': 'Cafe Moido 3 Coracoes Gourmet 250g', 'Preço': 'R$ 18,99' },
+                { 'Produto': 'Cafe Soluvel 3 Coracoes 40g Tradicional/Extraforte', 'Preço': 'R$ 4,49' },
+                { 'Produto': 'Cafe Soluvel Brasileiro 40g', 'Preço': 'R$ 3,99' },
+                { 'Produto': 'Achocolatado em Po Chocolatto 3 Coracoes 560g Chocolate', 'Preço': 'R$ 10,98' },
+                { 'Produto': 'Achocolatado em Po Chocolatto 3 Coracoes 560g Caramelo', 'Preço': 'R$ 9,98' }
+            ]
+        };
+
+        const wb = XLSX.utils.book_new();
+        Object.keys(demoData).forEach(sheetName => {
+            const ws = XLSX.utils.json_to_sheet(demoData[sheetName]);
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        });
+
+        this.currentWorkbook = wb;
+        this.processWorkbook();
+    }
+
+    processWorkbook() {
+        if (!this.currentWorkbook) return;
+        if (this.catalog.length === 0) {
+            alert('Aguarde o carregamento do catálogo ou faça o upload da base de produtos.');
+            return;
+        }
+
+        this.sheetResults = {};
+        const sheetNames = this.currentWorkbook.SheetNames;
+
+        sheetNames.forEach(sheetName => {
+            const ws = this.currentWorkbook.Sheets[sheetName];
+            const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+            if (rows.length === 0) return;
+
+            // Encontrar colunas de Produto e Preço
+            const header = rows[0] || [];
+            let prodColIdx = header.findIndex(h => /prod|desc|item|nome/i.test(String(h || '')));
+            if (prodColIdx === -1) prodColIdx = 0;
+
+            let priceColIdx = header.findIndex(h => /prec|valor|r\$|oferta/i.test(String(h || '')));
+
+            const items = [];
+            for (let r = 1; r < rows.length; r++) {
+                const row = rows[r];
+                if (!row || row.length === 0) continue;
+                const prodText = String(row[prodColIdx] || '').trim();
+                if (!prodText) continue;
+
+                const priceText = priceColIdx !== -1 ? String(row[priceColIdx] || '').trim() : '';
+                const matchResult = this.matchItem(prodText);
+
+                items.push({
+                    id: `${sheetName}_${r}`,
+                    sheetName,
+                    rowIndex: r,
+                    prodColIdx,
+                    originalRow: row,
+                    tabloidProduct: prodText,
+                    price: priceText,
+                    code: matchResult.best ? matchResult.best.item.code : '',
+                    erpProduct: matchResult.best ? matchResult.best.item.raw : '-',
+                    confidence: matchResult.best ? Math.round(matchResult.best.score) : 0,
+                    status: matchResult.status, // 'high', 'family', 'missing'
+                    familyVariations: matchResult.familyVariations || [],
+                    unfoldFamily: false // se o usuário quer desdobrar a família na planilha
+                });
+            }
+
+            this.sheetResults[sheetName] = items;
+        });
+
+        this.renderSheetPills();
+        this.updateStats();
+        this.renderTable();
+
+        // Exibe seções de resultado
+        const infoBar = document.getElementById('tabloid-file-info-bar');
+        const resultsSec = document.getElementById('tabloid-results-section');
+        const fileNameEl = document.getElementById('tabloid-loaded-filename');
+        const sheetsCountEl = document.getElementById('tabloid-loaded-sheets-count');
+
+        if (infoBar) infoBar.classList.remove('hidden');
+        if (resultsSec) resultsSec.classList.remove('hidden');
+        if (fileNameEl) fileNameEl.innerText = this.tabloidFileName;
+        if (sheetsCountEl) sheetsCountEl.innerText = `${sheetNames.length} ${sheetNames.length === 1 ? 'Aba Encontrada' : 'Abas Encontradas'}`;
+    }
+
+    // Algoritmo de Cruzamento Inteligente com Isolamento de Submarcas (ex: FORT) e Detecção de Família
+    matchItem(tabloidText) {
+        const normTab = this.normalizeText(tabloidText);
+        const tabWeight = this.extractWeight(tabloidText);
+        const tabTokens = normTab.split(' ').filter(t => t.length > 1 && !['com', 'sem', 'para', 'de', 'do', 'da', 'em'].includes(t));
+
+        const isExplicitFort = normTab.includes('fort') && !normTab.includes('confort');
+
+        let candidates = [];
+
+        for (const item of this.catalog) {
+            // Isolamento estrito de submarca:
+            // Se o item do tabloide NÃO menciona "fort", não casa com Café Fort (submarca separada)
+            if (!isExplicitFort && item.isFortBrand) {
+                continue;
+            }
+            // Se o item do tabloide é explicitamente "fort", prioriza a marca Fort
+            if (isExplicitFort && !item.isFortBrand && !item.norm.includes('fort')) {
+                continue;
+            }
+
+            // Trava estrita de gramatura
+            if (tabWeight && item.weight) {
+                if (tabWeight.unit === item.weight.unit && Math.abs(tabWeight.val - item.weight.val) > 1) {
+                    continue;
+                }
+            }
+
+            let score = 0;
+            let matchedTokens = 0;
+
+            for (const tToken of tabTokens) {
+                let maxSim = 0;
+                for (const iToken of item.tokens) {
+                    const sim = this.tokenSimilarity(tToken, iToken);
+                    if (sim > maxSim) maxSim = sim;
+                }
+                if (maxSim > 0.6) {
+                    score += maxSim;
+                    matchedTokens++;
+                }
+            }
+
+            if (matchedTokens >= 2 || (tabTokens.length <= 2 && matchedTokens >= 1)) {
+                const matchPct = (score / tabTokens.length) * 100;
+                if (matchPct >= 42) {
+                    candidates.push({ item, score: matchPct });
+                }
+            }
+        }
+
+        candidates.sort((a, b) => b.score - a.score);
+
+        if (candidates.length === 0) {
+            return { best: null, status: 'missing', familyVariations: [] };
+        }
+
+        const top = candidates[0];
+        
+        // Verifica se há variações da mesma família (ex: Extraforte, Vácuo, Tradicional com pontuação próxima)
+        const familyCandidates = candidates.filter(c => c.score >= top.score * 0.70 && c.score >= 50);
+
+        if (familyCandidates.length > 1) {
+            // Identificamos família de produtos (ex: Café 3 Corações com 4 variações)
+            return {
+                best: top,
+                status: 'family',
+                familyVariations: familyCandidates.slice(0, 6).map(fc => ({
+                    code: fc.item.code,
+                    desc: fc.item.raw,
+                    selected: true
+                }))
+            };
+        }
+
+        if (top.score >= 75) {
+            return { best: top, status: 'high', familyVariations: [] };
+        } else {
+            return { best: top, status: 'family', familyVariations: familyCandidates.map(fc => ({ code: fc.item.code, desc: fc.item.raw, selected: true })) };
+        }
+    }
+
+    renderSheetPills() {
+        const container = document.getElementById('tabloid-sheet-pills');
+        if (!container) return;
+
+        const sheets = Object.keys(this.sheetResults);
+        let html = `
+            <button type="button" onclick="tabloidApp.setActiveSheet('all')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer ${this.activeSheetName === 'all' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-gray-800 text-gray-400 hover:text-white'}">
+                Todas (${this.getAllItems().length})
+            </button>
+        `;
+
+        sheets.forEach(sheet => {
+            const count = (this.sheetResults[sheet] || []).length;
+            const isSel = this.activeSheetName === sheet;
+            html += `
+                <button type="button" onclick="tabloidApp.setActiveSheet('${sheet}')" class="px-2.5 py-1 text-xs font-bold rounded-lg transition cursor-pointer ${isSel ? 'bg-emerald-600 text-white shadow-sm' : 'bg-gray-800 text-gray-400 hover:text-white'}">
+                    ${sheet} (${count})
+                </button>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    setActiveSheet(sheet) {
+        this.activeSheetName = sheet;
+        this.renderSheetPills();
+        this.updateStats();
+        this.renderTable();
+    }
+
+    getAllItems() {
+        if (this.activeSheetName === 'all') {
+            return Object.values(this.sheetResults).flat();
+        }
+        return this.sheetResults[this.activeSheetName] || [];
+    }
+
+    updateStats() {
+        const items = this.getAllItems();
+        const total = items.length;
+        const high = items.filter(i => i.status === 'high').length;
+        const family = items.filter(i => i.status === 'family').length;
+        const missing = items.filter(i => i.status === 'missing').length;
+
+        const elTotal = document.getElementById('stat-tabloid-total');
+        const elHigh = document.getElementById('stat-tabloid-high');
+        const elFamily = document.getElementById('stat-tabloid-family');
+        const elMissing = document.getElementById('stat-tabloid-missing');
+
+        if (elTotal) elTotal.innerText = total;
+        if (elHigh) elHigh.innerText = high;
+        if (elFamily) elFamily.innerText = family;
+        if (elMissing) elMissing.innerText = missing;
+    }
+
+    setStatusFilter(status) {
+        this.currentFilter = status;
+        ['all', 'high', 'family', 'missing'].forEach(s => {
+            const btn = document.getElementById(`filter-tab-${s}`);
+            if (btn) {
+                if (s === status) {
+                    btn.className = "px-2.5 py-1 rounded-lg text-emerald-400 font-bold bg-emerald-950/70 border border-emerald-800/40";
+                } else {
+                    btn.className = "px-2.5 py-1 rounded-lg text-gray-400 hover:text-gray-200";
+                }
+            }
+        });
+        this.renderTable();
+    }
+
+    filterResults() {
+        const input = document.getElementById('tabloid-search-filter');
+        this.searchQuery = (input ? input.value : '').toLowerCase().trim();
+        this.renderTable();
+    }
+
+    renderTable() {
+        const tbody = document.getElementById('tabloid-table-body');
+        if (!tbody) return;
+
+        let items = this.getAllItems();
+
+        // Filtro por status
+        if (this.currentFilter !== 'all') {
+            items = items.filter(i => i.status === this.currentFilter);
+        }
+
+        // Filtro por texto
+        if (this.searchQuery) {
+            items = items.filter(i => 
+                i.tabloidProduct.toLowerCase().includes(this.searchQuery) ||
+                String(i.code).toLowerCase().includes(this.searchQuery) ||
+                i.erpProduct.toLowerCase().includes(this.searchQuery)
+            );
+        }
+
+        if (items.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="py-8 text-center text-gray-500">
+                        Nenhum produto encontrado com os filtros atuais.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        let html = '';
+        items.forEach((item, idx) => {
+            const statusDot = item.status === 'high' 
+                ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" title="Alta Certeza"></span>'
+                : (item.status === 'family' 
+                    ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" title="Família / Variações"></span>'
+                    : '<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500" title="Não Localizado"></span>');
+
+            const hasFamily = item.familyVariations && item.familyVariations.length > 1;
+
+            html += `
+                <tr class="hover:bg-gray-800/40 transition group">
+                    <td class="py-2.5 px-3 text-center">${statusDot}</td>
+                    <td class="py-2.5 px-3">
+                        <input type="text" value="${item.code || ''}" onchange="tabloidApp.updateItemCode('${item.id}', this.value)" placeholder="Sem código" class="w-24 bg-gray-950 border ${item.code ? 'border-gray-700 text-emerald-400 font-bold' : 'border-rose-800 text-rose-300'} rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-emerald-500">
+                    </td>
+                    <td class="py-2.5 px-3">
+                        <span class="text-gray-100 font-bold block">${item.tabloidProduct}</span>
+                        ${this.activeSheetName === 'all' ? `<span class="text-[10px] text-gray-500">${item.sheetName}</span>` : ''}
+                    </td>
+                    <td class="py-2.5 px-3 text-gray-300 font-semibold">${item.price || '-'}</td>
+                    <td class="py-2.5 px-3">
+                        <span class="text-gray-300 text-xs block">${item.erpProduct}</span>
+                        ${hasFamily ? `
+                            <div class="mt-1.5 p-2 bg-gray-950/90 rounded-lg border border-amber-500/20 space-y-1">
+                                <div class="flex items-center justify-between text-[10px] text-amber-300 font-bold mb-1">
+                                    <span>Variações da Linha / Sabores (${item.familyVariations.length}):</span>
+                                    <label class="inline-flex items-center gap-1 cursor-pointer">
+                                        <input type="checkbox" ${item.unfoldFamily ? 'checked' : ''} onchange="tabloidApp.toggleUnfold('${item.id}', this.checked)" class="rounded text-amber-500 text-[10px]">
+                                        <span>Desdobrar na Planilha</span>
+                                    </label>
+                                </div>
+                                <div class="flex flex-wrap gap-1">
+                                    ${item.familyVariations.map((v, vIdx) => `
+                                        <label class="inline-flex items-center gap-1 text-[10px] bg-gray-900 px-2 py-0.5 rounded border border-gray-800 hover:border-amber-500 cursor-pointer">
+                                            <input type="checkbox" ${v.selected ? 'checked' : ''} onchange="tabloidApp.toggleFamilyVariation('${item.id}', ${vIdx}, this.checked)">
+                                            <span class="text-gray-200"><strong>${v.code}</strong> - ${v.desc.replace(/^\*\*+/, '')}</span>
+                                        </label>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </td>
+                    <td class="py-2.5 px-3 text-center">
+                        <span class="text-[11px] font-bold ${item.confidence >= 80 ? 'text-emerald-400' : (item.confidence >= 50 ? 'text-amber-400' : 'text-gray-500')}">${item.confidence}%</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-center">
+                        <button type="button" onclick="tabloidApp.openManualSearch('${item.id}')" title="Buscar no Catálogo" class="p-1.5 rounded-lg bg-gray-800 hover:bg-emerald-600 text-gray-300 hover:text-white transition cursor-pointer active:scale-95">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    updateItemCode(itemId, newCode) {
+        const item = this.findItemById(itemId);
+        if (!item) return;
+
+        item.code = newCode.trim();
+        // Procura no catálogo se existe descrição para esse código
+        const found = this.catalog.find(c => String(c.code) === item.code);
+        if (found) {
+            item.erpProduct = found.raw;
+            item.confidence = 100;
+            item.status = 'high';
+        }
+        this.updateStats();
+        this.renderTable();
+    }
+
+    toggleUnfold(itemId, checked) {
+        const item = this.findItemById(itemId);
+        if (item) item.unfoldFamily = checked;
+    }
+
+    toggleFamilyVariation(itemId, vIdx, checked) {
+        const item = this.findItemById(itemId);
+        if (item && item.familyVariations && item.familyVariations[vIdx]) {
+            item.familyVariations[vIdx].selected = checked;
+        }
+    }
+
+    findItemById(itemId) {
+        for (const sheet in this.sheetResults) {
+            const found = this.sheetResults[sheet].find(i => i.id === itemId);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    openManualSearch(itemId) {
+        this.editingItemRef = itemId;
+        const item = this.findItemById(itemId);
+        if (!item) return;
+
+        const modal = document.getElementById('tabloid-manual-search-modal');
+        const label = document.getElementById('manual-search-item-label');
+        const input = document.getElementById('manual-search-input');
+        const results = document.getElementById('manual-search-results');
+
+        if (label) label.innerText = `${item.tabloidProduct} (${item.price || 'Sem preço'})`;
+        if (input) {
+            input.value = item.tabloidProduct.split(' ')[0] || '';
+            this.handleManualSearchType();
+        }
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    closeManualSearch() {
+        const modal = document.getElementById('tabloid-manual-search-modal');
+        if (modal) modal.classList.add('hidden');
+        this.editingItemRef = null;
+    }
+
+    handleManualSearchType() {
+        const input = document.getElementById('manual-search-input');
+        const container = document.getElementById('manual-search-results');
+        if (!input || !container) return;
+
+        const q = this.normalizeText(input.value);
+        if (q.length < 2) {
+            container.innerHTML = '<p class="text-xs text-gray-500 p-3 text-center">Digite pelo menos 2 caracteres para pesquisar...</p>';
+            return;
+        }
+
+        const terms = q.split(' ').filter(t => t.length > 1);
+        const matches = this.catalog.filter(p => {
+            return terms.every(t => p.norm.includes(t));
+        }).slice(0, 20);
+
+        if (matches.length === 0) {
+            container.innerHTML = '<p class="text-xs text-gray-500 p-3 text-center">Nenhum produto encontrado no catálogo.</p>';
+            return;
+        }
+
+        let html = '';
+        matches.forEach(m => {
+            html += `
+                <div class="p-2.5 bg-gray-950 hover:bg-gray-800 rounded-xl border border-gray-800 hover:border-emerald-500/50 flex items-center justify-between gap-2 transition cursor-pointer" onclick="tabloidApp.applyManualChoice('${m.code}', '${m.raw.replace(/'/g, "\\'")}')">
+                    <div class="min-w-0">
+                        <span class="text-xs font-bold text-emerald-400 block">${m.code}</span>
+                        <span class="text-xs text-gray-200 block truncate">${m.raw}</span>
+                    </div>
+                    <button type="button" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold rounded-lg shrink-0">
+                        Selecionar
+                    </button>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    applyManualChoice(code, desc) {
+        if (!this.editingItemRef) return;
+        const item = this.findItemById(this.editingItemRef);
+        if (item) {
+            item.code = code;
+            item.erpProduct = desc;
+            item.confidence = 100;
+            item.status = 'high';
+            this.updateStats();
+            this.renderTable();
+            if (window.syncManager) {
+                syncManager.showToast(`✓ Produto ${code} vinculado!`);
+            }
+        }
+        this.closeManualSearch();
+    }
+
+    copyTableToClipboard() {
+        const items = this.getAllItems();
+        if (items.length === 0) return;
+
+        let tsv = 'CÓDIGO\tPRODUTO TABLOIDE\tPREÇO\tPRODUTO SISTEMA\tCONFIANÇA\n';
+        items.forEach(i => {
+            tsv += `${i.code || ''}\t${i.tabloidProduct}\t${i.price || ''}\t${i.erpProduct}\t${i.confidence}%\n`;
+        });
+
+        navigator.clipboard.writeText(tsv).then(() => {
+            if (window.syncManager) syncManager.showToast('✓ Tabela copiada para a área de transferência!');
+        }).catch(() => {
+            alert('Não foi possível copiar automaticamente.');
+        });
+    }
+
+    exportProcessedExcel() {
+        if (!this.currentWorkbook) {
+            alert('Nenhum tabloide carregado para exportar.');
+            return;
+        }
+
+        const outWb = XLSX.utils.book_new();
+        const sheetNames = this.currentWorkbook.SheetNames;
+
+        sheetNames.forEach(sheetName => {
+            const items = this.sheetResults[sheetName] || [];
+            const ws = this.currentWorkbook.Sheets[sheetName];
+            const originalRows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+            if (originalRows.length === 0) return;
+
+            const header = originalRows[0];
+            let prodColIdx = header.findIndex(h => /prod|desc|item|nome/i.test(String(h || '')));
+            if (prodColIdx === -1) prodColIdx = 0;
+
+            const newRows = [];
+
+            // 1. Cabeçalho: insere a coluna CÓDIGO imediatamente antes do produto
+            const newHeader = [...header];
+            newHeader.splice(prodColIdx, 0, 'CÓDIGO');
+            newRows.push(newHeader);
+
+            // 2. Linhas de dados
+            for (let r = 1; r < originalRows.length; r++) {
+                const origRow = originalRows[r];
+                const matchedItem = items.find(i => i.rowIndex === r);
+
+                if (!matchedItem) {
+                    const rowCopy = [...origRow];
+                    rowCopy.splice(prodColIdx, 0, '');
+                    newRows.push(rowCopy);
+                    continue;
+                }
+
+                // Se o usuário marcou para desdobrar variações da família (ex: 4 cafés diferentes)
+                if (matchedItem.unfoldFamily && matchedItem.familyVariations && matchedItem.familyVariations.length > 1) {
+                    const selectedVars = matchedItem.familyVariations.filter(v => v.selected);
+                    if (selectedVars.length > 0) {
+                        selectedVars.forEach(v => {
+                            const rowCopy = [...origRow];
+                            rowCopy[prodColIdx] = `${matchedItem.tabloidProduct} (${v.desc.replace(/^\*\*+/, '')})`;
+                            rowCopy.splice(prodColIdx, 0, v.code);
+                            newRows.push(rowCopy);
+                        });
+                        continue;
+                    }
+                }
+
+                // Linha padrão: insere o código encontrado
+                const rowCopy = [...origRow];
+                rowCopy.splice(prodColIdx, 0, matchedItem.code || '');
+                newRows.push(rowCopy);
+            }
+
+            const newWs = XLSX.utils.aoa_to_sheet(newRows);
+            XLSX.utils.book_append_sheet(outWb, newWs, sheetName);
+        });
+
+        const exportName = this.tabloidFileName.replace(/\.(xlsx|xls|csv)$/i, '') + '_COM_CODIGOS.xlsx';
+        XLSX.writeFile(outWb, exportName);
+
+        if (window.syncManager) {
+            syncManager.showToast(`🎉 Planilha "${exportName}" gerada com sucesso!`);
+        }
+    }
+}
+
+window.tabloidApp = new TabloidApp();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.tabloidApp) window.tabloidApp.init();
+        });
+    
 
 
     
