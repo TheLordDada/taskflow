@@ -776,6 +776,14 @@
                     </span>
                     <span id="sidebar-tasks-count" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 font-extrabold shrink-0">0</span>
                 </button>
+                <!-- Botão Checklists Operacionais -->
+                <button type="button" id="main-switch-checklists" onclick="window.switchMainView('checklists')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition" title="Checklists Operacionais por Cargo">
+                    <span class="flex items-center gap-2.5 min-w-0">
+                        <i class="fa-solid fa-square-check w-4 text-xs text-cyan-400"></i>
+                        <span class="truncate">Checklists</span>
+                    </span>
+                    <span id="sidebar-checklists-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full bg-cyan-500 text-black font-extrabold shrink-0">0</span>
+                </button>
                 <button type="button" id="main-switch-occurrences" onclick="window.switchMainView('occurrences')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition" title="Acompanhamento de Processos & Ocorrências">
                     <span class="flex items-center gap-2.5 min-w-0">
                         <i class="fa-solid fa-clipboard-user w-4 text-xs text-amber-400"></i>
@@ -895,6 +903,11 @@
                         <i class="fa-solid fa-list-check text-[11px]"></i>
                         <span>Tarefas</span>
                     </button>
+                    <button type="button" id="topbar-switch-checklists" onclick="window.switchMainView('checklists')" class="px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative" title="Checklists Operacionais por Cargo">
+                        <i class="fa-solid fa-square-check text-[11px] text-cyan-400"></i>
+                        <span>Checklists</span>
+                        <span id="topbar-checklists-badge" class="hidden text-[10px] px-1 rounded-full bg-cyan-500 text-black font-extrabold ml-0.5">0</span>
+                    </button>
                     <button type="button" id="topbar-switch-occurrences" onclick="window.switchMainView('occurrences')" class="px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative">
                         <i class="fa-solid fa-clipboard-user text-[11px] text-amber-400"></i>
                         <span>Ocorrências</span>
@@ -958,6 +971,10 @@
                 <button id="topbar-new-task-btn" onclick="app.openModal()" class="hidden sm:flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold transition shadow-lg shadow-sm whitespace-nowrap">
                     <i class="fa-solid fa-plus text-xs"></i>
                     <span>Nova Tarefa</span>
+                </button>
+                <button id="topbar-new-checklist-btn" onclick="checklistApp.openNewChecklistModal()" class="hidden sm:flex items-center gap-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-cyan-600/30 whitespace-nowrap cursor-pointer">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>Novo Checklist</span>
                 </button>
                 <button id="topbar-new-occurrence-btn" onclick="occApp.openNewModal()" class="hidden sm:flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-black font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-amber-600/30 whitespace-nowrap">
                     <i class="fa-solid fa-plus text-xs"></i>
@@ -1982,7 +1999,139 @@
             <!-- ======================================================== -->
             <!-- MÓDULO 6: CRUZADOR DE TABLOIDES (EXCLUSIVO ADMINISTRADOR)-->
             <!-- ======================================================== -->
-            <div id="view-tabloid-container" class="hidden space-y-4 pb-28 md:pb-6">
+            
+            <!-- ======================================================== -->
+            <!-- MÓDULO: CHECKLISTS OPERACIONAIS POR CARGO -->
+            <!-- ======================================================== -->
+            <div id="view-checklists-container" class="hidden space-y-4 pb-28 md:pb-6">
+                <!-- Cabeçalho Informativo -->
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-square-check text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                                Checklists Operacionais
+                                <span id="checklist-user-role-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Seu Cargo</span>
+                            </h3>
+                            <p class="text-xs text-gray-400">Validação diária de processos e conformidade por cargo e turno.</p>
+                        </div>
+                    </div>
+
+                    <!-- Seletor de Abas Internas & Botão Novo (Gerente/ADM) -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end flex-wrap">
+                        <div class="inline-flex p-1 rounded-xl bg-gray-950 border border-gray-800">
+                            <button type="button" onclick="checklistApp.switchTab('today')" id="tab-checklist-today" class="px-3 py-1.5 rounded-lg text-xs font-bold transition bg-cyan-600 text-white shadow-sm">
+                                📋 De Hoje
+                            </button>
+                            <button type="button" onclick="checklistApp.switchTab('history')" id="tab-checklist-history" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-gray-200 transition">
+                                📊 Histórico
+                            </button>
+                            <button type="button" onclick="checklistApp.switchTab('manage')" id="tab-checklist-manage" class="hidden px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-gray-200 transition">
+                                ⚙️ Modelos
+                            </button>
+                        </div>
+
+                        <button type="button" id="checklist-btn-new-model" onclick="checklistApp.openNewChecklistModal()" class="hidden px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-600/30 flex items-center gap-1.5 transition cursor-pointer">
+                            <i class="fa-solid fa-plus text-xs"></i>
+                            <span>Criar Modelo</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Painel 1: Checklists de Hoje (Execução & Monitoramento) -->
+                <div id="checklist-panel-today" class="space-y-3">
+                    <!-- Resumo Rápido / Stats -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                        <div class="bg-gray-900 border border-gray-800 rounded-xl p-2.5 sm:p-3 text-center">
+                            <span class="text-[10px] sm:text-[11px] uppercase font-bold text-gray-400 block mb-0.5">Checklists Hoje</span>
+                            <span class="text-lg sm:text-2xl font-black text-white" id="stat-chk-total">0</span>
+                        </div>
+                        <div class="bg-gray-900 border border-emerald-500/20 rounded-xl p-2.5 sm:p-3 text-center">
+                            <span class="text-[10px] sm:text-[11px] uppercase font-bold text-emerald-400 block mb-0.5">Concluídos</span>
+                            <span class="text-lg sm:text-2xl font-black text-emerald-300" id="stat-chk-completed">0</span>
+                        </div>
+                        <div class="bg-gray-900 border border-amber-500/20 rounded-xl p-2.5 sm:p-3 text-center">
+                            <span class="text-[10px] sm:text-[11px] uppercase font-bold text-amber-400 block mb-0.5">Pendentes</span>
+                            <span class="text-lg sm:text-2xl font-black text-amber-300" id="stat-chk-pending">0</span>
+                        </div>
+                        <div class="bg-gray-900 border border-cyan-500/20 rounded-xl p-2.5 sm:p-3 text-center">
+                            <span class="text-[10px] sm:text-[11px] uppercase font-bold text-cyan-400 block mb-0.5">Conformidade</span>
+                            <span class="text-lg sm:text-2xl font-black text-cyan-300" id="stat-chk-conformity">-%</span>
+                        </div>
+                    </div>
+
+                    <!-- Filtros Rápidos de Status -->
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="inline-flex p-1 rounded-xl bg-gray-950 border border-gray-800 text-xs">
+                            <button type="button" onclick="checklistApp.setTodayFilter('all')" id="chk-filter-all" class="px-2.5 py-1 rounded-lg text-cyan-400 font-bold bg-cyan-950/70 border border-cyan-800/40">Todos</button>
+                            <button type="button" onclick="checklistApp.setTodayFilter('pending')" id="chk-filter-pending" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-gray-200">Pendentes</button>
+                            <button type="button" onclick="checklistApp.setTodayFilter('completed')" id="chk-filter-completed" class="px-2.5 py-1 rounded-lg text-gray-400 hover:text-gray-200">Concluídos</button>
+                        </div>
+                        <span class="text-[11px] text-gray-400 italic" id="chk-today-date-label">Data: --/--/----</span>
+                    </div>
+
+                    <!-- Lista de Checklists (Grid de Cards) -->
+                    <div id="checklist-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <!-- Cards injetados via JS -->
+                    </div>
+                </div>
+
+                <!-- Painel 2: Histórico & Auditoria -->
+                <div id="checklist-panel-history" class="hidden space-y-3">
+                    <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 sm:p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <div class="flex items-center gap-1.5 bg-gray-950 px-3 py-1.5 rounded-xl border border-gray-800">
+                                <i class="fa-solid fa-calendar text-xs text-cyan-400"></i>
+                                <input type="date" id="chk-history-date-filter" onchange="checklistApp.renderHistory()" class="bg-transparent text-xs text-white focus:outline-none cursor-pointer">
+                            </div>
+                            <select id="chk-history-role-filter" onchange="checklistApp.renderHistory()" class="bg-gray-950 text-xs text-gray-200 px-3 py-1.5 rounded-xl border border-gray-800 focus:outline-none">
+                                <option value="all">Todos os Cargos</option>
+                            </select>
+                        </div>
+                        <span class="text-xs text-gray-400" id="chk-history-count-label">0 execuções registradas</span>
+                    </div>
+
+                    <!-- Tabela ou Lista de Auditoria do Histórico -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden shadow-sm">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead class="bg-gray-950/90 text-gray-400 uppercase font-semibold border-b border-gray-800">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Data/Hora</th>
+                                        <th class="py-2.5 px-3">Checklist</th>
+                                        <th class="py-2.5 px-3">Cargo Alvo</th>
+                                        <th class="py-2.5 px-3">Executante</th>
+                                        <th class="py-2.5 px-3 text-center">Conformidade</th>
+                                        <th class="py-2.5 px-3 text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="chk-history-table-body" class="divide-y divide-gray-800/50">
+                                    <!-- Injetado dinamicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Painel 3: Gerenciar Modelos (Visível apenas para ADM e Gerentes) -->
+                <div id="checklist-panel-manage" class="hidden space-y-3">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs text-gray-400">Modelos de checklist configurados e seus cargos de destino.</p>
+                        <button type="button" onclick="checklistApp.openNewChecklistModal()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-600/30 flex items-center gap-1.5 transition cursor-pointer">
+                            <i class="fa-solid fa-plus text-xs"></i>
+                            <span>Novo Modelo</span>
+                        </button>
+                    </div>
+
+                    <div id="chk-models-list" class="space-y-2.5">
+                        <!-- Modelos injetados via JS -->
+                    </div>
+                </div>
+            </div>
+
+<div id="view-tabloid-container" class="hidden space-y-4 pb-28 md:pb-6">
                 <!-- Cabeçalho do Módulo de Tabloides -->
                 <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
@@ -2186,6 +2335,11 @@
                 <i class="fa-solid fa-tags text-base text-amber-400"></i>
                 <span class="text-[9px] font-bold text-amber-400">Cartazes</span>
                 <span id="mob-tools-badge" class="hidden absolute top-0 right-1 w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+            </button>
+            <button onclick="window.switchMainView('checklists')" id="mob-nav-checklists" class="flex-1 flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1 transition active:scale-90 relative" title="Checklists">
+                <i class="fa-solid fa-square-check text-base text-cyan-400"></i>
+                <span class="text-[9px] font-semibold">Checklist</span>
+                <span id="mob-checklists-badge" class="hidden absolute top-0 right-1 w-2 h-2 rounded-full bg-cyan-500 animate-ping"></span>
             </button>
             <button onclick="window.switchMainView('occurrences')" id="mob-nav-occurrences" class="flex-1 flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1 transition active:scale-90 relative">
                 <i class="fa-solid fa-clipboard-user text-base text-amber-400"></i>
@@ -3578,7 +3732,12 @@
                             <span class="text-gray-200 font-medium">Escala</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700">
-                            <input type="checkbox" id="admin-edit-tab-tools" class="rounded accent-amber-500 w-4 h-4">
+                            
+                        <label class="flex items-center gap-2 p-2 rounded-lg bg-gray-900/60 border border-gray-800 hover:border-cyan-500/40 cursor-pointer select-none">
+                            <input type="checkbox" id="admin-edit-tab-checklists" checked class="accent-cyan-500 rounded">
+                            <span class="text-xs text-gray-200">Checklists Operacionais</span>
+                        </label>
+                        <input type="checkbox" id="admin-edit-tab-tools" class="rounded accent-amber-500 w-4 h-4">
                             <span class="text-gray-200 font-medium">Cartazes</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700">
@@ -6596,7 +6755,7 @@
 
         window.switchMainView = function(view) {
             if (window.auth && auth.currentUser && !auth.currentUser.isAdmin) {
-                const allowed = auth.currentUser.allowedTabs || ['tasks', 'schedule', 'tools', (auth.currentUser.canAccessOccurrences ? 'occurrences' : null), 'feedback'].filter(Boolean);
+                const allowed = auth.currentUser.allowedTabs || ['tasks', 'schedule', 'checklists', 'tools', (auth.currentUser.canAccessOccurrences ? 'occurrences' : null), 'feedback'].filter(Boolean);
                 if (!allowed.includes(view)) {
                     if (typeof showCustomAlert === 'function') {
                         showCustomAlert('Acesso Restrito', 'Você não possui permissão para acessar esta aba. Solicite liberação ao Administrador.', 'warning');
@@ -6613,6 +6772,11 @@
             const schedSec = document.getElementById('view-schedule-container');
             const toolsSec = document.getElementById('view-tools-container');
             const tabloidSec = document.getElementById('view-tabloid-container');
+            const chkSec = document.getElementById('view-checklists-container');
+            const switchChecklists = document.getElementById('main-switch-checklists');
+            const topbarChecklists = document.getElementById('topbar-switch-checklists');
+            const mobChecklists = document.getElementById('mob-nav-checklists');
+            const btnNewChecklist = document.getElementById('topbar-new-checklist-btn');
 
             const viewTitle = document.getElementById('current-view-title');
             const btnNewTask = document.getElementById('topbar-new-task-btn');
@@ -6651,6 +6815,7 @@
             if (schedSec) schedSec.classList.add('hidden');
             if (toolsSec) toolsSec.classList.add('hidden');
             if (tabloidSec) tabloidSec.classList.add('hidden');
+            if (chkSec) chkSec.classList.add('hidden');
 
             // Exibir filtros de tarefas na sidebar apenas na view de Tarefas
             const sidebarTaskFilters = document.getElementById('sidebar-task-filters');
@@ -6770,7 +6935,11 @@
                 if (toolsSec) toolsSec.classList.remove('hidden');
                 if (viewTitle) viewTitle.innerText = "Cartazes & Ofertas da Loja";
 
-                if (switchTools) switchTools.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition bg-amber-500 text-black shadow-md shadow-amber-500/30";
+                if (switchChecklists) switchChecklists.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-400 hover:bg-gray-800/60 hover:text-gray-200 transition";
+            if (topbarChecklists) topbarChecklists.className = "px-2.5 py-1 text-xs font-bold rounded-lg text-gray-400 hover:text-gray-200 transition flex items-center gap-1 relative";
+            if (mobChecklists) mobChecklists.className = "flex flex-col items-center gap-1 text-gray-400 hover:text-gray-200 py-1 px-1 transition active:scale-90 relative";
+            if (btnNewChecklist) { btnNewChecklist.style.display = 'none'; }
+            if (switchTools) switchTools.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition bg-amber-500 text-black shadow-md shadow-amber-500/30";
                 if (topbarTools) topbarTools.className = "px-2.5 py-1 text-xs font-bold rounded-lg bg-amber-500 text-black transition flex items-center gap-1 relative shadow-sm";
                 if (mobTools) mobTools.className = "flex flex-col items-center gap-1 text-amber-400 py-1 px-1.5 transition active:scale-90 relative font-bold";
 
@@ -6782,6 +6951,33 @@
                     setTimeout(() => {
                         if (window.posterApp) posterApp.updateLivePreview();
                     }, 50);
+                }
+            } else if (view === 'checklists') {
+                const canManage = (window.auth && auth.currentUser && (auth.currentUser.isAdmin || (auth.currentUser.role && auth.currentUser.role.toLowerCase().includes('gerente'))));
+                if (mobFab) {
+                    if (canManage) {
+                        mobFab.classList.remove('hidden');
+                        mobFab.className = "md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-cyan-600 hover:bg-cyan-500 active:scale-90 text-white rounded-xl shadow-2xl shadow-cyan-600/50 flex items-center justify-center text-xl transition border border-cyan-400/40";
+                        mobFab.onclick = () => checklistApp.openNewChecklistModal();
+                    } else {
+                        mobFab.classList.add('hidden');
+                    }
+                }
+                const chkContainer = document.getElementById('view-checklists-container');
+                if (chkContainer) chkContainer.classList.remove('hidden');
+                if (viewTitle) viewTitle.innerText = "Checklists Operacionais";
+
+                if (switchChecklists) switchChecklists.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition bg-cyan-600 text-white shadow-md shadow-cyan-600/30";
+                if (topbarChecklists) topbarChecklists.className = "px-2.5 py-1 text-xs font-bold rounded-lg bg-cyan-600 text-white transition flex items-center gap-1 relative shadow-sm";
+                if (mobChecklists) mobChecklists.className = "flex flex-col items-center gap-1 text-cyan-400 py-1 px-1 transition active:scale-90";
+
+                const isDesktop = window.innerWidth >= 640;
+                if (btnNewChecklist) {
+                    btnNewChecklist.style.display = (canManage && isDesktop) ? 'flex' : 'none';
+                }
+
+                if (window.checklistApp) {
+                    checklistApp.init();
                 }
             } else if (view === 'tabloid') {
                 if (!window.auth || !auth.currentUser || !auth.currentUser.isAdmin) {
@@ -9877,6 +10073,26 @@
                 const mobFb = document.getElementById('mob-nav-feedback');
                 const btnNewFb = document.getElementById('topbar-new-feedback-btn');
 
+                // Permissões do Módulo de Checklists
+                const allowedTabsUser = this.currentUser.allowedTabs || ['tasks', 'schedule', 'checklists', 'tools', 'occurrences', 'feedback'];
+                const canChecklists = isAdm || allowedTabsUser.includes('checklists');
+                const switchChk = document.getElementById('main-switch-checklists');
+                const topbarChk = document.getElementById('topbar-switch-checklists');
+                const mobChk = document.getElementById('mob-nav-checklists');
+
+                if (canChecklists) {
+                    if (switchChk) switchChk.classList.remove('hidden');
+                    if (topbarChk) topbarChk.classList.remove('hidden');
+                    if (mobChk) mobChk.classList.remove('hidden');
+                } else {
+                    if (switchChk) switchChk.classList.add('hidden');
+                    if (topbarChk) topbarChk.classList.add('hidden');
+                    if (mobChk) mobChk.classList.add('hidden');
+                    if (window.currentMainView === 'checklists') {
+                        window.switchMainView('tasks');
+                    }
+                }
+
                 if (canFeedback) {
                     if (switchFb) switchFb.classList.remove('hidden');
                     if (topbarFb) topbarFb.classList.remove('hidden');
@@ -12310,7 +12526,8 @@
                 document.getElementById('admin-edit-user-dept').value = acc.dept || 'Geral';
                 document.getElementById('admin-edit-user-is-admin').value = acc.isAdmin ? 'true' : 'false';
                 document.getElementById('admin-edit-user-status').value = acc.status || 'approved';
-                const tabs = acc.allowedTabs || ['tasks', 'schedule', 'tools', 'occurrences', 'feedback'];
+                const tabs = acc.allowedTabs || ['tasks', 'schedule', 'checklists', 'tools', 'occurrences', 'feedback'];
+                if (document.getElementById('admin-edit-tab-checklists')) document.getElementById('admin-edit-tab-checklists').checked = tabs.includes('checklists');
                 if (document.getElementById('admin-edit-tab-tasks')) document.getElementById('admin-edit-tab-tasks').checked = tabs.includes('tasks');
                 if (document.getElementById('admin-edit-tab-schedule')) document.getElementById('admin-edit-tab-schedule').checked = tabs.includes('schedule');
                 if (document.getElementById('admin-edit-tab-tools')) document.getElementById('admin-edit-tab-tools').checked = tabs.includes('tools');
@@ -12362,6 +12579,7 @@
                 const newStatus = document.getElementById('admin-edit-user-status').value;
                 const allowedTabs = [];
                 if (document.getElementById('admin-edit-tab-tasks')?.checked) allowedTabs.push('tasks');
+                if (document.getElementById('admin-edit-tab-checklists')?.checked) allowedTabs.push('checklists');
                 if (document.getElementById('admin-edit-tab-schedule')?.checked) allowedTabs.push('schedule');
                 if (document.getElementById('admin-edit-tab-tools')?.checked) allowedTabs.push('tools');
                 if (document.getElementById('admin-edit-tab-occurrences')?.checked) allowedTabs.push('occurrences');
@@ -20323,6 +20541,1009 @@ class TabloidApp {
     }
 }
 
+
+// =============================================================================
+// MÓDULO CHECKLISTS OPERACIONAIS POR CARGO (ADM, GERENTES & COLABORADORES)
+// =============================================================================
+class ChecklistApp {
+    constructor() {
+        this.checklists = [];
+        this.executions = [];
+        this.activeTab = 'today'; // 'today', 'history', 'manage'
+        this.todayFilter = 'all'; // 'all', 'pending', 'completed'
+        this.currentExecutionSession = null; // dados da execução em andamento no modal
+        this.modelItemCounter = 0;
+    }
+
+    init() {
+        this.loadData();
+        this.updateRoleBadge();
+        this.render();
+    }
+
+    canManage() {
+        if (!window.auth || !auth.currentUser) return false;
+        if (auth.currentUser.isAdmin) return true;
+        const role = (auth.currentUser.role || '').toLowerCase();
+        return role.includes('gerente') || role.includes('administrador');
+    }
+
+    getCurrentUserRole() {
+        return (window.auth && auth.currentUser) ? auth.currentUser.role : 'Colaborador';
+    }
+
+    getCurrentUserName() {
+        return (window.auth && auth.currentUser) ? auth.currentUser.displayName : 'Colaborador';
+    }
+
+    getTodayDate() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    getCurrentShiftName() {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 14) return 'Manhã';
+        if (hour >= 14 && hour < 22) return 'Tarde';
+        return 'Noite';
+    }
+
+    loadData() {
+        const savedModels = localStorage.getItem('taskflow_checklists');
+        if (savedModels) {
+            try { this.checklists = JSON.parse(savedModels); } catch(e) { this.checklists = []; }
+        } else {
+            this.seedInitialChecklists();
+        }
+
+        const savedExecs = localStorage.getItem('taskflow_checklist_executions');
+        if (savedExecs) {
+            try { this.executions = JSON.parse(savedExecs); } catch(e) { this.executions = []; }
+        } else {
+            this.executions = [];
+        }
+    }
+
+    saveData() {
+        localStorage.setItem('taskflow_checklists', JSON.stringify(this.checklists));
+        localStorage.setItem('taskflow_checklist_executions', JSON.stringify(this.executions));
+        this.render();
+    }
+
+    seedInitialChecklists() {
+        this.checklists = [
+            {
+                id: 'chk_abertura_caixa',
+                title: 'Checklist de Abertura - Frente de Caixa',
+                targetRole: 'Operador de Caixa',
+                dept: 'Frente de Caixa',
+                recurrence: 'shift',
+                requirePhotoOnNonConform: true,
+                description: 'Verificação obrigatória dos pontos de venda antes de iniciar o atendimento ao cliente.',
+                items: [
+                    { id: 'it_1', text: 'Fundo de troco conferido na gaveta', category: 'Equipamentos' },
+                    { id: 'it_2', text: 'Bobinas térmicas sobressalentes abastecidas no checkout', category: 'Materiais' },
+                    { id: 'it_3', text: 'Leitor óptico de código de barras e teclado testados', category: 'Equipamentos' },
+                    { id: 'it_4', text: 'Pinpad (máquina de cartão) ligado e com conexão ativa', category: 'Sistemas' },
+                    { id: 'it_5', text: 'Sacolas plásticas abastecidas no suporte', category: 'Atendimento' }
+                ],
+                createdAt: Date.now() - 86400000,
+                createdBy: 'Administrador Geral',
+                active: true
+            },
+            {
+                id: 'chk_reposicao_mercearia',
+                title: 'Checklist Diário de Reposição & Gôndola - Mercearia',
+                targetRole: 'Repositor',
+                dept: 'Mercearia',
+                recurrence: 'daily',
+                requirePhotoOnNonConform: true,
+                description: 'Auditoria de frenteamento, conferência de PEPS e prevenção de rupturas nos corredores.',
+                items: [
+                    { id: 'it_1', text: 'Puxada de frente / frenteamento de todos os produtos do corredor', category: 'Gôndola' },
+                    { id: 'it_2', text: 'Conferência de produtos com data de validade próxima (PEPS)', category: 'Qualidade' },
+                    { id: 'it_3', text: 'Etiquetas de preços visíveis e legíveis em 100% dos itens', category: 'Precificação' },
+                    { id: 'it_4', text: 'Rupturas de gôndola anotadas e reposição puxada do depósito', category: 'Estoque' },
+                    { id: 'it_5', text: 'Corredor livre de caixas vazias, pallets e obstáculos', category: 'Segurança' }
+                ],
+                createdAt: Date.now() - 86400000,
+                createdBy: 'Administrador Geral',
+                active: true
+            },
+            {
+                id: 'chk_fechamento_loja',
+                title: 'Checklist de Fechamento de Loja',
+                targetRole: 'Líder Setorial',
+                dept: 'Geral',
+                recurrence: 'daily',
+                requirePhotoOnNonConform: true,
+                description: 'Conferência patrimonial e encerramento seguro das operações diárias.',
+                items: [
+                    { id: 'it_1', text: 'Desligamento de luzes das seções e ar-condicionado', category: 'Economia' },
+                    { id: 'it_2', text: 'Portões, portas corta-fogo e docas trancadas com cadeado', category: 'Segurança' },
+                    { id: 'it_3', text: 'Caixas registradoras abertas e valores recolhidos à tesouraria', category: 'Financeiro' },
+                    { id: 'it_4', text: 'Ativação do alarme de segurança e monitoramento', category: 'Patrimonial' }
+                ],
+                createdAt: Date.now() - 86400000,
+                createdBy: 'Administrador Geral',
+                active: true
+            }
+        ];
+        localStorage.setItem('taskflow_checklists', JSON.stringify(this.checklists));
+    }
+
+    updateRoleBadge() {
+        const badge = document.getElementById('checklist-user-role-badge');
+        if (badge) {
+            const role = this.getCurrentUserRole();
+            const isAdm = this.canManage();
+            badge.innerText = isAdm ? `Gestão: ${role}` : `Cargo: ${role}`;
+        }
+
+        const btnManageTab = document.getElementById('tab-checklist-manage');
+        const btnNewModel = document.getElementById('checklist-btn-new-model');
+        const isMgr = this.canManage();
+
+        if (btnManageTab) btnManageTab.classList.toggle('hidden', !isMgr);
+        if (btnNewModel) btnNewModel.classList.toggle('hidden', !isMgr);
+
+        const dateLabel = document.getElementById('chk-today-date-label');
+        if (dateLabel) {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+            dateLabel.innerText = `Ciclo Atual: ${dateStr} (${this.getCurrentShiftName()})`;
+        }
+    }
+
+    switchTab(tab) {
+        this.activeTab = tab;
+        ['today', 'history', 'manage'].forEach(t => {
+            const panel = document.getElementById('checklist-panel-' + t);
+            const btn = document.getElementById('tab-checklist-' + t);
+            if (panel) panel.classList.toggle('hidden', t !== tab);
+            if (btn) {
+                if (t === tab) {
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-cyan-600 text-white shadow-sm";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-gray-200 transition";
+                }
+            }
+        });
+
+        if (tab === 'today') this.renderTodayChecklists();
+        if (tab === 'history') this.renderHistory();
+        if (tab === 'manage') this.renderManageModels();
+    }
+
+    setTodayFilter(filter) {
+        this.todayFilter = filter;
+        ['all', 'pending', 'completed'].forEach(f => {
+            const btn = document.getElementById('chk-filter-' + f);
+            if (!btn) return;
+            if (f === filter) {
+                btn.className = "px-2.5 py-1 rounded-lg text-cyan-400 font-bold bg-cyan-950/70 border border-cyan-800/40";
+            } else {
+                btn.className = "px-2.5 py-1 rounded-lg text-gray-400 hover:text-gray-200";
+            }
+        });
+        this.renderTodayChecklists();
+    }
+
+    render() {
+        this.updateRoleBadge();
+        if (this.activeTab === 'today') this.renderTodayChecklists();
+        else if (this.activeTab === 'history') this.renderHistory();
+        else if (this.activeTab === 'manage') this.renderManageModels();
+    }
+
+    getTodayChecklistItems() {
+        const today = this.getTodayDate();
+        const currentShift = this.getCurrentShiftName();
+        const userRole = this.getCurrentUserRole();
+        const isMgr = this.canManage();
+
+        // Filtra os modelos ativos
+        let models = this.checklists.filter(c => c.active !== false);
+
+        // Se NÃO for Gestor/ADM, filtra pelo cargo do usuário (ou checklists gerais)
+        if (!isMgr) {
+            models = models.filter(c => 
+                c.targetRole === 'Todos os Cargos' ||
+                c.targetRole.toLowerCase() === userRole.toLowerCase() ||
+                (userRole && c.targetRole && userRole.toLowerCase().includes(c.targetRole.toLowerCase()))
+            );
+        }
+
+        return models.map(model => {
+            const shiftTag = model.recurrence === 'shift' ? currentShift : null;
+            const execId = `${model.id}_${today}_${shiftTag || 'daily'}`;
+            const exec = this.executions.find(e => e.id === execId);
+
+            return {
+                model,
+                shiftTag,
+                execId,
+                exec: exec || null,
+                isCompleted: !!(exec && exec.completed)
+            };
+        });
+    }
+
+    renderTodayChecklists() {
+        const container = document.getElementById('checklist-cards-container');
+        if (!container) return;
+
+        const allToday = this.getTodayChecklistItems();
+
+        // Atualiza Cards de Estatísticas
+        const total = allToday.length;
+        const completed = allToday.filter(i => i.isCompleted).length;
+        const pending = total - completed;
+
+        let totalScore = 0;
+        let scoreCount = 0;
+        allToday.forEach(i => {
+            if (i.exec && typeof i.exec.conformityScore === 'number') {
+                totalScore += i.exec.conformityScore;
+                scoreCount++;
+            }
+        });
+        const avgScore = scoreCount > 0 ? Math.round(totalScore / scoreCount) : null;
+
+        const elTotal = document.getElementById('stat-chk-total');
+        const elComp = document.getElementById('stat-chk-completed');
+        const elPend = document.getElementById('stat-chk-pending');
+        const elConf = document.getElementById('stat-chk-conformity');
+
+        if (elTotal) elTotal.innerText = total;
+        if (elComp) elComp.innerText = completed;
+        if (elPend) elPend.innerText = pending;
+        if (elConf) elConf.innerText = avgScore !== null ? `${avgScore}%` : '-%';
+
+        // Aplica filtro de status
+        let filtered = allToday;
+        if (this.todayFilter === 'pending') filtered = allToday.filter(i => !i.isCompleted);
+        if (this.todayFilter === 'completed') filtered = allToday.filter(i => i.isCompleted);
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full py-12 text-center bg-gray-900 border border-gray-800 rounded-2xl">
+                    <i class="fa-solid fa-clipboard-check text-4xl text-gray-700 mb-3"></i>
+                    <p class="text-sm text-gray-300 font-bold">Nenhum checklist pendente para o seu cargo no momento.</p>
+                    <p class="text-xs text-gray-500 mt-1">Todos os processos do ciclo estão em dia!</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(item => {
+            const model = item.model;
+            const exec = item.exec;
+            const isDone = item.isCompleted;
+
+            // Contagem de itens preenchidos
+            const totalItems = model.items.length;
+            let answeredCount = 0;
+            if (exec && exec.answers) {
+                answeredCount = Object.keys(exec.answers).length;
+            }
+            const pct = Math.round((answeredCount / totalItems) * 100);
+
+            html += `
+                <div class="bg-gray-900 border ${isDone ? 'border-emerald-800/40 bg-gradient-to-b from-gray-900 to-emerald-950/20' : 'border-gray-800'} rounded-2xl p-4 shadow-sm flex flex-col justify-between transition hover:border-cyan-500/30">
+                    <div>
+                        <!-- Header do Card -->
+                        <div class="flex items-start justify-between gap-2 mb-2">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-950/70 text-cyan-300 border border-cyan-800/50 truncate max-w-[150px]">
+                                <i class="fa-solid fa-user-tag text-[9px] mr-1"></i>${model.targetRole}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isDone ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/50' : (answeredCount > 0 ? 'bg-blue-950 text-blue-300 border border-blue-700/50' : 'bg-amber-950 text-amber-300 border border-amber-700/50')}">
+                                ${isDone ? '✓ Concluído' : (answeredCount > 0 ? 'Em Andamento' : 'Pendente')}
+                            </span>
+                        </div>
+
+                        <!-- Título e Descrição -->
+                        <h4 class="font-bold text-sm text-white mb-1 leading-snug">${model.title}</h4>
+                        <p class="text-xs text-gray-400 line-clamp-2 mb-3">${model.description || 'Validação de rotinas operacionais.'}</p>
+
+                        <!-- Indicador de Turno e Setor -->
+                        <div class="flex items-center gap-2 text-[11px] text-gray-500 mb-3 flex-wrap">
+                            ${item.shiftTag ? `<span class="bg-gray-800/80 px-2 py-0.5 rounded text-gray-300"><i class="fa-solid fa-clock text-[9px] mr-1"></i>Turno ${item.shiftTag}</span>` : ''}
+                            <span class="bg-gray-800/80 px-2 py-0.5 rounded text-gray-300"><i class="fa-solid fa-building text-[9px] mr-1"></i>${model.dept || 'Geral'}</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!-- Barra de Progresso -->
+                        <div class="bg-gray-950 p-2.5 rounded-xl border border-gray-800 mb-3">
+                            <div class="flex justify-between text-[10px] font-semibold text-gray-400 mb-1">
+                                <span>Itens Verificados</span>
+                                <span class="${isDone ? 'text-emerald-400 font-bold' : 'text-gray-300'}">${answeredCount} / ${totalItems} (${pct}%)</span>
+                            </div>
+                            <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                                <div class="${isDone ? 'bg-emerald-500' : 'bg-cyan-500'} h-full transition-all duration-300" style="width: ${pct}%"></div>
+                            </div>
+                            ${isDone && exec ? `
+                                <div class="mt-2 pt-1.5 border-t border-gray-800 flex justify-between items-center text-[10px]">
+                                    <span class="text-gray-400">Por: ${exec.completedBy}</span>
+                                    <span class="font-extrabold text-emerald-400">${exec.conformityScore}% Conforme</span>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Botão de Ação -->
+                        <button type="button" onclick="checklistApp.openExecutionModal('${model.id}', '${item.shiftTag || ''}')" class="w-full py-2.5 text-xs font-bold rounded-xl transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${isDone ? 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700' : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/30'}">
+                            <i class="fa-solid ${isDone ? 'fa-eye' : 'fa-clipboard-check'}"></i>
+                            <span>${isDone ? 'Revisar Respostas' : (answeredCount > 0 ? 'Continuar Preenchimento' : 'Executar Checklist')}</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    openExecutionModal(modelId, shiftTag = null) {
+        const model = this.checklists.find(c => c.id === modelId);
+        if (!model) return;
+
+        const today = this.getTodayDate();
+        const currentShift = shiftTag || (model.recurrence === 'shift' ? this.getCurrentShiftName() : null);
+        const execId = `${model.id}_${today}_${currentShift || 'daily'}`;
+
+        let exec = this.executions.find(e => e.id === execId);
+        if (!exec) {
+            exec = {
+                id: execId,
+                checklistId: model.id,
+                title: model.title,
+                targetRole: model.targetRole,
+                dept: model.dept,
+                date: today,
+                shift: currentShift,
+                completed: false,
+                completedBy: null,
+                completedAt: null,
+                conformityScore: 0,
+                answers: {}
+            };
+        }
+
+        this.currentExecutionSession = {
+            model,
+            exec,
+            // Clone respostas para edição antes de gravar
+            answers: JSON.parse(JSON.stringify(exec.answers || {}))
+        };
+
+        // Preenche cabeçalhos do modal
+        const titleEl = document.getElementById('chk-exec-title');
+        const descEl = document.getElementById('chk-exec-desc');
+        const roleEl = document.getElementById('chk-exec-role-badge');
+        const shiftEl = document.getElementById('chk-exec-shift-badge');
+        const dateEl = document.getElementById('chk-exec-date-badge');
+
+        if (titleEl) titleEl.innerText = model.title;
+        if (descEl) descEl.innerText = model.description || 'Preencha cada item com atenção e anexe comprovação em caso de não conformidade.';
+        if (roleEl) roleEl.innerText = `Cargo: ${model.targetRole}`;
+        if (shiftEl) {
+            shiftEl.innerText = currentShift ? `Turno ${currentShift}` : 'Diário';
+            shiftEl.style.display = 'inline-block';
+        }
+        if (dateEl) dateEl.innerText = `Data: ${today}`;
+
+        this.renderExecutionItems();
+        this.updateExecutionProgress();
+
+        const modal = document.getElementById('modal-checklist-execution');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+        }
+    }
+
+    closeExecutionModal() {
+        const modal = document.getElementById('modal-checklist-execution');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        }
+        this.currentExecutionSession = null;
+    }
+
+    renderExecutionItems() {
+        const container = document.getElementById('chk-exec-items-list');
+        if (!container || !this.currentExecutionSession) return;
+
+        const model = this.currentExecutionSession.model;
+        const answers = this.currentExecutionSession.answers;
+
+        let html = '';
+        model.items.forEach((item, idx) => {
+            const ans = answers[item.id] || null;
+            const status = ans ? ans.status : null; // 'conforme', 'nao_conforme', null
+            const isNonConform = status === 'nao_conforme';
+            const obs = ans ? (ans.observation || '') : '';
+            const photo = ans ? ans.photo : null;
+            const justified = ans ? !!ans.justification : false;
+
+            html += `
+                <div class="bg-gray-950 p-3.5 rounded-xl border ${status === 'conforme' ? 'border-emerald-600/50 bg-emerald-950/10' : (status === 'nao_conforme' ? 'border-red-600/50 bg-red-950/10' : 'border-gray-800')} transition space-y-2.5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-1.5 mb-1">
+                                <span class="w-5 h-5 rounded-full bg-gray-800 text-gray-300 text-[10px] font-bold flex items-center justify-center shrink-0">${idx + 1}</span>
+                                ${item.category ? `<span class="text-[10px] font-bold px-2 py-0.2 rounded bg-gray-800 text-gray-400 uppercase">${item.category}</span>` : ''}
+                            </div>
+                            <p class="text-xs sm:text-sm font-semibold text-gray-100 leading-snug">${item.text}</p>
+                        </div>
+
+                        <!-- Botões de Validação -->
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" onclick="checklistApp.setAnswer('${item.id}', 'conforme')" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1 cursor-pointer ${status === 'conforme' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/40 ring-2 ring-emerald-400' : 'bg-gray-800 text-gray-400 hover:text-emerald-300 hover:bg-gray-700'}">
+                                <i class="fa-solid fa-check"></i>
+                                <span class="hidden sm:inline">Conforme</span>
+                            </button>
+                            <button type="button" onclick="checklistApp.setAnswer('${item.id}', 'nao_conforme')" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1 cursor-pointer ${status === 'nao_conforme' ? 'bg-red-600 text-white shadow-md shadow-red-600/40 ring-2 ring-red-400' : 'bg-gray-800 text-gray-400 hover:text-red-300 hover:bg-gray-700'}">
+                                <i class="fa-solid fa-xmark"></i>
+                                <span class="hidden sm:inline">Não Conforme</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bloco de Justificativa / Foto para Não Conforme -->
+                    ${isNonConform ? `
+                        <div class="pt-2 border-t border-red-900/40 space-y-2 bg-red-950/20 p-2.5 rounded-lg">
+                            <div>
+                                <label class="block text-[11px] font-bold text-red-300 mb-1">
+                                    Descreva o problema / motivo da não conformidade *
+                                </label>
+                                <textarea rows="2" placeholder="Ex: Produto sem etiqueta de preço no corredor 4..." oninput="checklistApp.setItemObservation('${item.id}', this.value)" class="w-full bg-gray-950 border border-red-800/60 rounded-xl px-3 py-1.5 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-500">${obs}</textarea>
+                            </div>
+
+                            <!-- Foto da Não Conformidade -->
+                            <div>
+                                <div class="flex items-center justify-between gap-2">
+                                    <label class="text-[10px] font-bold text-gray-400 uppercase">Foto Comprobatória (Opcional ou Justificada)</label>
+                                    <button type="button" onclick="document.getElementById('chk-photo-input-${item.id}').click()" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 cursor-pointer">
+                                        <i class="fa-solid fa-camera"></i> ${photo ? 'Trocar Foto' : 'Tirar / Anexar Foto'}
+                                    </button>
+                                    <input type="file" id="chk-photo-input-${item.id}" accept="image/*" capture="environment" class="hidden" onchange="checklistApp.handleItemPhoto('${item.id}', event)">
+                                </div>
+
+                                ${photo ? `
+                                    <div class="mt-1.5 relative inline-block rounded-xl overflow-hidden border border-gray-700 max-h-32 bg-black">
+                                        <img src="${photo}" class="max-h-32 object-contain rounded-lg">
+                                        <button type="button" onclick="checklistApp.removeItemPhoto('${item.id}')" class="absolute top-1 right-1 bg-black/80 text-white rounded-full p-1 hover:bg-red-600 text-[10px]" title="Remover Foto">✕</button>
+                                    </div>
+                                ` : ''}
+
+                                <div class="mt-1">
+                                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                                        <input type="checkbox" ${justified ? 'checked' : ''} onchange="checklistApp.toggleNoPhotoJustification('${item.id}', this.checked)" class="accent-amber-500 rounded text-xs">
+                                        <span class="text-[11px] text-amber-300">Justificar ausência de foto (ex: clientes no corredor, local inacessível)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    setAnswer(itemId, status) {
+        if (!this.currentExecutionSession) return;
+        const answers = this.currentExecutionSession.answers;
+        if (!answers[itemId]) {
+            answers[itemId] = {
+                status: null,
+                observation: '',
+                photo: null,
+                justification: null,
+                answeredBy: this.getCurrentUserName(),
+                answeredAt: Date.now()
+            };
+        }
+
+        answers[itemId].status = status;
+        this.renderExecutionItems();
+        this.updateExecutionProgress();
+    }
+
+    setItemObservation(itemId, val) {
+        if (!this.currentExecutionSession) return;
+        const ans = this.currentExecutionSession.answers[itemId];
+        if (ans) ans.observation = val;
+    }
+
+    handleItemPhoto(itemId, event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file || !this.currentExecutionSession) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const ans = this.currentExecutionSession.answers[itemId];
+            if (ans) {
+                ans.photo = e.target.result;
+                ans.justification = null;
+            }
+            this.renderExecutionItems();
+        };
+        reader.readAsDataURL(file);
+    }
+
+    removeItemPhoto(itemId) {
+        if (!this.currentExecutionSession) return;
+        const ans = this.currentExecutionSession.answers[itemId];
+        if (ans) ans.photo = null;
+        this.renderExecutionItems();
+    }
+
+    toggleNoPhotoJustification(itemId, checked) {
+        if (!this.currentExecutionSession) return;
+        const ans = this.currentExecutionSession.answers[itemId];
+        if (ans) {
+            ans.justification = checked ? 'Foto dispensada devido à justificativa operacional.' : null;
+            if (checked) ans.photo = null;
+        }
+        this.renderExecutionItems();
+    }
+
+    updateExecutionProgress() {
+        if (!this.currentExecutionSession) return;
+        const model = this.currentExecutionSession.model;
+        const answers = this.currentExecutionSession.answers;
+
+        const total = model.items.length;
+        let answered = 0;
+        let conforme = 0;
+
+        model.items.forEach(item => {
+            const ans = answers[item.id];
+            if (ans && ans.status) {
+                answered++;
+                if (ans.status === 'conforme') conforme++;
+            }
+        });
+
+        const progressPct = total > 0 ? Math.round((answered / total) * 100) : 0;
+        const scorePct = answered > 0 ? Math.round((conforme / answered) * 100) : 0;
+
+        const pLabel = document.getElementById('chk-exec-progress-label');
+        const pBar = document.getElementById('chk-exec-progress-bar');
+        const sBadge = document.getElementById('chk-exec-score-badge');
+
+        if (pLabel) pLabel.innerText = `${answered} / ${total} Itens Respondidos`;
+        if (pBar) pBar.style.width = `${progressPct}%`;
+        if (sBadge) {
+            sBadge.innerText = `${scorePct}% Conforme`;
+            sBadge.className = scorePct >= 80 
+                ? "px-2.5 py-1 rounded-xl text-xs font-black bg-emerald-950 text-emerald-300 border border-emerald-700/50 shrink-0"
+                : "px-2.5 py-1 rounded-xl text-xs font-black bg-amber-950 text-amber-300 border border-amber-700/50 shrink-0";
+        }
+    }
+
+    submitExecution() {
+        if (!this.currentExecutionSession) return;
+        const session = this.currentExecutionSession;
+        const model = session.model;
+        const answers = session.answers;
+
+        // Validação: todos os itens precisam ter resposta
+        const unanswered = model.items.filter(it => !answers[it.id] || !answers[it.id].status);
+        if (unanswered.length > 0) {
+            if (typeof showCustomAlert === 'function') {
+                showCustomAlert('Itens Pendentes', `Por favor, responda todos os itens antes de finalizar. Faltam ${unanswered.length} item(ns).`, 'warning');
+            } else {
+                alert(`Faltam ${unanswered.length} item(ns) a serem respondidos.`);
+            }
+            return;
+        }
+
+        // Validação: Não Conforme exige descrição
+        for (const it of model.items) {
+            const ans = answers[it.id];
+            if (ans && ans.status === 'nao_conforme' && !ans.observation.trim()) {
+                if (typeof showCustomAlert === 'function') {
+                    showCustomAlert('Observação Obrigatória', `O item "${it.text}" foi marcado como Não Conforme. Descreva o problema encontrado.`, 'warning');
+                } else {
+                    alert(`Descreva o problema encontrado no item: ${it.text}`);
+                }
+                return;
+            }
+        }
+
+        // Calcula taxa final de conformidade
+        const total = model.items.length;
+        const conformeCount = model.items.filter(it => answers[it.id]?.status === 'conforme').length;
+        const finalScore = Math.round((conformeCount / total) * 100);
+
+        const execPayload = {
+            id: session.exec.id,
+            checklistId: model.id,
+            title: model.title,
+            targetRole: model.targetRole,
+            dept: model.dept,
+            date: session.exec.date,
+            shift: session.exec.shift,
+            completed: true,
+            completedBy: this.getCurrentUserName(),
+            completedAt: Date.now(),
+            conformityScore: finalScore,
+            answers: answers
+        };
+
+        // Salva ou atualiza no histórico
+        const existingIdx = this.executions.findIndex(e => e.id === execPayload.id);
+        if (existingIdx !== -1) {
+            this.executions[existingIdx] = execPayload;
+        } else {
+            this.executions.unshift(execPayload);
+        }
+
+        this.saveData();
+        this.closeExecutionModal();
+
+        if (window.syncManager) {
+            syncManager.showToast(`✓ Checklist "${model.title}" finalizado com ${finalScore}% de conformidade!`);
+        }
+    }
+
+    renderHistory() {
+        const tbody = document.getElementById('chk-history-table-body');
+        const roleFilterEl = document.getElementById('chk-history-role-filter');
+        const countLabel = document.getElementById('chk-history-count-label');
+        if (!tbody) return;
+
+        // Popula filtro de cargos se necessário
+        if (roleFilterEl && roleFilterEl.options.length <= 1) {
+            const roles = ['Todos os Cargos', 'Operador de Caixa', 'Repositor', 'Fiscal de Caixa', 'Líder Setorial', 'Supervisor', 'Gerente'];
+            roleFilterEl.innerHTML = '<option value="all">Todos os Cargos</option>' + roles.map(r => `<option value="${r}">${r}</option>`).join('');
+        }
+
+        const dateFilter = document.getElementById('chk-history-date-filter')?.value || '';
+        const roleFilter = roleFilterEl?.value || 'all';
+
+        let list = this.executions.filter(e => e.completed);
+
+        if (dateFilter) list = list.filter(e => e.date === dateFilter);
+        if (roleFilter !== 'all') list = list.filter(e => e.targetRole === roleFilter);
+
+        if (countLabel) countLabel.innerText = `${list.length} execuções registradas`;
+
+        if (list.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="py-8 text-center text-gray-500">
+                        Nenhum registro de checklist encontrado para o filtro selecionado.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        let html = '';
+        list.forEach(e => {
+            const d = new Date(e.completedAt || Date.now());
+            const dateStr = d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            const score = e.conformityScore || 0;
+
+            html += `
+                <tr class="hover:bg-gray-800/40 transition">
+                    <td class="py-2.5 px-3 font-mono text-gray-300 text-[11px]">${dateStr}</td>
+                    <td class="py-2.5 px-3">
+                        <span class="font-bold text-gray-200 block">${e.title}</span>
+                        ${e.shift ? `<span class="text-[10px] text-gray-500">Turno ${e.shift}</span>` : ''}
+                    </td>
+                    <td class="py-2.5 px-3">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800/50">${e.targetRole}</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-gray-300 font-semibold">${e.completedBy}</td>
+                    <td class="py-2.5 px-3 text-center">
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black ${score >= 80 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/50' : 'bg-amber-950 text-amber-400 border border-amber-800/50'}">
+                            ${score}%
+                        </span>
+                    </td>
+                    <td class="py-2.5 px-3 text-right">
+                        <button type="button" onclick="checklistApp.viewHistoryDetail('${e.id}')" class="px-2.5 py-1 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg border border-gray-700 transition active:scale-95 cursor-pointer">
+                            <i class="fa-solid fa-eye text-[10px] mr-1"></i> Detalhes
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    viewHistoryDetail(execId) {
+        const exec = this.executions.find(e => e.id === execId);
+        if (!exec) return;
+
+        const titleEl = document.getElementById('chk-detail-title');
+        const metaEl = document.getElementById('chk-detail-meta');
+        const container = document.getElementById('chk-detail-items-container');
+
+        if (titleEl) titleEl.innerText = exec.title;
+        if (metaEl) {
+            const d = new Date(exec.completedAt || Date.now());
+            metaEl.innerText = `Executado por ${exec.completedBy} em ${d.toLocaleString('pt-BR')} • ${exec.conformityScore}% Conforme`;
+        }
+
+        const model = this.checklists.find(c => c.id === exec.checklistId);
+        const items = model ? model.items : [];
+
+        let html = '';
+        if (items.length > 0) {
+            items.forEach((it, idx) => {
+                const ans = exec.answers ? exec.answers[it.id] : null;
+                const status = ans ? ans.status : 'pendente';
+                const isConf = status === 'conforme';
+
+                html += `
+                    <div class="bg-gray-950 p-3 rounded-xl border ${isConf ? 'border-emerald-900/50' : 'border-red-900/50'} space-y-1.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-xs font-semibold text-gray-200">${idx + 1}. ${it.text}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isConf ? 'bg-emerald-950 text-emerald-300' : 'bg-red-950 text-red-300'}">
+                                ${isConf ? 'CONFORME' : 'NÃO CONFORME'}
+                            </span>
+                        </div>
+                        ${!isConf && ans ? `
+                            <div class="p-2 rounded bg-red-950/30 text-xs text-red-200 mt-1">
+                                <span class="font-bold">Motivo:</span> ${ans.observation || 'Não especificado'}
+                                ${ans.photo ? `
+                                    <div class="mt-2">
+                                        <img src="${ans.photo}" class="max-h-40 rounded-lg border border-gray-700">
+                                    </div>
+                                ` : (ans.justification ? `<p class="text-[10px] text-amber-300 italic mt-1">${ans.justification}</p>` : '')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+        } else {
+            html = '<p class="text-xs text-gray-500 py-4 text-center">Detalhes não disponíveis.</p>';
+        }
+
+        if (container) container.innerHTML = html;
+
+        const modal = document.getElementById('modal-checklist-detail');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+        }
+    }
+
+    closeDetailModal() {
+        const modal = document.getElementById('modal-checklist-detail');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        }
+    }
+
+    renderManageModels() {
+        const container = document.getElementById('chk-models-list');
+        if (!container) return;
+
+        let html = '';
+        this.checklists.forEach((model, idx) => {
+            html += `
+                <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-cyan-500/40 transition">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800/50">
+                                ${model.targetRole}
+                            </span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-800 text-gray-300">
+                                ${model.recurrence === 'shift' ? 'Por Turno' : (model.recurrence === 'daily' ? 'Diário' : 'Avulso')}
+                            </span>
+                            <span class="text-[11px] text-gray-500">• ${model.items.length} itens a validar</span>
+                        </div>
+                        <h4 class="font-bold text-sm text-white">${model.title}</h4>
+                        <p class="text-xs text-gray-400 mt-0.5">${model.description || 'Sem descrição adicional.'}</p>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                        <button type="button" onclick="checklistApp.openNewChecklistModal('${model.id}')" class="px-3 py-1.5 text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl transition cursor-pointer">
+                            <i class="fa-solid fa-pen text-[10px] mr-1"></i> Editar
+                        </button>
+                        <button type="button" onclick="checklistApp.deleteModel('${model.id}')" class="px-3 py-1.5 text-xs font-semibold bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-800/50 rounded-xl transition cursor-pointer">
+                            <i class="fa-solid fa-trash text-[10px] mr-1"></i> Excluir
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    openNewChecklistModal(modelId = null) {
+        if (!this.canManage()) {
+            if (typeof showCustomAlert === 'function') {
+                showCustomAlert('Acesso Restrito', 'Apenas Administradores e Gerentes podem criar ou editar modelos de checklist.', 'warning');
+            } else {
+                alert('Acesso restrito a Gerentes e Administradores.');
+            }
+            return;
+        }
+
+        const modal = document.getElementById('modal-checklist-new');
+        const titleModal = document.getElementById('chk-modal-model-title');
+        const idInput = document.getElementById('chk-model-id');
+        const titleInput = document.getElementById('chk-model-title-input');
+        const descInput = document.getElementById('chk-model-desc-input');
+        const roleSelect = document.getElementById('chk-model-role-select');
+        const recSelect = document.getElementById('chk-model-recurrence-select');
+        const reqPhotoCheck = document.getElementById('chk-model-require-photo');
+        const builder = document.getElementById('chk-model-items-builder');
+
+        this.populateModelRoleSelect();
+        if (builder) builder.innerHTML = '';
+        this.modelItemCounter = 0;
+
+        if (modelId) {
+            const m = this.checklists.find(c => c.id === modelId);
+            if (!m) return;
+            if (titleModal) titleModal.innerText = 'Editar Modelo de Checklist';
+            if (idInput) idInput.value = m.id;
+            if (titleInput) titleInput.value = m.title;
+            if (descInput) descInput.value = m.description || '';
+            if (roleSelect) roleSelect.value = m.targetRole;
+            if (recSelect) recSelect.value = m.recurrence || 'daily';
+            if (reqPhotoCheck) reqPhotoCheck.checked = m.requirePhotoOnNonConform !== false;
+
+            m.items.forEach(it => this.addEmptyModelItem(it.text, it.category));
+        } else {
+            if (titleModal) titleModal.innerText = 'Criar Novo Modelo de Checklist';
+            if (idInput) idInput.value = '';
+            if (titleInput) titleInput.value = '';
+            if (descInput) descInput.value = '';
+            if (reqPhotoCheck) reqPhotoCheck.checked = true;
+
+            // Adiciona 3 itens vazios por padrão para facilitar
+            this.addEmptyModelItem('', 'Abertura');
+            this.addEmptyModelItem('', 'Operação');
+            this.addEmptyModelItem('', 'Fechamento');
+        }
+
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+        }
+    }
+
+    closeNewChecklistModal() {
+        const modal = document.getElementById('modal-checklist-new');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        }
+    }
+
+    populateModelRoleSelect() {
+        const select = document.getElementById('chk-model-role-select');
+        if (!select) return;
+
+        let roles = ["Todos os Cargos", "Operador de Caixa", "Repositor", "Fiscal de Caixa", "Fiscal de Loja", "Conferente", "Atendente", "Líder Setorial", "Supervisor", "Gerente"];
+        if (window.admin && typeof admin.getRoles === 'function') {
+            const adminRoles = admin.getRoles();
+            if (adminRoles && adminRoles.length > 0) {
+                roles = ["Todos os Cargos", ...adminRoles];
+            }
+        }
+
+        select.innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join('');
+    }
+
+    addEmptyModelItem(text = '', category = '') {
+        const builder = document.getElementById('chk-model-items-builder');
+        if (!builder) return;
+
+        this.modelItemCounter++;
+        const id = 'chk_item_input_' + this.modelItemCounter;
+
+        const row = document.createElement('div');
+        row.id = id;
+        row.className = "flex items-center gap-2 p-2 bg-gray-950 rounded-xl border border-gray-800";
+        row.innerHTML = `
+            <span class="w-5 text-center text-xs text-gray-500 font-mono shrink-0">#</span>
+            <input type="text" value="${text}" placeholder="Descrição do que deve ser verificado..." required class="chk-item-text-field flex-1 bg-transparent text-xs text-gray-100 placeholder-gray-500 focus:outline-none">
+            <input type="text" value="${category}" placeholder="Categoria (ex: Limpeza)" class="chk-item-cat-field w-28 bg-gray-900 border border-gray-700/60 rounded-lg px-2 py-1 text-[11px] text-gray-300 focus:outline-none">
+            <button type="button" onclick="document.getElementById('${id}').remove()" class="text-gray-500 hover:text-red-400 p-1 shrink-0" title="Remover item">✕</button>
+        `;
+        builder.appendChild(row);
+    }
+
+    handleSaveModel(event) {
+        event.preventDefault();
+        const idInput = document.getElementById('chk-model-id')?.value;
+        const title = document.getElementById('chk-model-title-input')?.value.trim();
+        const desc = document.getElementById('chk-model-desc-input')?.value.trim();
+        const targetRole = document.getElementById('chk-model-role-select')?.value;
+        const recurrence = document.getElementById('chk-model-recurrence-select')?.value;
+        const requirePhoto = document.getElementById('chk-model-require-photo')?.checked;
+
+        if (!title) return;
+
+        // Coleta itens do builder
+        const rows = document.querySelectorAll('#chk-model-items-builder > div');
+        const items = [];
+        rows.forEach((row, idx) => {
+            const text = row.querySelector('.chk-item-text-field')?.value.trim();
+            const cat = row.querySelector('.chk-item-cat-field')?.value.trim();
+            if (text) {
+                items.push({
+                    id: 'it_' + (idx + 1),
+                    text,
+                    category: cat || 'Geral'
+                });
+            }
+        });
+
+        if (items.length === 0) {
+            alert('Por favor, adicione pelo menos 1 item de verificação para o checklist.');
+            return;
+        }
+
+        if (idInput) {
+            // Atualização
+            const m = this.checklists.find(c => c.id === idInput);
+            if (m) {
+                m.title = title;
+                m.description = desc;
+                m.targetRole = targetRole;
+                m.recurrence = recurrence;
+                m.requirePhotoOnNonConform = requirePhoto;
+                m.items = items;
+            }
+        } else {
+            // Novo modelo
+            const newModel = {
+                id: 'chk_' + Date.now(),
+                title,
+                description: desc,
+                targetRole,
+                dept: 'Geral',
+                recurrence,
+                requirePhotoOnNonConform: requirePhoto,
+                items,
+                createdAt: Date.now(),
+                createdBy: this.getCurrentUserName(),
+                active: true
+            };
+            this.checklists.push(newModel);
+        }
+
+        this.saveData();
+        this.closeNewChecklistModal();
+
+        if (window.syncManager) {
+            syncManager.showToast(`✓ Modelo "${title}" salvo com sucesso!`);
+        }
+    }
+
+    deleteModel(modelId) {
+        if (!confirm('Deseja realmente excluir este modelo de checklist?')) return;
+        this.checklists = this.checklists.filter(c => c.id !== modelId);
+        this.saveData();
+    }
+}
+
+window.checklistApp = new ChecklistApp();
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.checklistApp) window.checklistApp.init();
+});
+
 window.tabloidApp = new TabloidApp();
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -21208,6 +22429,154 @@ window.tabloidApp = new TabloidApp();
             <img id="lightbox-img-full" src="" alt="Comprovante de Tarefa" class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-gray-800">
         </div>
         <p id="lightbox-caption" class="mt-3 text-xs text-gray-300 font-medium text-center bg-gray-900/80 px-3 py-1 rounded-full border border-gray-800"></p>
+    </div>
+
+    
+    <!-- ======================================================== -->
+    <!-- MODAL 1: EXECUÇÃO DE CHECKLIST (PREENCHIMENTO) -->
+    <!-- ======================================================== -->
+    <div id="modal-checklist-execution" style="display: none; z-index: 100010;" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-2xl p-4 sm:p-5 space-y-4 shadow-2xl modal-content-box max-h-[92vh] flex flex-col">
+            <!-- Cabeçalho -->
+            <div class="flex items-start justify-between border-b border-gray-800 pb-3 shrink-0">
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span id="chk-exec-role-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800/60">Cargo</span>
+                        <span id="chk-exec-shift-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-800 text-gray-300">Turno</span>
+                        <span id="chk-exec-date-badge" class="text-[11px] text-gray-400">Data</span>
+                    </div>
+                    <h3 id="chk-exec-title" class="text-base sm:text-lg font-bold text-white mt-1">Checklist</h3>
+                    <p id="chk-exec-desc" class="text-xs text-gray-400 mt-0.5">Instruções</p>
+                </div>
+                <button type="button" onclick="checklistApp.closeExecutionModal()" class="text-gray-400 hover:text-gray-200 text-xl p-1">✕</button>
+            </div>
+
+            <!-- Progresso Geral -->
+            <div class="shrink-0 bg-gray-950 p-2.5 rounded-xl border border-gray-800 flex items-center justify-between gap-3">
+                <div class="flex-1">
+                    <div class="flex justify-between text-[11px] font-semibold text-gray-300 mb-1">
+                        <span>Progresso da Validação</span>
+                        <span id="chk-exec-progress-label">0 / 0 Itens</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                        <div id="chk-exec-progress-bar" class="bg-cyan-500 h-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+                <span id="chk-exec-score-badge" class="px-2.5 py-1 rounded-xl text-xs font-black bg-gray-800 text-gray-300 shrink-0">0% Conforme</span>
+            </div>
+
+            <!-- Lista de Itens com Scroll -->
+            <div id="chk-exec-items-list" class="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-1">
+                <!-- Itens injetados via JS -->
+            </div>
+
+            <!-- Rodapé / Submissão -->
+            <div class="shrink-0 pt-3 border-t border-gray-800 flex items-center justify-between gap-3">
+                <button type="button" onclick="checklistApp.closeExecutionModal()" class="px-4 py-2.5 text-xs rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition active:scale-95 cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" onclick="checklistApp.submitExecution()" id="chk-exec-submit-btn" class="flex-1 sm:flex-none px-6 py-2.5 text-xs rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold shadow-lg shadow-cyan-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-check-double"></i>
+                    <span>Finalizar & Gravar Checklist</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 2: CRIAÇÃO / EDIÇÃO DE MODELO DE CHECKLIST (GERENTE/ADM) -->
+    <!-- ======================================================== -->
+    <div id="modal-checklist-new" style="display: none; z-index: 100010;" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-3.5 shadow-2xl modal-content-box max-h-[92vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-gray-800 pb-3 shrink-0">
+                <h3 class="font-bold text-sm sm:text-base text-gray-100 flex items-center gap-2">
+                    <i class="fa-solid fa-clipboard-list text-cyan-400"></i>
+                    <span id="chk-modal-model-title">Criar Novo Modelo de Checklist</span>
+                </h3>
+                <button type="button" onclick="checklistApp.closeNewChecklistModal()" class="text-gray-400 hover:text-gray-200 text-lg">✕</button>
+            </div>
+
+            <form id="form-new-checklist-model" onsubmit="checklistApp.handleSaveModel(event)" class="flex-1 overflow-y-auto space-y-3.5 custom-scrollbar pr-1">
+                <input type="hidden" id="chk-model-id" value="">
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Título do Checklist *</label>
+                    <input type="text" id="chk-model-title-input" required placeholder="Ex: Checklist de Abertura - Frente de Caixa" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-500">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Cargo de Destino *</label>
+                        <select id="chk-model-role-select" required class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-cyan-500">
+                            <!-- Injetado dinamicamente -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Periodicidade *</label>
+                        <select id="chk-model-recurrence-select" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-cyan-500">
+                            <option value="daily">Diário (Todo Dia)</option>
+                            <option value="shift">Por Turno (Manhã / Tarde / Noite)</option>
+                            <option value="single">Avulso (Por Demanda)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Descrição / Instruções</label>
+                    <textarea id="chk-model-desc-input" rows="2" placeholder="Instruções gerais para o colaborador antes de iniciar..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-500"></textarea>
+                </div>
+
+                <!-- Itens a Validar -->
+                <div class="pt-2 border-t border-gray-800 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-cyan-300">Itens de Verificação *</label>
+                        <button type="button" onclick="checklistApp.addEmptyModelItem()" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 active:scale-95">
+                            <i class="fa-solid fa-plus text-[10px]"></i> Adicionar Item
+                        </button>
+                    </div>
+                    <div id="chk-model-items-builder" class="space-y-2">
+                        <!-- Linhas de itens injetadas dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Configuração de Exigência -->
+                <div class="pt-2 border-t border-gray-800">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="chk-model-require-photo" checked class="accent-cyan-500 rounded w-4 h-4">
+                        <span class="text-xs text-gray-300">Exigir Foto ou Justificativa em caso de <strong>Não Conforme</strong></span>
+                    </label>
+                </div>
+
+                <div class="pt-3 border-t border-gray-800 flex gap-2">
+                    <button type="button" onclick="checklistApp.closeNewChecklistModal()" class="flex-1 py-2.5 text-xs rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition active:scale-95">Cancelar</button>
+                    <button type="submit" class="flex-1 py-2.5 text-xs rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold shadow-lg shadow-cyan-600/30 transition active:scale-95 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-save"></i>
+                        <span>Salvar Modelo</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 3: AUDITORIA / DETALHES DE HISTÓRICO -->
+    <!-- ======================================================== -->
+    <div id="modal-checklist-detail" style="display: none; z-index: 100010;" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-3.5 shadow-2xl modal-content-box max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-gray-800 pb-3 shrink-0">
+                <div>
+                    <h3 id="chk-detail-title" class="font-bold text-sm sm:text-base text-gray-100">Auditoria de Checklist</h3>
+                    <p id="chk-detail-meta" class="text-xs text-gray-400">-</p>
+                </div>
+                <button type="button" onclick="checklistApp.closeDetailModal()" class="text-gray-400 hover:text-gray-200 text-lg">✕</button>
+            </div>
+            <div id="chk-detail-items-container" class="flex-1 overflow-y-auto space-y-2.5 custom-scrollbar pr-1">
+                <!-- Itens auditados injetados via JS -->
+            </div>
+            <div class="shrink-0 pt-2 border-t border-gray-800 text-right">
+                <button type="button" onclick="checklistApp.closeDetailModal()" class="px-4 py-2 text-xs rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold">Fechar</button>
+            </div>
+        </div>
     </div>
 
     <!-- ======================================================== -->
