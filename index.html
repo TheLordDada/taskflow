@@ -14288,8 +14288,13 @@
 
             getDefaultMonthYear() {
                 const now = new Date();
-                const m = (now.getMonth() + 1 < 10 ? '0' : '') + (now.getMonth() + 1);
-                return m + '/' + now.getFullYear();
+                const y = now.getFullYear();
+                const m = now.getMonth();
+                if (y < 2026 || (y === 2026 && m < 9)) {
+                    return '10/2026';
+                }
+                const mStr = (m + 1 < 10 ? '0' : '') + (m + 1);
+                return mStr + '/' + y;
             }
 
             setPeriodMode(mode) {
@@ -14336,8 +14341,8 @@
 
                 let html = '';
                 // Disponibiliza APENAS a partir de Outubro / 2026
-                const startYear = Math.max(2026, curYear);
-                for (let y = startYear; y <= startYear + 1; y++) {
+                // Disponibiliza APENAS a partir de Outubro / 2026
+                for (let y = 2026; y <= Math.max(2027, curYear + 1); y++) {
                     const startMonth = (y === 2026) ? 9 : 0; // 9 = Outubro (mês 10)
                     for (let m = startMonth; m < 12; m++) {
                         const mStr = (m + 1 < 10 ? '0' : '') + (m + 1);
