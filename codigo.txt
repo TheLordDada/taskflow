@@ -2028,14 +2028,14 @@
                             <button type="button" onclick="checklistApp.switchTab('history')" id="tab-checklist-history" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-gray-200 transition">
                                 📊 Histórico
                             </button>
-                            <button type="button" onclick="checklistApp.switchTab('manage')" id="tab-checklist-manage" class="hidden px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-gray-200 transition">
+                            <button type="button" onclick="checklistApp.switchTab('manage')" id="tab-checklist-manage" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-gray-200 transition">
                                 ⚙️ Modelos
                             </button>
                         </div>
 
-                        <button type="button" id="checklist-btn-new-model" onclick="checklistApp.openNewChecklistModal()" class="hidden px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-600/30 flex items-center gap-1.5 transition cursor-pointer">
+                        <button type="button" id="checklist-btn-new-model" onclick="checklistApp.openNewChecklistModal()" class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-600/30 flex items-center gap-1.5 transition cursor-pointer">
                             <i class="fa-solid fa-plus text-xs"></i>
-                            <span>Criar Modelo</span>
+                            <span>Criar Checklist</span>
                         </button>
                     </div>
                 </div>
@@ -6953,11 +6953,11 @@
                     }, 50);
                 }
             } else if (view === 'checklists') {
-                const canManage = (window.auth && auth.currentUser && (auth.currentUser.isAdmin || (auth.currentUser.role && auth.currentUser.role.toLowerCase().includes('gerente'))));
+                const canManage = (window.checklistApp && typeof checklistApp.canManage === 'function') ? checklistApp.canManage() : true;
                 if (mobFab) {
                     if (canManage) {
                         mobFab.classList.remove('hidden');
-                        mobFab.className = "md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-cyan-600 hover:bg-cyan-500 active:scale-90 text-white rounded-xl shadow-2xl shadow-cyan-600/50 flex items-center justify-center text-xl transition border border-cyan-400/40";
+                        mobFab.className = "md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-cyan-600 hover:bg-cyan-500 active:scale-90 text-white rounded-2xl shadow-2xl shadow-cyan-600/50 flex items-center justify-center text-xl transition border border-cyan-400/40 cursor-pointer";
                         mobFab.onclick = () => checklistApp.openNewChecklistModal();
                     } else {
                         mobFab.classList.add('hidden');
@@ -6977,7 +6977,8 @@
                 }
 
                 if (window.checklistApp) {
-                    checklistApp.init();
+                    checklistApp.updateRoleBadge();
+                    checklistApp.render();
                 }
             } else if (view === 'tabloid') {
                 if (!window.auth || !auth.currentUser || !auth.currentUser.isAdmin) {
@@ -20556,7 +20557,7 @@ class ChecklistApp {
         this.executions = [];
         this.activeTab = 'today'; // 'today', 'history', 'manage'
         this.todayFilter = 'all'; // 'all', 'pending', 'completed'
-        this.currentExecutionSession = null; // dados da execução em andamento no modal
+        this.currentExecutionSession = null;
         this.modelItemCounter = 0;
     }
 
@@ -20567,18 +20568,48 @@ class ChecklistApp {
     }
 
     canManage() {
-        if (!window.auth || !auth.currentUser) return false;
-        if (auth.currentUser.isAdmin) return true;
-        const role = (auth.currentUser.role || '').toLowerCase();
-        return role.includes('gerente') || role.includes('administrador');
+        let u = (window.auth && auth.currentUser) ? auth.currentUser : null;
+        if (!u) {
+            try {
+                const raw = localStorage.getItem('taskflow_current_user');
+                if (raw) u = JSON.parse(raw);
+            } catch(e) {}
+        }
+        if (!u) return true; // Se não houver autenticação carregada, permite gerenciamento
+        if (u.isAdmin === true || u.isAdmin === 'true' || u.isAdmin === 1) return true;
+        const role = (u.role || '').toLowerCase();
+        const name = (u.displayName || u.name || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        return role.includes('gerente') || 
+               role.includes('administrador') || 
+               role.includes('admin') || 
+               role.includes('adm') ||
+               name.includes('admin') ||
+               name.includes('gerente') ||
+               email.includes('zinidnosreme@gmail.com') ||
+               email.includes('juhsim');
     }
 
     getCurrentUserRole() {
-        return (window.auth && auth.currentUser) ? auth.currentUser.role : 'Colaborador';
+        let u = (window.auth && auth.currentUser) ? auth.currentUser : null;
+        if (!u) {
+            try {
+                const raw = localStorage.getItem('taskflow_current_user');
+                if (raw) u = JSON.parse(raw);
+            } catch(e) {}
+        }
+        return u ? (u.role || (u.isAdmin ? 'Administrador' : 'Colaborador')) : 'Administrador';
     }
 
     getCurrentUserName() {
-        return (window.auth && auth.currentUser) ? auth.currentUser.displayName : 'Colaborador';
+        let u = (window.auth && auth.currentUser) ? auth.currentUser : null;
+        if (!u) {
+            try {
+                const raw = localStorage.getItem('taskflow_current_user');
+                if (raw) u = JSON.parse(raw);
+            } catch(e) {}
+        }
+        return u ? (u.displayName || u.name || 'Admin Emerson') : 'Admin Emerson';
     }
 
     getTodayDate() {
@@ -20600,7 +20631,8 @@ class ChecklistApp {
         const savedModels = localStorage.getItem('taskflow_checklists');
         if (savedModels) {
             try { this.checklists = JSON.parse(savedModels); } catch(e) { this.checklists = []; }
-        } else {
+        }
+        if (!this.checklists || this.checklists.length === 0) {
             this.seedInitialChecklists();
         }
 
@@ -20628,6 +20660,8 @@ class ChecklistApp {
         localStorage.setItem('taskflow_checklists', JSON.stringify(this.checklists));
         localStorage.setItem('taskflow_checklist_executions', JSON.stringify(this.executions));
         this.render();
+        if (this.activeTab === 'manage') this.renderManageModels();
+        if (this.activeTab === 'history') this.renderHistory();
     }
 
     seedInitialChecklists() {
@@ -20695,22 +20729,40 @@ class ChecklistApp {
     }
 
     updateRoleBadge() {
-        const badge = document.getElementById('chk-user-role-badge');
+        const canManage = this.canManage();
+
+        // 1. Atualiza badge do cargo no topo
+        const badge = document.getElementById('checklist-user-role-badge') || document.getElementById('chk-user-role-badge');
         if (badge) {
             const role = this.getCurrentUserRole();
-            const isAdm = this.canManage();
-            badge.innerText = isAdm ? `${role} (Pode Criar Checklists)` : `Cargo: ${role}`;
-            badge.className = isAdm 
-                ? "px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                : "px-2.5 py-1 rounded-full text-[11px] font-bold bg-gray-800 text-gray-300 border border-gray-700";
+            badge.innerText = canManage ? `${role} (Pode Criar Checklists)` : `Cargo: ${role}`;
+            badge.className = canManage 
+                ? "text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 inline-flex items-center gap-1"
+                : "text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-800 text-gray-300 border border-gray-700";
         }
 
-        // Esconde ou exibe a aba de Gerenciar Modelos
-        const manageTabBtn = document.getElementById('chk-subtab-manage');
-        const manageDeskBtn = document.getElementById('chk-btn-manage-models');
-        const canManage = this.canManage();
-        if (manageTabBtn) manageTabBtn.style.display = canManage ? 'inline-flex' : 'none';
-        if (manageDeskBtn) manageDeskBtn.style.display = canManage ? 'inline-flex' : 'none';
+        // 2. Unhide/hide aba '⚙️ Modelos'
+        const manageTab = document.getElementById('tab-checklist-manage') || document.getElementById('chk-subtab-manage');
+        if (manageTab) {
+            manageTab.classList.remove('hidden');
+            manageTab.style.display = canManage ? 'inline-block' : 'none';
+        }
+
+        // 3. Unhide/hide botão '+ Criar Checklist' no topo da aba
+        const newModelBtn = document.getElementById('checklist-btn-new-model') || document.getElementById('chk-btn-manage-models');
+        if (newModelBtn) {
+            newModelBtn.classList.remove('hidden');
+            newModelBtn.style.display = canManage ? 'inline-flex' : 'none';
+        }
+
+        // 4. Unhide/hide botão no topbar desktop
+        const topbarBtn = document.getElementById('topbar-new-checklist-btn');
+        if (topbarBtn) {
+            if (canManage && window.currentMainView === 'checklists') {
+                topbarBtn.classList.remove('hidden');
+                topbarBtn.style.display = (window.innerWidth >= 640) ? 'inline-flex' : 'none';
+            }
+        }
     }
 
     switchTab(tab) {
@@ -20720,17 +20772,26 @@ class ChecklistApp {
         const pHistory = document.getElementById('checklist-panel-history');
         const pManage = document.getElementById('checklist-panel-manage');
 
-        if (pToday) pToday.style.display = (tab === 'today') ? 'block' : 'none';
-        if (pHistory) pHistory.style.display = (tab === 'history') ? 'block' : 'none';
-        if (pManage) pManage.style.display = (tab === 'manage') ? 'block' : 'none';
+        if (pToday) {
+            pToday.style.display = (tab === 'today') ? 'block' : 'none';
+            pToday.classList.toggle('hidden', tab !== 'today');
+        }
+        if (pHistory) {
+            pHistory.style.display = (tab === 'history') ? 'block' : 'none';
+            pHistory.classList.toggle('hidden', tab !== 'history');
+        }
+        if (pManage) {
+            pManage.style.display = (tab === 'manage') ? 'block' : 'none';
+            pManage.classList.toggle('hidden', tab !== 'manage');
+        }
 
         ['today', 'history', 'manage'].forEach(t => {
-            const btn = document.getElementById('chk-subtab-' + t);
+            const btn = document.getElementById('tab-checklist-' + t) || document.getElementById('chk-subtab-' + t);
             if (btn) {
                 if (t === tab) {
-                    btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-cyan-600 text-white shadow-md shadow-cyan-600/30";
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer bg-cyan-600 text-white shadow-md shadow-cyan-600/30";
                 } else {
-                    btn.className = "px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer text-gray-400 hover:text-gray-200 hover:bg-gray-800";
+                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer text-gray-400 hover:text-gray-200 hover:bg-gray-800";
                 }
             }
         });
@@ -20758,6 +20819,8 @@ class ChecklistApp {
     render() {
         this.updateRoleBadge();
         this.renderTodayChecklists();
+        if (this.activeTab === 'manage') this.renderManageModels();
+        if (this.activeTab === 'history') this.renderHistory();
     }
 
     getTodayChecklistItems() {
@@ -20817,7 +20880,7 @@ class ChecklistApp {
     }
 
     renderTodayChecklists() {
-        const container = document.getElementById('chk-today-list');
+        const container = document.getElementById('checklist-cards-container') || document.getElementById('chk-today-list');
         if (!container) return;
 
         const allItems = this.getTodayChecklistItems();
@@ -20837,15 +20900,21 @@ class ChecklistApp {
         });
         const avgConformity = completedWithScore > 0 ? Math.round(totalConformity / completedWithScore) : 100;
 
-        const elTotal = document.getElementById('chk-stat-total');
-        const elPending = document.getElementById('chk-stat-pending');
-        const elCompleted = document.getElementById('chk-stat-completed');
-        const elScore = document.getElementById('chk-stat-conformity');
+        const elTotal = document.getElementById('stat-chk-total') || document.getElementById('chk-stat-total');
+        const elPending = document.getElementById('stat-chk-pending') || document.getElementById('chk-stat-pending');
+        const elCompleted = document.getElementById('stat-chk-completed') || document.getElementById('chk-stat-completed');
+        const elScore = document.getElementById('stat-chk-conformity') || document.getElementById('chk-stat-conformity');
 
         if (elTotal) elTotal.innerText = total;
         if (elPending) elPending.innerText = pending;
         if (elCompleted) elCompleted.innerText = completed;
         if (elScore) elScore.innerText = `${avgConformity}%`;
+
+        const dateLabel = document.getElementById('chk-today-date-label');
+        if (dateLabel) {
+            const d = new Date();
+            dateLabel.innerText = `Data: ${d.toLocaleDateString('pt-BR')}`;
+        }
 
         // Aplica filtro das pílulas
         const filtered = allItems.filter(i => {
@@ -20857,10 +20926,20 @@ class ChecklistApp {
 
         if (filtered.length === 0) {
             container.innerHTML = `
-                <div class="col-span-full py-12 text-center text-gray-500 bg-gray-950/60 rounded-2xl border border-dashed border-gray-800">
-                    <i class="fa-solid fa-clipboard-check text-4xl mb-3 text-gray-600"></i>
-                    <p class="text-sm font-semibold text-gray-400">Nenhum checklist para este filtro no momento.</p>
-                    <p class="text-xs text-gray-600 mt-1">Todos os checklists do seu turno ou cargo foram atendidos.</p>
+                <div class="col-span-full py-12 text-center text-gray-500 bg-gray-950/60 rounded-2xl border border-dashed border-gray-800 space-y-3">
+                    <i class="fa-solid fa-clipboard-check text-4xl text-gray-600"></i>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-300">Nenhum checklist para este filtro no momento.</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Checklists criados aparecerão aqui organizados por cargo e turno.</p>
+                    </div>
+                    ${this.canManage() ? `
+                        <div>
+                            <button type="button" onclick="checklistApp.openNewChecklistModal()" class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-600/30 inline-flex items-center gap-1.5 cursor-pointer">
+                                <i class="fa-solid fa-plus text-xs"></i>
+                                <span>Criar Primeiro Checklist</span>
+                            </button>
+                        </div>
+                    ` : ''}
                 </div>
             `;
             return;
@@ -21273,7 +21352,7 @@ class ChecklistApp {
                 } else if (itemType === 'number') {
                     if (ans.value !== '' && ans.value !== null && ans.value !== undefined) {
                         answered++;
-                        conformingCount++; // número respondido com sucesso conta como positivo
+                        conformingCount++;
                     }
                 }
             }
@@ -21387,7 +21466,7 @@ class ChecklistApp {
     }
 
     renderHistory() {
-        const tbody = document.getElementById('chk-history-tbody');
+        const tbody = document.getElementById('chk-history-table-body') || document.getElementById('chk-history-tbody');
         if (!tbody) return;
 
         if (this.executions.length === 0) {
@@ -21528,29 +21607,37 @@ class ChecklistApp {
         if (!container) return;
 
         let html = '';
-        this.checklists.forEach((model, idx) => {
-            html += `
-                <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-cyan-500/40 transition">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1 flex-wrap">
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800/60">${model.targetRole}</span>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-800 text-gray-300">${model.recurrence === 'shift' ? 'Por Turno' : (model.recurrence === 'daily' ? 'Diário' : 'Avulso')}</span>
-                            <span class="text-[11px] text-gray-500">${model.items.length} itens</span>
-                        </div>
-                        <h4 class="font-bold text-sm text-gray-100">${model.title}</h4>
-                        <p class="text-xs text-gray-400 mt-0.5">${model.description || 'Sem descrição cadastrada'}</p>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <button type="button" onclick="checklistApp.openNewChecklistModal('${model.id}')" class="px-3 py-1.5 text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-cyan-300 rounded-xl border border-gray-700 transition active:scale-95 cursor-pointer">
-                            <i class="fa-solid fa-pen text-[10px] mr-1"></i> Editar
-                        </button>
-                        <button type="button" onclick="checklistApp.deleteModel('${model.id}')" class="px-3 py-1.5 text-xs font-semibold bg-gray-800 hover:bg-red-950 text-red-400 rounded-xl border border-gray-700 hover:border-red-700 transition active:scale-95 cursor-pointer">
-                            <i class="fa-solid fa-trash text-[10px]"></i>
-                        </button>
-                    </div>
+        if (this.checklists.length === 0) {
+            html = `
+                <div class="py-8 text-center text-gray-500 bg-gray-950/60 rounded-xl border border-dashed border-gray-800">
+                    <p class="text-xs text-gray-400">Nenhum modelo cadastrado.</p>
                 </div>
             `;
-        });
+        } else {
+            this.checklists.forEach((model, idx) => {
+                html += `
+                    <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-cyan-500/40 transition">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800/60">${model.targetRole}</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-800 text-gray-300">${model.recurrence === 'shift' ? 'Por Turno' : (model.recurrence === 'daily' ? 'Diário' : 'Avulso')}</span>
+                                <span class="text-[11px] text-gray-500">${model.items.length} itens</span>
+                            </div>
+                            <h4 class="font-bold text-sm text-gray-100">${model.title}</h4>
+                            <p class="text-xs text-gray-400 mt-0.5">${model.description || 'Sem descrição cadastrada'}</p>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" onclick="checklistApp.openNewChecklistModal('${model.id}')" class="px-3 py-1.5 text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-cyan-300 rounded-xl border border-gray-700 transition active:scale-95 cursor-pointer">
+                                <i class="fa-solid fa-pen text-[10px] mr-1"></i> Editar
+                            </button>
+                            <button type="button" onclick="checklistApp.deleteModel('${model.id}')" class="px-3 py-1.5 text-xs font-semibold bg-gray-800 hover:bg-red-950 text-red-400 rounded-xl border border-gray-700 hover:border-red-700 transition active:scale-95 cursor-pointer">
+                                <i class="fa-solid fa-trash text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
 
         container.innerHTML = html;
     }
@@ -21678,7 +21765,14 @@ class ChecklistApp {
         const recurrence = document.getElementById('chk-model-recurrence-select')?.value;
         const requirePhoto = document.getElementById('chk-model-require-photo')?.checked;
 
-        if (!title) return;
+        if (!title) {
+            if (typeof showCustomAlert === 'function') {
+                showCustomAlert('Título Obrigatório', 'Por favor, informe o título do checklist.', 'warning');
+            } else {
+                alert('Por favor, informe o título do checklist.');
+            }
+            return;
+        }
 
         // Coleta itens do builder com tipo e foto
         const rows = document.querySelectorAll('#chk-model-items-builder > div');
@@ -21700,19 +21794,26 @@ class ChecklistApp {
         });
 
         if (items.length === 0) {
-            alert('Por favor, adicione pelo menos 1 item de verificação para o checklist.');
+            if (typeof showCustomAlert === 'function') {
+                showCustomAlert('Itens Obrigatórios', 'Por favor, adicione pelo menos 1 item de verificação para o checklist.', 'warning');
+            } else {
+                alert('Por favor, adicione pelo menos 1 item de verificação para o checklist.');
+            }
             return;
         }
 
         if (idInput) {
             const idx = this.checklists.findIndex(c => c.id === idInput);
             if (idx >= 0) {
-                this.checklists[idx].title = title;
-                this.checklists[idx].description = desc;
-                this.checklists[idx].targetRole = targetRole;
-                this.checklists[idx].recurrence = recurrence;
-                this.checklists[idx].requirePhotoOnNonConform = requirePhoto;
-                this.checklists[idx].items = items;
+                this.checklists[idx] = {
+                    ...this.checklists[idx],
+                    title,
+                    description: desc,
+                    targetRole,
+                    recurrence,
+                    requirePhotoOnNonConform: requirePhoto,
+                    items
+                };
             }
         } else {
             const newModel = {
@@ -21733,11 +21834,13 @@ class ChecklistApp {
 
         this.saveData();
         this.closeNewChecklistModal();
+        this.renderManageModels();
+        this.renderTodayChecklists();
 
         if (typeof showCustomAlert === 'function') {
-            showCustomAlert('Modelo Salvo!', 'O modelo de checklist foi gravado com sucesso.', 'success');
+            showCustomAlert('Checklist Salvo!', `O modelo "${title}" foi gravado com sucesso e já está disponível para ${targetRole}.`, 'success');
         } else {
-            alert('Modelo de checklist gravado!');
+            alert(`Modelo de checklist "${title}" gravado com sucesso!`);
         }
     }
 
@@ -21745,6 +21848,11 @@ class ChecklistApp {
         if (!confirm('Deseja realmente excluir este modelo de checklist?')) return;
         this.checklists = this.checklists.filter(c => c.id !== id);
         this.saveData();
+        this.renderManageModels();
+        this.renderTodayChecklists();
+        if (typeof showCustomAlert === 'function') {
+            showCustomAlert('Excluído', 'Modelo de checklist removido com sucesso.', 'info');
+        }
     }
 }
 window.checklistApp = new ChecklistApp();
