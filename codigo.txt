@@ -2257,10 +2257,14 @@
                         </div>
 
                         <!-- Botões de Ação Principal -->
-                        <div class="flex items-center gap-2 w-full md:w-auto">
-                            <button type="button" onclick="tabloidApp.exportProcessedExcel()" class="flex-1 md:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer">
+                        <div class="flex items-center gap-2 w-full md:w-auto flex-wrap">
+                            <button type="button" onclick="tabloidApp.openInGoogleSheets()" class="flex-1 md:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer" title="Abrir dados formatados direto no Google Planilhas">
+                                <i class="fa-solid fa-table"></i>
+                                <span>Abrir no Google Planilhas</span>
+                            </button>
+                            <button type="button" onclick="tabloidApp.exportProcessedExcel()" class="flex-1 md:flex-none px-3.5 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold text-xs rounded-xl border border-gray-700 flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer">
                                 <i class="fa-solid fa-download"></i>
-                                <span>Baixar Excel com Códigos (.xlsx)</span>
+                                <span>Baixar Excel (.xlsx)</span>
                             </button>
                             <button type="button" onclick="tabloidApp.copyTableToClipboard()" title="Copiar Tabela" class="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl border border-gray-700 transition active:scale-95 cursor-pointer">
                                 <i class="fa-regular fa-copy"></i>
@@ -4251,7 +4255,7 @@
                 }
             });
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=1793937469034').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=1793938326954').then(reg => {
                     if (reg) reg.update();
                 }).catch(() => {});
             });
@@ -20598,6 +20602,34 @@ class TabloidApp {
         if (window.syncManager) {
             syncManager.showToast(`✓ Vinculado: ${code} - ${desc}`);
         }
+    }
+
+    openInGoogleSheets() {
+        if (!this.currentWorkbook) {
+            alert('Nenhum tabloide carregado para abrir.');
+            return;
+        }
+
+        const items = this.getAllItems();
+        let tsv = 'CÓDIGO ERP\tPRODUTO TABLOIDE\tPREÇO\tPRODUTO ERP\tOBS. PROMOÇÃO\tSTATUS\n';
+        items.forEach(i => {
+            tsv += `${i.code || ''}\t${i.tabloidProduct}\t${i.price || ''}\t${i.erpProduct}\t${i.promoNote || ''}\t${i.status}\n`;
+        });
+
+        navigator.clipboard.writeText(tsv).then(() => {
+            window.open('https://sheets.new', '_blank');
+            if (typeof showCustomAlert === 'function') {
+                showCustomAlert(
+                    'Google Planilhas Aberto!',
+                    'A planilha foi aberta em uma nova aba e todos os produtos com códigos foram <b>COPIADOS</b> para sua área de transferência.<br><br>👉 Basta clicar na primeira célula <b>(A1)</b> e pressionar <b>Ctrl + V</b> para colar tudo pronto!',
+                    'success'
+                );
+            } else {
+                alert('Google Planilhas aberto! Pressione Ctrl + V na célula A1 para colar a tabela completa com códigos.');
+            }
+        }).catch(() => {
+            window.open('https://sheets.new', '_blank');
+        });
     }
 
     exportProcessedExcel() {
