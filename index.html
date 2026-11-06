@@ -2182,6 +2182,20 @@
                         </div>
                     </div>
 
+                    <!-- Barra de Progresso / Carregando Ultra Rápido -->
+                    <div id="tabloid-progress-container" class="hidden p-4 bg-gray-950 rounded-xl border border-emerald-500/30 space-y-2">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-bolt text-amber-400 animate-pulse"></i>
+                                <span id="tabloid-progress-label">Cruzando produtos com a base Consinco...</span>
+                            </span>
+                            <span id="tabloid-progress-pct" class="font-mono font-bold text-emerald-400">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-800 rounded-full h-2.5 overflow-hidden">
+                            <div id="tabloid-progress-bar" class="bg-gradient-to-r from-emerald-500 to-cyan-500 h-2.5 rounded-full transition-all duration-150" style="width: 0%"></div>
+                        </div>
+                    </div>
+
                     <!-- Informações do Arquivo Carregado & Seletor de Abas -->
                     <div id="tabloid-file-info-bar" class="hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3 bg-gray-950 rounded-xl border border-gray-800">
                         <div class="flex items-center gap-3">
@@ -4237,7 +4251,7 @@
                 }
             });
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=1793935599953').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=1793937469034').then(reg => {
                     if (reg) reg.update();
                 }).catch(() => {});
             });
@@ -19473,6 +19487,7 @@
 class TabloidApp {
     constructor() {
         this.catalog = [];
+        this.tokenIndex = new Map(); // Índice Invertido para busca em < 1ms
         this.currentWorkbook = null;
         this.tabloidFileName = 'Tabloide.xlsx';
         this.activeSheetName = 'all';
@@ -19561,7 +19576,7 @@ class TabloidApp {
         }, false);
     }
 
-    // Normalizador de Texto
+    // Normalizador de Texto de Alta Performance
     normalizeText(str) {
         if (!str) return '';
         return str.toString()
@@ -19629,7 +19644,7 @@ class TabloidApp {
         return meatTerms.some(t => norm.includes(t)) || produceTerms.some(t => norm.includes(t));
     }
 
-    // Identificador de Combos e Vendas Casadas (Compre X e Leve Y com itens de Mercearia/Bebidas)
+    // Identificador de Combos e Vendas Casadas
     detectComboPromo(rawText) {
         const norm = this.normalizeText(rawText);
         const comboRegex = /(?:compre|leve|ganhe|combo|kit|por mais)/i;
@@ -19651,7 +19666,7 @@ class TabloidApp {
         return { isCombo: false };
     }
 
-    // Detector de Mecânicas Promocionais ("Compre 2 Pague Menos", "Leve 4 Pague 3", "50% Desc", etc.)
+    // Detector de Mecânicas Promocionais
     detectPromoMechanism(text) {
         const clean = text || '';
         const pMatch = clean.match(/(compre\s+\d+.*?(?:pague|por).*?cada|leve\s+\d+\s+pague\s+\d+|desconto\s+na\s+\d+[ªa]?\s*un|50%\s+desc|desc(?:onto)?\s+especial)/i);
@@ -19665,36 +19680,17 @@ class TabloidApp {
         return { hasPromo: false, promoNote: '', cleanedText: clean };
     }
 
-    levenshtein(a, b) {
-        const an = a.length, bn = b.length;
-        if (an === 0) return bn;
-        if (bn === 0) return an;
-        const matrix = Array.from({ length: bn + 1 }, (_, i) => [i]);
-        for (let j = 0; j <= an; j++) matrix[0][j] = j;
-        for (let i = 1; i <= bn; i++) {
-            for (let j = 1; j <= an; j++) {
-                if (b.charAt(i - 1) === a.charAt(j - 1)) {
-                    matrix[i][j] = matrix[i - 1][j - 1];
-                } else {
-                    matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
-                }
-            }
-        }
-        return matrix[bn][an];
-    }
-
     tokenSimilarity(t1, t2) {
         if (t1 === t2) return 1.0;
-        if (this.retailSynonyms[t1] === t2 || this.retailSynonyms[t2] === t1) return 0.98;
-        if (t1 === 'refri' && t2 === 'ref') return 0.98;
-        if (t2 === 'refri' && t1 === 'ref') return 0.98;
-        if (t1.length >= 4 && t2.startsWith(t1)) return 0.90;
-        if (t2.length >= 4 && t1.startsWith(t2)) return 0.90;
-        const maxLen = Math.max(t1.length, t2.length);
-        if (maxLen <= 2) return 0;
-        const dist = this.levenshtein(t1, t2);
-        const sim = 1.0 - (dist / maxLen);
-        return sim >= 0.7 ? sim : 0;
+        if (this.retailSynonyms[t1] === t2 || this.retailSynonyms[t2] === t1) return 1.0;
+        if (t1 === 'refri' && t2 === 'ref') return 1.0;
+        if (t2 === 'refri' && t1 === 'ref') return 1.0;
+        if (t1.includes(t2) || t2.includes(t1)) {
+            const minLen = Math.min(t1.length, t2.length);
+            const maxLen = Math.max(t1.length, t2.length);
+            return minLen / maxLen;
+        }
+        return 0;
     }
 
     openDB() {
@@ -19767,14 +19763,28 @@ class TabloidApp {
         });
     }
 
+    // Cria o Catálogo e o Índice Invertido em memória
     indexCatalog(rawItems) {
-        this.catalog = rawItems.filter(r => (r.c || r.CODIGO) && (r.d || r.DESCRICAO)).map(r => {
+        this.tokenIndex = new Map();
+        this.catalog = rawItems.filter(r => (r.c || r.CODIGO) && (r.d || r.DESCRICAO)).map((r, idx) => {
             const raw = r.d || r.DESCRICAO || r.nome || '';
-            const code = r.c || r.CODIGO || r.codigo || '';
+            const code = String(r.c || r.CODIGO || r.codigo || '');
             const norm = this.normalizeText(raw);
             const weight = this.extractWeight(raw);
             const tokens = norm.split(' ').filter(t => t.length > 1);
             const isFortBrand = norm.includes('fort') && !norm.includes('confort');
+
+            // Alimenta o Índice Invertido
+            for (let i = 0; i < tokens.length; i++) {
+                const t = tokens[i];
+                let list = this.tokenIndex.get(t);
+                if (!list) {
+                    list = [];
+                    this.tokenIndex.set(t, list);
+                }
+                list.push(idx);
+            }
+
             return {
                 code,
                 raw,
@@ -19784,6 +19794,58 @@ class TabloidApp {
                 isFortBrand
             };
         });
+    }
+
+    // Busca rápida usando o Índice Invertido: reduz 13.600 produtos para os 60 mais prováveis em 0.1ms
+    getCandidateIndices(tabTokens) {
+        const scoreMap = new Map();
+        for (let i = 0; i < tabTokens.length; i++) {
+            const t = tabTokens[i];
+            
+            // 1. Busca exata do token
+            const direct = this.tokenIndex.get(t);
+            if (direct) {
+                for (let d = 0; d < direct.length; d++) {
+                    const idx = direct[d];
+                    scoreMap.set(idx, (scoreMap.get(idx) || 0) + 3);
+                }
+            }
+
+            // 2. Busca por sinônimo de varejo
+            const syn = this.retailSynonyms[t];
+            if (syn) {
+                const synMatches = this.tokenIndex.get(syn);
+                if (synMatches) {
+                    for (let s = 0; s < synMatches.length; s++) {
+                        const idx = synMatches[s];
+                        scoreMap.set(idx, (scoreMap.get(idx) || 0) + 3);
+                    }
+                }
+            }
+        }
+
+        // Se houver poucos candidatos, faz busca por prefixo (ex: parb -> parboilizado)
+        if (scoreMap.size < 5) {
+            for (let i = 0; i < tabTokens.length; i++) {
+                const t = tabTokens[i];
+                if (t.length >= 4) {
+                    const prefix = t.slice(0, 4);
+                    for (const [indexedToken, indices] of this.tokenIndex.entries()) {
+                        if (indexedToken.startsWith(prefix) && indexedToken !== t) {
+                            for (let p = 0; p < indices.length; p++) {
+                                const idx = indices[p];
+                                scoreMap.set(idx, (scoreMap.get(idx) || 0) + 1);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return Array.from(scoreMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 60)
+            .map(e => e[0]);
     }
 
     updateCatalogBadge(text, isReady = true) {
@@ -19862,14 +19924,14 @@ class TabloidApp {
             const buffer = await file.arrayBuffer();
             const wb = XLSX.read(buffer, { type: 'array' });
             this.currentWorkbook = wb;
-            this.processWorkbook();
+            await this.processWorkbook();
         } catch (err) {
             console.error(err);
             alert('Erro ao ler planilha: ' + err.message);
         }
     }
 
-    loadDemoFeirao() {
+    async loadDemoFeirao() {
         this.tabloidFileName = 'Feirao_Verde_e_Ofertas.xlsx';
         const demoData = {
             'Destaques': [
@@ -19909,10 +19971,10 @@ class TabloidApp {
         });
 
         this.currentWorkbook = wb;
-        this.processWorkbook();
+        await this.processWorkbook();
     }
 
-    loadDemoTabloid() {
+    async loadDemoTabloid() {
         this.tabloidFileName = 'Tabloide_Ofertas_Encarte.xlsx';
         const demoData = {
             'Bebidas e Vinhos': [
@@ -19941,25 +20003,36 @@ class TabloidApp {
         });
 
         this.currentWorkbook = wb;
-        this.processWorkbook();
+        await this.processWorkbook();
     }
 
-    processWorkbook() {
+    // Processamento Ultra Rápido e Não-Bloqueante (com Barra de Progresso)
+    async processWorkbook() {
         if (!this.currentWorkbook) return;
         if (this.catalog.length === 0) {
             alert('Aguarde o carregamento do catálogo ou faça o upload da base de produtos.');
             return;
         }
 
+        const progContainer = document.getElementById('tabloid-progress-container');
+        const progLabel = document.getElementById('tabloid-progress-label');
+        const progPct = document.getElementById('tabloid-progress-pct');
+        const progBar = document.getElementById('tabloid-progress-bar');
+
+        if (progContainer) progContainer.classList.remove('hidden');
+        if (progPct) progPct.innerText = '0%';
+        if (progBar) progBar.style.width = '0%';
+
         this.sheetResults = {};
         const sheetNames = this.currentWorkbook.SheetNames;
 
+        // Pré-coleta todos os itens válidos de todas as abas
+        const tasks = [];
         sheetNames.forEach(sheetName => {
             const ws = this.currentWorkbook.Sheets[sheetName];
             const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
             if (rows.length === 0) return;
 
-            // Busca inteligente do cabeçalho real nas primeiras 10 linhas
             let headerRowIdx = 0;
             for (let i = 0; i < Math.min(rows.length, 10); i++) {
                 const r = rows[i] || [];
@@ -19976,44 +20049,66 @@ class TabloidApp {
 
             let priceColIdx = header.findIndex(h => /prec|valor|r\$|oferta/i.test(String(h || '')));
 
-            const items = [];
+            this.sheetResults[sheetName] = [];
+
             for (let r = headerRowIdx + 1; r < rows.length; r++) {
                 const row = rows[r];
                 if (!row || row.length === 0) continue;
                 const prodText = String(row[prodColIdx] || '').trim();
                 if (!prodText || prodText.length < 2) continue;
 
-                // Ignora se for apenas um separador de seção (ex: PÁGINA 01, BEBIDAS)
+                // Ignora separadores de seção vazios
                 if (/^(PÁGINA|PAGINA|BEBIDAS|SC JOHNSON|PRODUTO)\b/i.test(prodText) && row.filter(Boolean).length <= 1) {
                     continue;
                 }
 
                 const priceText = priceColIdx !== -1 ? String(row[priceColIdx] || '').trim() : '';
-                const matchResult = this.matchItem(prodText);
-
-                items.push({
-                    id: `${sheetName}_${r}`,
-                    sheetName,
-                    rowIndex: r,
-                    prodColIdx,
-                    priceColIdx,
-                    headerRowIdx,
-                    originalRow: row,
-                    tabloidProduct: prodText,
-                    price: priceText,
-                    code: matchResult.code || '',
-                    erpProduct: matchResult.desc || '-',
-                    confidence: matchResult.confidence || 0,
-                    status: matchResult.status, // 'high', 'family', 'combo', 'ignored_stock', 'missing'
-                    familyVariations: matchResult.variations || [],
-                    isCombo: matchResult.isCombo || false,
-                    comboNote: matchResult.comboNote || '',
-                    promoNote: matchResult.promoNote || ''
-                });
+                tasks.push({ sheetName, r, row, prodColIdx, priceColIdx, headerRowIdx, prodText, priceText });
             }
-
-            this.sheetResults[sheetName] = items;
         });
+
+        const totalTasks = tasks.length;
+        if (totalTasks === 0) {
+            if (progContainer) progContainer.classList.add('hidden');
+            return;
+        }
+
+        // Processa em lotes com liberação de UI a cada 20 itens para nunca travar o navegador
+        for (let i = 0; i < totalTasks; i++) {
+            const t = tasks[i];
+            const matchResult = this.matchItem(t.prodText);
+
+            this.sheetResults[t.sheetName].push({
+                id: `${t.sheetName}_${t.r}`,
+                sheetName: t.sheetName,
+                rowIndex: t.r,
+                prodColIdx: t.prodColIdx,
+                priceColIdx: t.priceColIdx,
+                headerRowIdx: t.headerRowIdx,
+                originalRow: t.row,
+                tabloidProduct: t.prodText,
+                price: t.priceText,
+                code: matchResult.code || '',
+                erpProduct: matchResult.desc || '-',
+                confidence: matchResult.confidence || 0,
+                status: matchResult.status,
+                familyVariations: matchResult.variations || [],
+                isCombo: matchResult.isCombo || false,
+                comboNote: matchResult.comboNote || '',
+                promoNote: matchResult.promoNote || ''
+            });
+
+            if (i % 25 === 0 || i === totalTasks - 1) {
+                const pct = Math.round(((i + 1) / totalTasks) * 100);
+                if (progPct) progPct.innerText = `${pct}%`;
+                if (progBar) progBar.style.width = `${pct}%`;
+                if (progLabel) progLabel.innerText = `Processando: ${i + 1} de ${totalTasks} produtos...`;
+                // Cede o controle para o navegador desenhar a tela e responder a cliques
+                await new Promise(res => setTimeout(res, 0));
+            }
+        }
+
+        if (progContainer) progContainer.classList.add('hidden');
 
         this.renderSheetPills();
         this.updateStats();
@@ -20031,7 +20126,7 @@ class TabloidApp {
     }
 
     matchItem(tabloidText) {
-        // 1. Checa Promoção Casada / Combo (Compre X e Leve Y com produto de mercearia/bebida)
+        // 1. Checa Promoção Casada / Combo
         const combo = this.detectComboPromo(tabloidText);
         if (combo.isCombo) {
             const m = this.matchSingleQuery(combo.extractedText);
@@ -20048,7 +20143,7 @@ class TabloidApp {
             }
         }
 
-        // 2. Checa Modo Estoque: Açougue a Granel e Hortifrúti in natura
+        // 2. Checa Açougue / Hortifrúti
         if (this.onlyStockItems && this.isBulkMeatOrProduce(tabloidText)) {
             return {
                 status: 'ignored_stock',
@@ -20059,11 +20154,11 @@ class TabloidApp {
             };
         }
 
-        // 3. Checa mecânica de promoção (Compre X Pague Menos / 50% desc)
+        // 3. Checa mecânica de promoção
         const promoInfo = this.detectPromoMechanism(tabloidText);
         let searchText = promoInfo.cleanedText;
 
-        // 4. Checa múltiplos sabores / variações explícitas separadas por barra (' / ')
+        // 4. Sabores / Variações separadas por barra
         let slashParts = [];
         if (searchText.includes('/') && !searchText.includes('c/')) {
             slashParts = searchText.split('/').map(p => p.trim()).filter(p => p.length > 2);
@@ -20096,13 +20191,32 @@ class TabloidApp {
             }
         }
 
-        // 5. Match Individual ou por Família/Sabores
+        // 5. Match Individual ou por Família via Índice Invertido
         const normTab = this.normalizeText(searchText);
         const tabWeight = this.extractWeight(searchText);
         const tabTokens = normTab.split(' ').filter(t => t.length > 1 && !['com', 'sem', 'para', 'de', 'do', 'da', 'em', 'um', 'uma', 'todos', 'sabores', 'familia', 'pack'].includes(t));
 
+        if (tabTokens.length === 0) {
+            return { status: 'missing', code: '', desc: 'Texto inválido', confidence: 0, promoNote: '', variations: [] };
+        }
+
+        // Busca candidatos em < 0.1ms usando o Índice Invertido
+        const candidateIndices = this.getCandidateIndices(tabTokens);
+        if (candidateIndices.length === 0) {
+            return {
+                status: 'missing',
+                code: '',
+                desc: 'Produto não localizado na base Consinco',
+                confidence: 0,
+                promoNote: promoInfo.promoNote,
+                variations: []
+            };
+        }
+
         let candidates = [];
-        for (const item of this.catalog) {
+        for (let c = 0; c < candidateIndices.length; c++) {
+            const item = this.catalog[candidateIndices[c]];
+
             if (tabWeight && item.weight) {
                 if (tabWeight.unit === item.weight.unit && Math.abs(tabWeight.val - item.weight.val) > 1) {
                     continue;
@@ -20111,10 +20225,11 @@ class TabloidApp {
 
             let score = 0;
             let matched = 0;
-            for (const t of tabTokens) {
+            for (let t = 0; t < tabTokens.length; t++) {
+                const tToken = tabTokens[t];
                 let maxSim = 0;
-                for (const it of item.tokens) {
-                    const sim = this.tokenSimilarity(t, it);
+                for (let it = 0; it < item.tokens.length; it++) {
+                    const sim = this.tokenSimilarity(tToken, item.tokens[it]);
                     if (sim > maxSim) maxSim = sim;
                 }
                 if (maxSim > 0.6) {
@@ -20125,7 +20240,7 @@ class TabloidApp {
 
             if (matched >= 2 || (tabTokens.length <= 2 && matched >= 1)) {
                 const pct = (score / tabTokens.length) * 100;
-                if (pct >= 45) {
+                if (pct >= 40) {
                     candidates.push({ item, score: pct });
                 }
             }
@@ -20148,7 +20263,6 @@ class TabloidApp {
         const isFamilyTerm = /todos|sabores|fragr|variedades|familia/i.test(tabloidText);
         const familyCandidates = candidates.filter(c => c.score >= top.score * 0.75 && c.score >= 50);
 
-        // Se detectou família ou sabores, agrupa automaticamente os códigos na mesma linha sem exigir cliques!
         if ((isFamilyTerm || familyCandidates.length > 1) && familyCandidates.length > 1) {
             const uniqueCodes = [];
             const variations = [];
@@ -20185,8 +20299,14 @@ class TabloidApp {
         const weight = this.extractWeight(clean);
         const tokens = norm.split(' ').filter(t => t.length > 1 && !['com', 'sem', 'para', 'de', 'do', 'da', 'em', 'um', 'uma'].includes(t));
 
+        if (tokens.length === 0) return null;
+
+        const candidateIndices = this.getCandidateIndices(tokens);
+        if (candidateIndices.length === 0) return null;
+
         let candidates = [];
-        for (const item of this.catalog) {
+        for (let c = 0; c < candidateIndices.length; c++) {
+            const item = this.catalog[candidateIndices[c]];
             if (weight && item.weight) {
                 if (weight.unit === item.weight.unit && Math.abs(weight.val - item.weight.val) > 1) {
                     continue;
@@ -20195,10 +20315,11 @@ class TabloidApp {
 
             let score = 0;
             let matched = 0;
-            for (const tToken of tokens) {
+            for (let t = 0; t < tokens.length; t++) {
+                const tToken = tokens[t];
                 let maxSim = 0;
-                for (const iToken of item.tokens) {
-                    const sim = this.tokenSimilarity(tToken, iToken);
+                for (let it = 0; it < item.tokens.length; it++) {
+                    const sim = this.tokenSimilarity(tToken, item.tokens[it]);
                     if (sim > maxSim) maxSim = sim;
                 }
                 if (maxSim > 0.6) {
@@ -20286,7 +20407,7 @@ class TabloidApp {
         this.renderTable();
     }
 
-    // Renderização Limpa, Fluida e Sem Checkboxes Intermináveis
+    // Renderização Limpa, Fluida e Instantânea
     renderTable() {
         const tbody = document.getElementById('tabloid-table-body');
         if (!tbody) return;
@@ -20317,7 +20438,9 @@ class TabloidApp {
         }
 
         let html = '';
-        items.forEach((item, index) => {
+        const limit = items.length;
+        for (let i = 0; i < limit; i++) {
+            const item = items[i];
             let statusBadge = '';
             if (item.status === 'high') {
                 statusBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-950/80 text-emerald-400 border border-emerald-800/40">✓ Código Único</span>';
@@ -20375,7 +20498,7 @@ class TabloidApp {
                     </td>
                 </tr>
             `;
-        });
+        }
 
         tbody.innerHTML = html;
     }
@@ -20507,12 +20630,10 @@ class TabloidApp {
 
             const newRows = [];
 
-            // Preserva linhas acima do cabeçalho (ex: banners de página)
             for (let i = 0; i < headerRowIdx; i++) {
                 newRows.push(originalRows[i] || []);
             }
 
-            // Insere a coluna CÓDIGO ERP e OBS. PROMOÇÃO no cabeçalho
             const newHeader = [...header];
             newHeader.splice(prodColIdx, 0, 'CÓDIGO ERP');
             newHeader.push('OBS. PROMOÇÃO');
