@@ -4237,7 +4237,7 @@
                 }
             });
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=1793316684038').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=1793935599953').then(reg => {
                     if (reg) reg.update();
                 }).catch(() => {});
             });
@@ -19483,7 +19483,7 @@ class TabloidApp {
         this.dbName = 'TaskFlowCatalogDB';
         this.dbVersion = 1;
         this.isCatalogLoading = false;
-        this.onlyStockItems = true; // Modo Estoque: focar em mercearia / perecíveis e ignorar açougue/hortifrúti sem combo
+        this.onlyStockItems = true;
 
         this.retailSynonyms = {
             'achoc': 'achocolatado', 'achocolatado': 'achoc',
@@ -19512,7 +19512,18 @@ class TabloidApp {
             'und': 'unidade',
             'grnel': 'granel',
             'whisky': 'whisky', 'uisque': 'whisky',
-            'aguard': 'aguardente', 'aguardente': 'aguard'
+            'aguard': 'aguardente', 'aguardente': 'aguard',
+            'parbo': 'parboilizado', 'parb': 'parboilizado', 'parbolizado': 'parboilizado', 'parboilizado': 'parboilizado',
+            'hig': 'higienico', 'higienico': 'hig',
+            'fd': 'dupla', 'fs': 'simples',
+            'mt': 'metros', 'mts': 'metros',
+            'rf': 'refil', 'refil': 'rf',
+            'desod': 'desodorante', 'desodorante': 'desod',
+            'desinf': 'desinfetante', 'desinfetante': 'desinf',
+            'shamp': 'shampoo', 'cond': 'condicionador',
+            'sab': 'sabonete', 'sabonete': 'sab',
+            'alim': 'alimento', 'caps': 'capsulas',
+            'tor/moid': 'moido'
         };
     }
 
@@ -19591,6 +19602,33 @@ class TabloidApp {
         return null;
     }
 
+    // Identificador de Carnes in natura / Hortifrúti a Granel
+    isBulkMeatOrProduce(text) {
+        const norm = this.normalizeText(text);
+        const meatTerms = [
+            'paleta suina', 'pernil suino', 'bisteca suina', 'copa lombo',
+            'acem', 'musculo', 'costelinha suina', 'suan suino', 'lombo suino',
+            'filezinho suino', 'pe suino', 'picanha', 'alcatra', 'contra file',
+            'fraldinha', 'patinho', 'coxao mole', 'coxao duro', 'lagarto', 'moida',
+            'recorte de acem', 'suinos e pereciveis', 'peixe 1000', 'cupim',
+            'ponta de peito', 'peito bovino', 'file mignon', 'carne moida',
+            'costela bovina', 'bisteca bovina', 'linguica toscana',
+            'coxa sobrecoxa', 'peito frango', 'asa frango', 'tulipa granel',
+            'coracao frango', 'pescoco frango', 'moela frango'
+        ];
+        const produceTerms = [
+            'repolho', 'cenoura', 'chuchu', 'alho poro', 'berinjela', 'acelga',
+            'abobora', 'manga tommy', 'manga palmer', 'abacate', 'melao amarelo',
+            'tomate sweet grape', 'brocolis', 'couve flor', 'mandioca agricola',
+            'inhame', 'pera importada', 'limao', 'nectarina', 'maracuja', 'vagem',
+            'banana a terra', 'banana nanica', 'banana prata', 'banana maca',
+            'gengibre', 'beterraba', 'feirao verde', 'cebola media',
+            'cebola roxa', 'tangerina a granel', 'abacaxi havai', 'coco verde peca',
+            'alho a granel', 'batata monalisa', 'batata inglesa'
+        ];
+        return meatTerms.some(t => norm.includes(t)) || produceTerms.some(t => norm.includes(t));
+    }
+
     // Identificador de Combos e Vendas Casadas (Compre X e Leve Y com itens de Mercearia/Bebidas)
     detectComboPromo(rawText) {
         const norm = this.normalizeText(rawText);
@@ -19613,26 +19651,18 @@ class TabloidApp {
         return { isCombo: false };
     }
 
-    // Identificador de Carnes in natura / Hortifrúti a Granel (que não são validados no estoque do usuário)
-    isBulkMeatOrProduce(text) {
-        const norm = this.normalizeText(text);
-        const meatTerms = [
-            'paleta suina', 'pernil suino', 'bisteca suina', 'copa lombo',
-            'acem', 'musculo', 'costelinha suina', 'suan suino', 'lombo suino',
-            'filezinho suino', 'pe suino', 'picanha', 'alcatra', 'contra file',
-            'fraldinha', 'patinho', 'coxao mole', 'coxao duro', 'lagarto', 'moida',
-            'recorte de acem', 'suinos e pereciveis', 'peixe 1000'
-        ];
-        const produceTerms = [
-            'repolho', 'cenoura', 'chuchu', 'alho poro', 'berinjela', 'acelga',
-            'abobora', 'manga tommy', 'manga palmer', 'abacate', 'melao amarelo',
-            'tomate sweet grape', 'brocolis', 'couve flor', 'mandioca agricola',
-            'inhame', 'pera importada', 'limao', 'nectarina', 'maracuja', 'vagem',
-            'banana a terra', 'gengibre', 'beterraba', 'feirao verde', 'cebola media',
-            'cebola roxa', 'tangerina a granel', 'abacaxi havai', 'coco verde peca',
-            'alho a granel'
-        ];
-        return meatTerms.some(t => norm.includes(t)) || produceTerms.some(t => norm.includes(t));
+    // Detector de Mecânicas Promocionais ("Compre 2 Pague Menos", "Leve 4 Pague 3", "50% Desc", etc.)
+    detectPromoMechanism(text) {
+        const clean = text || '';
+        const pMatch = clean.match(/(compre\s+\d+.*?(?:pague|por).*?cada|leve\s+\d+\s+pague\s+\d+|desconto\s+na\s+\d+[ªa]?\s*un|50%\s+desc|desc(?:onto)?\s+especial)/i);
+        if (pMatch) {
+            return {
+                hasPromo: true,
+                promoNote: pMatch[0].trim(),
+                cleanedText: clean.replace(pMatch[0], ' ').replace(/\s+/g, ' ').trim()
+            };
+        }
+        return { hasPromo: false, promoNote: '', cleanedText: clean };
     }
 
     levenshtein(a, b) {
@@ -19667,7 +19697,6 @@ class TabloidApp {
         return sim >= 0.7 ? sim : 0;
     }
 
-    // Acesso ao IndexedDB para alta performance de 13.000+ produtos offline
     openDB() {
         return new Promise((resolve, reject) => {
             const req = indexedDB.open(this.dbName, this.dbVersion);
@@ -19739,14 +19768,15 @@ class TabloidApp {
     }
 
     indexCatalog(rawItems) {
-        this.catalog = rawItems.filter(r => r.c && r.d).map(r => {
-            const raw = r.d;
+        this.catalog = rawItems.filter(r => (r.c || r.CODIGO) && (r.d || r.DESCRICAO)).map(r => {
+            const raw = r.d || r.DESCRICAO || r.nome || '';
+            const code = r.c || r.CODIGO || r.codigo || '';
             const norm = this.normalizeText(raw);
             const weight = this.extractWeight(raw);
             const tokens = norm.split(' ').filter(t => t.length > 1);
             const isFortBrand = norm.includes('fort') && !norm.includes('confort');
             return {
-                code: r.c,
+                code,
                 raw,
                 norm,
                 weight,
@@ -19839,7 +19869,6 @@ class TabloidApp {
         }
     }
 
-    // Carregar Modelo do Usuário (Feirão Quarta e Quinta com Açougue, Hortifrúti, Rap 10 e Combos de Bebidas)
     loadDemoFeirao() {
         this.tabloidFileName = 'Feirao_Verde_e_Ofertas.xlsx';
         const demoData = {
@@ -19849,24 +19878,6 @@ class TabloidApp {
                 { 'Produto': 'repolho verde a granel kg', 'Preço': 'R$ 1,38' },
                 { 'Produto': 'cenoura a granel kg', 'Preço': 'R$ 2,58' },
                 { 'Produto': 'uva natural flavors vermelha s/s band 500 gr', 'Preço': 'R$ 5,98' }
-            ],
-            'Frente': [
-                { 'Produto': 'alho poró und.', 'Preço': 'R$ 1,78' },
-                { 'Produto': 'chuchu a granel kg', 'Preço': 'R$ 1,78' },
-                { 'Produto': 'alho a granel kg (cada 100gr )', 'Preço': 'R$ 1,98' },
-                { 'Produto': 'coco verde peça', 'Preço': 'R$ 1,98' },
-                { 'Produto': 'berinjela a granel kg', 'Preço': 'R$ 2,88' },
-                { 'Produto': 'repolho roxo a granel kg', 'Preço': 'R$ 2,88' },
-                { 'Produto': 'acelga a granel kg', 'Preço': 'R$ 2,88' },
-                { 'Produto': 'batata média pacote 1kg', 'Preço': 'R$ 2,98' },
-                { 'Produto': 'beterraba a granel kg', 'Preço': 'R$ 2,98' },
-                { 'Produto': 'abobora itália a granel kg', 'Preço': 'R$ 3,28' },
-                { 'Produto': 'manga tommy / palmer a granel kg', 'Preço': 'R$ 3,88' },
-                { 'Produto': 'abacate a granel kg', 'Preço': 'R$ 3,88' },
-                { 'Produto': 'melão amarelo inteiro kg', 'Preço': 'R$ 3,88' },
-                { 'Produto': 'cebola média pacote kg', 'Preço': 'R$ 4,98' },
-                { 'Produto': 'tangerina a granel kg', 'Preço': 'R$ 4,98' },
-                { 'Produto': 'limão a granel kg', 'Preço': 'R$ 8,68' }
             ],
             'Verso (Mercearia & Estoque)': [
                 { 'Produto': 'arroz ouro claro pacote 5kg - limite de 6 unidades', 'Preço': 'R$ 16,98' },
@@ -19901,7 +19912,6 @@ class TabloidApp {
         this.processWorkbook();
     }
 
-    // Carregar encarte de demonstração padrão
     loadDemoTabloid() {
         this.tabloidFileName = 'Tabloide_Ofertas_Encarte.xlsx';
         const demoData = {
@@ -19918,9 +19928,9 @@ class TabloidApp {
                 { 'Produto': 'Biscoito Recheado Zoo Cartoon 85g Sabores', 'Preço': 'R$ 1,59' },
                 { 'Produto': 'Biscoito Wafer Minueto 73g/81g Sabores', 'Preço': 'R$ 1,99' },
                 { 'Produto': 'Biscoito Bauducco Choco Biscuit 80g Ao Leite/Branco', 'Preço': 'R$ 5,89' },
-                { 'Produto': 'Pao de Forma Bauducco 390g Tradicional', 'Preço': 'R$ 6,98' },
-                { 'Produto': 'Cafe 3 Coracoes 500g', 'Preço': 'R$ 20,98' },
-                { 'Produto': 'Cafe Brasileiro/Itamaraty/Fort 500g', 'Preço': 'R$ 17,98' }
+                { 'Produto': 'Pao de Forma Bauducco 390g Tradicional', 'Preço': 'R$ 6,89' },
+                { 'Produto': 'Torrada Bauducco Salgada 142g', 'Preço': 'R$ 3,99' },
+                { 'Produto': 'Cafe Pilao Tradicional 500g Almofada', 'Preço': 'R$ 21,98' }
             ]
         };
 
@@ -19949,18 +19959,34 @@ class TabloidApp {
             const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
             if (rows.length === 0) return;
 
-            const header = rows[0] || [];
-            let prodColIdx = header.findIndex(h => /prod|desc|item|nome/i.test(String(h || '')));
+            // Busca inteligente do cabeçalho real nas primeiras 10 linhas
+            let headerRowIdx = 0;
+            for (let i = 0; i < Math.min(rows.length, 10); i++) {
+                const r = rows[i] || [];
+                const hasHeaderKeyword = r.some(c => /prod|desc|item|oferta|prec|valor|tdb/i.test(String(c || '')));
+                if (hasHeaderKeyword) {
+                    headerRowIdx = i;
+                    break;
+                }
+            }
+
+            const header = rows[headerRowIdx] || [];
+            let prodColIdx = header.findIndex(h => /prod|desc|item|nome|bebida/i.test(String(h || '')));
             if (prodColIdx === -1) prodColIdx = 0;
 
             let priceColIdx = header.findIndex(h => /prec|valor|r\$|oferta/i.test(String(h || '')));
 
             const items = [];
-            for (let r = 1; r < rows.length; r++) {
+            for (let r = headerRowIdx + 1; r < rows.length; r++) {
                 const row = rows[r];
                 if (!row || row.length === 0) continue;
                 const prodText = String(row[prodColIdx] || '').trim();
-                if (!prodText) continue;
+                if (!prodText || prodText.length < 2) continue;
+
+                // Ignora se for apenas um separador de seção (ex: PÁGINA 01, BEBIDAS)
+                if (/^(PÁGINA|PAGINA|BEBIDAS|SC JOHNSON|PRODUTO)\b/i.test(prodText) && row.filter(Boolean).length <= 1) {
+                    continue;
+                }
 
                 const priceText = priceColIdx !== -1 ? String(row[priceColIdx] || '').trim() : '';
                 const matchResult = this.matchItem(prodText);
@@ -19970,17 +19996,19 @@ class TabloidApp {
                     sheetName,
                     rowIndex: r,
                     prodColIdx,
+                    priceColIdx,
+                    headerRowIdx,
                     originalRow: row,
                     tabloidProduct: prodText,
                     price: priceText,
-                    code: matchResult.best ? matchResult.best.item.code : (matchResult.combinedCodes || ''),
-                    erpProduct: matchResult.best ? matchResult.best.item.raw : (matchResult.combinedDesc || '-'),
-                    confidence: matchResult.best ? Math.round(matchResult.best.score) : (matchResult.status === 'combo' ? 95 : 0),
+                    code: matchResult.code || '',
+                    erpProduct: matchResult.desc || '-',
+                    confidence: matchResult.confidence || 0,
                     status: matchResult.status, // 'high', 'family', 'combo', 'ignored_stock', 'missing'
-                    familyVariations: matchResult.familyVariations || [],
+                    familyVariations: matchResult.variations || [],
                     isCombo: matchResult.isCombo || false,
                     comboNote: matchResult.comboNote || '',
-                    unfoldFamily: false
+                    promoNote: matchResult.promoNote || ''
                 });
             }
 
@@ -20003,61 +20031,152 @@ class TabloidApp {
     }
 
     matchItem(tabloidText) {
-        // 1. Checa Promoção Casada / Combo (Compre X e Leve Y com itens do setor de estoque)
+        // 1. Checa Promoção Casada / Combo (Compre X e Leve Y com produto de mercearia/bebida)
         const combo = this.detectComboPromo(tabloidText);
         if (combo.isCombo) {
             const m = this.matchSingleQuery(combo.extractedText);
             if (m) {
                 return {
-                    best: m,
                     status: 'combo',
+                    code: m.item.code,
+                    desc: `${m.item.raw} (Combo)`,
+                    confidence: 95,
                     isCombo: true,
                     comboNote: `Combo: ${combo.extractedText}`,
-                    familyVariations: []
+                    variations: []
                 };
             }
         }
 
-        // 2. Checa Modo Estoque: Se for Açougue a Granel ou Hortifrúti in natura, ignora para não poluir
+        // 2. Checa Modo Estoque: Açougue a Granel e Hortifrúti in natura
         if (this.onlyStockItems && this.isBulkMeatOrProduce(tabloidText)) {
             return {
-                best: null,
                 status: 'ignored_stock',
-                combinedCodes: '',
-                combinedDesc: '[Açougue / FLV - Não auditado no estoque]',
-                familyVariations: []
+                code: '',
+                desc: 'Setor sem Estoque Unitário (Açougue / FLV - Venda por KG)',
+                confidence: 0,
+                variations: []
             };
         }
 
-        // 3. Checa se a linha possui múltiplos produtos agrupados por barra (' / ')
-        if (tabloidText.includes(' / ') || (tabloidText.includes('/') && !tabloidText.includes('c/'))) {
-            const parts = tabloidText.split(/\s*\/\s*/).map(p => p.trim()).filter(p => p.length > 2);
-            if (parts.length > 1) {
-                const subMatches = parts.map(part => {
-                    const m = this.matchSingleQuery(part);
-                    return m ? { part, code: m.item.code, desc: m.item.raw, score: m.score, item: m.item } : null;
-                }).filter(Boolean);
+        // 3. Checa mecânica de promoção (Compre X Pague Menos / 50% desc)
+        const promoInfo = this.detectPromoMechanism(tabloidText);
+        let searchText = promoInfo.cleanedText;
 
-                if (subMatches.length > 0) {
-                    const codes = subMatches.map(sm => sm.code).join(' / ');
-                    const desc = subMatches.map(sm => sm.desc.replace(/^\*\*+/, '')).join(' | ');
-                    return {
-                        best: subMatches[0],
-                        combinedCodes: codes,
-                        combinedDesc: desc,
-                        status: 'family',
-                        familyVariations: subMatches.map(sm => ({
-                            code: sm.code,
-                            desc: sm.desc,
-                            selected: true
-                        }))
-                    };
+        // 4. Checa múltiplos sabores / variações explícitas separadas por barra (' / ')
+        let slashParts = [];
+        if (searchText.includes('/') && !searchText.includes('c/')) {
+            slashParts = searchText.split('/').map(p => p.trim()).filter(p => p.length > 2);
+        }
+
+        if (slashParts.length > 1) {
+            const subMatches = slashParts.map(part => {
+                const m = this.matchSingleQuery(part);
+                return m ? { code: m.item.code, desc: m.item.raw, score: m.score, item: m.item } : null;
+            }).filter(Boolean);
+
+            if (subMatches.length > 0) {
+                const uniqueCodes = [];
+                const variations = [];
+                subMatches.forEach(sm => {
+                    if (!uniqueCodes.includes(sm.code)) {
+                        uniqueCodes.push(sm.code);
+                        variations.push({ code: sm.code, desc: sm.desc });
+                    }
+                });
+
+                return {
+                    status: 'family',
+                    code: uniqueCodes.join(' / '),
+                    desc: `${variations[0].desc} (+ ${variations.length - 1} variações agrupadas)`,
+                    confidence: Math.round(subMatches[0].score),
+                    promoNote: promoInfo.promoNote,
+                    variations
+                };
+            }
+        }
+
+        // 5. Match Individual ou por Família/Sabores
+        const normTab = this.normalizeText(searchText);
+        const tabWeight = this.extractWeight(searchText);
+        const tabTokens = normTab.split(' ').filter(t => t.length > 1 && !['com', 'sem', 'para', 'de', 'do', 'da', 'em', 'um', 'uma', 'todos', 'sabores', 'familia', 'pack'].includes(t));
+
+        let candidates = [];
+        for (const item of this.catalog) {
+            if (tabWeight && item.weight) {
+                if (tabWeight.unit === item.weight.unit && Math.abs(tabWeight.val - item.weight.val) > 1) {
+                    continue;
+                }
+            }
+
+            let score = 0;
+            let matched = 0;
+            for (const t of tabTokens) {
+                let maxSim = 0;
+                for (const it of item.tokens) {
+                    const sim = this.tokenSimilarity(t, it);
+                    if (sim > maxSim) maxSim = sim;
+                }
+                if (maxSim > 0.6) {
+                    score += maxSim;
+                    matched++;
+                }
+            }
+
+            if (matched >= 2 || (tabTokens.length <= 2 && matched >= 1)) {
+                const pct = (score / tabTokens.length) * 100;
+                if (pct >= 45) {
+                    candidates.push({ item, score: pct });
                 }
             }
         }
 
-        // 4. Match Padrão Individual
-        return this.matchSingleDetailed(tabloidText);
+        candidates.sort((a, b) => b.score - a.score);
+
+        if (candidates.length === 0) {
+            return {
+                status: 'missing',
+                code: '',
+                desc: 'Produto não localizado na base Consinco',
+                confidence: 0,
+                promoNote: promoInfo.promoNote,
+                variations: []
+            };
+        }
+
+        const top = candidates[0];
+        const isFamilyTerm = /todos|sabores|fragr|variedades|familia/i.test(tabloidText);
+        const familyCandidates = candidates.filter(c => c.score >= top.score * 0.75 && c.score >= 50);
+
+        // Se detectou família ou sabores, agrupa automaticamente os códigos na mesma linha sem exigir cliques!
+        if ((isFamilyTerm || familyCandidates.length > 1) && familyCandidates.length > 1) {
+            const uniqueCodes = [];
+            const variations = [];
+            familyCandidates.slice(0, 6).forEach(fc => {
+                if (!uniqueCodes.includes(fc.item.code)) {
+                    uniqueCodes.push(fc.item.code);
+                    variations.push({ code: fc.item.code, desc: fc.item.raw });
+                }
+            });
+
+            return {
+                status: 'family',
+                code: uniqueCodes.join(' / '),
+                desc: `${variations[0].desc} (+ ${variations.length - 1} variações agrupadas)`,
+                confidence: Math.round(top.score),
+                promoNote: promoInfo.promoNote,
+                variations
+            };
+        }
+
+        return {
+            status: top.score >= 70 ? 'high' : 'family',
+            code: top.item.code,
+            desc: top.item.raw,
+            confidence: Math.round(top.score),
+            promoNote: promoInfo.promoNote,
+            variations: []
+        };
     }
 
     matchSingleQuery(queryText) {
@@ -20087,54 +20206,9 @@ class TabloidApp {
                     matched++;
                 }
             }
+
             if (matched >= 2 || (tokens.length <= 2 && matched >= 1)) {
-                const pct = (score / tokens.length) * 100;
-                if (pct >= 40) {
-                    candidates.push({ item, score: pct });
-                }
-            }
-        }
-        candidates.sort((a, b) => b.score - a.score);
-        return candidates[0] || null;
-    }
-
-    matchSingleDetailed(tabloidText) {
-        const clean = this.sanitizeTabloidText(tabloidText);
-        const normTab = this.normalizeText(clean);
-        const tabWeight = this.extractWeight(clean);
-        const tabTokens = normTab.split(' ').filter(t => t.length > 1 && !['com', 'sem', 'para', 'de', 'do', 'da', 'em', 'um', 'uma'].includes(t));
-
-        const isExplicitFort = normTab.includes('fort') && !normTab.includes('confort');
-
-        let candidates = [];
-
-        for (const item of this.catalog) {
-            if (!isExplicitFort && item.isFortBrand) continue;
-            if (isExplicitFort && !item.isFortBrand && !item.norm.includes('fort')) continue;
-
-            if (tabWeight && item.weight) {
-                if (tabWeight.unit === item.weight.unit && Math.abs(tabWeight.val - item.weight.val) > 1) {
-                    continue;
-                }
-            }
-
-            let score = 0;
-            let matchedTokens = 0;
-
-            for (const tToken of tabTokens) {
-                let maxSim = 0;
-                for (const iToken of item.tokens) {
-                    const sim = this.tokenSimilarity(tToken, iToken);
-                    if (sim > maxSim) maxSim = sim;
-                }
-                if (maxSim > 0.6) {
-                    score += maxSim;
-                    matchedTokens++;
-                }
-            }
-
-            if (matchedTokens >= 2 || (tabTokens.length <= 2 && matchedTokens >= 1)) {
-                const matchPct = (score / tabTokens.length) * 100;
+                const matchPct = (score / tokens.length) * 100;
                 if (matchPct >= 40) {
                     candidates.push({ item, score: matchPct });
                 }
@@ -20142,31 +20216,7 @@ class TabloidApp {
         }
 
         candidates.sort((a, b) => b.score - a.score);
-
-        if (candidates.length === 0) {
-            return { best: null, status: 'missing', familyVariations: [] };
-        }
-
-        const top = candidates[0];
-        const familyCandidates = candidates.filter(c => c.score >= top.score * 0.70 && c.score >= 50);
-
-        if (familyCandidates.length > 1) {
-            return {
-                best: top,
-                status: 'family',
-                familyVariations: familyCandidates.slice(0, 6).map(fc => ({
-                    code: fc.item.code,
-                    desc: fc.item.raw,
-                    selected: true
-                }))
-            };
-        }
-
-        if (top.score >= 70) {
-            return { best: top, status: 'high', familyVariations: [] };
-        } else {
-            return { best: top, status: 'family', familyVariations: familyCandidates.map(fc => ({ code: fc.item.code, desc: fc.item.raw, selected: true })) };
-        }
+        return candidates[0] || null;
     }
 
     renderSheetPills() {
@@ -20221,38 +20271,22 @@ class TabloidApp {
         const elMissing = document.getElementById('stat-tabloid-missing');
 
         if (elTotal) elTotal.innerText = items.length;
-        if (elHigh) elHigh.innerText = high;
+        if (elHigh) elHigh.innerText = high + combo;
         if (elFamily) elFamily.innerText = family;
         if (elMissing) elMissing.innerText = missing;
-
-        const btnCombo = document.getElementById('filter-tab-combo');
-        if (btnCombo) btnCombo.innerText = `🎁 Combos (${combo})`;
-
-        const btnIgnored = document.getElementById('filter-tab-ignored');
-        if (btnIgnored) btnIgnored.innerText = `⚪ Açougue/FLV (${ignored})`;
     }
 
-    setStatusFilter(status) {
+    filterTable(status) {
         this.currentFilter = status;
-        const btns = ['all', 'high', 'family', 'combo', 'ignored_stock', 'missing'];
-        btns.forEach(b => {
-            const btn = document.getElementById('filter-tab-' + (b === 'ignored_stock' ? 'ignored' : b));
-            if (!btn) return;
-            if (this.currentFilter === b) {
-                btn.className = "px-2.5 py-1 rounded-lg text-emerald-400 font-bold bg-emerald-950/70 border border-emerald-800/40 shadow-sm";
-            } else {
-                btn.className = "px-2.5 py-1 rounded-lg text-gray-400 hover:text-gray-200";
-            }
-        });
         this.renderTable();
     }
 
-    filterResults() {
-        const input = document.getElementById('tabloid-search-filter');
-        this.searchQuery = input ? input.value.toLowerCase().trim() : '';
+    handleSearch(query) {
+        this.searchQuery = query.toLowerCase().trim();
         this.renderTable();
     }
 
+    // Renderização Limpa, Fluida e Sem Checkboxes Intermináveis
     renderTable() {
         const tbody = document.getElementById('tabloid-table-body');
         if (!tbody) return;
@@ -20283,54 +20317,47 @@ class TabloidApp {
         }
 
         let html = '';
-        items.forEach((item, idx) => {
+        items.forEach((item, index) => {
             let statusBadge = '';
             if (item.status === 'high') {
-                statusBadge = '<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" title="Alta Certeza"></span>';
+                statusBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-950/80 text-emerald-400 border border-emerald-800/40">✓ Código Único</span>';
             } else if (item.status === 'family') {
-                statusBadge = '<span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" title="Família / Barras"></span>';
+                statusBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-950/80 text-amber-400 border border-amber-800/40">⚡ Códigos Agrupados</span>';
             } else if (item.status === 'combo') {
-                statusBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-purple-950 text-purple-300 border border-purple-800" title="Combo / Venda Casada">🎁 COMBO</span>';
+                statusBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-950/80 text-purple-300 border border-purple-800/40">🎁 Combo Promo</span>';
             } else if (item.status === 'ignored_stock') {
-                statusBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-800 text-gray-400" title="Açougue/FLV Ignorado p/ Estoque">⚪ IGNORADO</span>';
+                statusBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-gray-800 text-gray-400 border border-gray-700">Açougue/FLV</span>';
             } else {
-                statusBadge = '<span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500" title="Não Localizado"></span>';
+                statusBadge = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-950/80 text-rose-400 border border-rose-800/40">⚠️ Não Encontrado</span>';
             }
 
-            const hasFamily = item.familyVariations && item.familyVariations.length > 1;
+            const hasGroupedVars = item.familyVariations && item.familyVariations.length > 1;
 
             html += `
-                <tr class="hover:bg-gray-800/40 transition group">
-                    <td class="py-2.5 px-3 text-center">${statusBadge}</td>
+                <tr class="border-b border-gray-800/60 hover:bg-gray-800/30 transition text-xs">
+                    <td class="py-2.5 px-3 text-center w-24">
+                        ${statusBadge}
+                    </td>
                     <td class="py-2.5 px-3">
-                        <input type="text" value="${item.code || ''}" onchange="tabloidApp.updateItemCode('${item.id}', this.value)" placeholder="Sem código" class="w-28 bg-gray-950 border ${item.code ? 'border-gray-700 text-emerald-400 font-bold' : 'border-gray-800 text-gray-500'} rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-emerald-500">
+                        <input type="text" value="${item.code || ''}" onchange="tabloidApp.updateItemCode('${item.id}', this.value)" placeholder="Sem código" class="w-36 bg-gray-950 border ${item.code ? 'border-gray-700 text-emerald-400 font-bold font-mono' : 'border-rose-900/60 text-rose-400'} rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-emerald-500 shadow-inner">
                     </td>
                     <td class="py-2.5 px-3">
                         <span class="text-gray-100 font-bold block">${item.tabloidProduct}</span>
-                        ${item.isCombo ? `<span class="text-[10px] text-purple-300 font-semibold flex items-center gap-1 mt-0.5"><i class="fa-solid fa-gift"></i> ${item.comboNote}</span>` : ''}
-                        ${this.activeSheetName === 'all' ? `<span class="text-[10px] text-gray-500">${item.sheetName}</span>` : ''}
+                        <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                            ${item.isCombo ? `<span class="text-[10px] text-purple-300 font-semibold flex items-center gap-1"><i class="fa-solid fa-gift"></i> ${item.comboNote}</span>` : ''}
+                            ${item.promoNote ? `<span class="inline-flex items-center gap-1 text-[10px] font-semibold text-purple-300 bg-purple-950/40 px-2 py-0.5 rounded-md border border-purple-800/30"><i class="fa-solid fa-tag"></i> ${item.promoNote}</span>` : ''}
+                            ${this.activeSheetName === 'all' ? `<span class="text-[10px] text-gray-500">${item.sheetName}</span>` : ''}
+                        </div>
                     </td>
                     <td class="py-2.5 px-3 text-gray-300 font-semibold">${item.price || '-'}</td>
                     <td class="py-2.5 px-3">
-                        <span class="text-gray-300 text-xs block">${item.erpProduct}</span>
-                        ${hasFamily ? `
-                            <div class="mt-1.5 p-2 bg-gray-950/90 rounded-lg border border-amber-500/20 space-y-1">
-                                <div class="flex items-center justify-between text-[10px] text-amber-300 font-bold mb-1">
-                                    <span>Variações / Sabores Identificados (${item.familyVariations.length}):</span>
-                                    <label class="inline-flex items-center gap-1 cursor-pointer">
-                                        <input type="checkbox" ${item.unfoldFamily ? 'checked' : ''} onchange="tabloidApp.toggleUnfold('${item.id}', this.checked)" class="rounded text-amber-500 text-[10px]">
-                                        <span>Desdobrar Linhas no Excel</span>
-                                    </label>
-                                </div>
-                                <div class="space-y-1">
-                                    ${item.familyVariations.map((v, vIdx) => `
-                                        <label class="flex items-center gap-1.5 text-[11px] text-gray-300 hover:text-white cursor-pointer">
-                                            <input type="checkbox" ${v.selected ? 'checked' : ''} onchange="tabloidApp.toggleFamilyVariation('${item.id}', ${vIdx}, this.checked)" class="rounded text-amber-500">
-                                            <span class="font-bold text-amber-400">${v.code}</span>
-                                            <span class="truncate">${v.desc.replace(/^\*\*+/, '')}</span>
-                                        </label>
-                                    `).join('')}
-                                </div>
+                        <span class="text-gray-300 text-xs block font-medium">${item.erpProduct}</span>
+                        ${hasGroupedVars ? `
+                            <div class="mt-1 flex items-center gap-1.5 flex-wrap">
+                                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-800/40">
+                                    <i class="fa-solid fa-layer-group text-[9px]"></i> ${item.familyVariations.length} Variações Agrupadas
+                                </span>
+                                <span class="text-[10px] text-gray-400 font-mono">(${item.familyVariations.map(v => v.code).join(', ')})</span>
                             </div>
                         ` : ''}
                     </td>
@@ -20342,7 +20369,7 @@ class TabloidApp {
                         `}
                     </td>
                     <td class="py-2.5 px-3 text-right">
-                        <button type="button" onclick="tabloidApp.openManualSearch('${item.id}')" title="Buscar no Catálogo" class="p-1.5 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg transition active:scale-95 cursor-pointer">
+                        <button type="button" onclick="tabloidApp.openManualSearch('${item.id}')" title="Buscar no Catálogo Consinco" class="p-1.5 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg transition active:scale-95 cursor-pointer">
                             <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         </button>
                     </td>
@@ -20365,22 +20392,6 @@ class TabloidApp {
             }
             this.updateStats();
             this.renderTable();
-        }
-    }
-
-    toggleUnfold(itemId, checked) {
-        const item = this.findItemById(itemId);
-        if (item) item.unfoldFamily = checked;
-    }
-
-    toggleFamilyVariation(itemId, vIdx, checked) {
-        const item = this.findItemById(itemId);
-        if (item && item.familyVariations && item.familyVariations[vIdx]) {
-            item.familyVariations[vIdx].selected = checked;
-            const selectedCodes = item.familyVariations.filter(v => v.selected).map(v => v.code);
-            item.code = selectedCodes.join(' / ');
-            const input = document.querySelector(`input[onchange*="'${itemId}'"]`);
-            if (input) input.value = item.code;
         }
     }
 
@@ -20481,42 +20492,46 @@ class TabloidApp {
             const originalRows = XLSX.utils.sheet_to_json(ws, { header: 1 });
             if (originalRows.length === 0) return;
 
-            const header = originalRows[0];
+            let headerRowIdx = 0;
+            for (let i = 0; i < Math.min(originalRows.length, 10); i++) {
+                const r = originalRows[i] || [];
+                if (r.some(c => /prod|desc|item|oferta|prec|valor|tdb/i.test(String(c || '')))) {
+                    headerRowIdx = i;
+                    break;
+                }
+            }
+
+            const header = originalRows[headerRowIdx] || [];
             let prodColIdx = header.findIndex(h => /prod|desc|item|nome/i.test(String(h || '')));
             if (prodColIdx === -1) prodColIdx = 0;
 
             const newRows = [];
 
+            // Preserva linhas acima do cabeçalho (ex: banners de página)
+            for (let i = 0; i < headerRowIdx; i++) {
+                newRows.push(originalRows[i] || []);
+            }
+
+            // Insere a coluna CÓDIGO ERP e OBS. PROMOÇÃO no cabeçalho
             const newHeader = [...header];
-            newHeader.splice(prodColIdx, 0, 'CÓDIGO');
+            newHeader.splice(prodColIdx, 0, 'CÓDIGO ERP');
+            newHeader.push('OBS. PROMOÇÃO');
             newRows.push(newHeader);
 
-            for (let r = 1; r < originalRows.length; r++) {
-                const origRow = originalRows[r];
+            for (let r = headerRowIdx + 1; r < originalRows.length; r++) {
+                const origRow = originalRows[r] || [];
                 const matchedItem = items.find(i => i.rowIndex === r);
 
+                const rowCopy = [...origRow];
                 if (!matchedItem) {
-                    const rowCopy = [...origRow];
                     rowCopy.splice(prodColIdx, 0, '');
+                    rowCopy.push('');
                     newRows.push(rowCopy);
                     continue;
                 }
 
-                if (matchedItem.unfoldFamily && matchedItem.familyVariations && matchedItem.familyVariations.length > 1) {
-                    const selectedVars = matchedItem.familyVariations.filter(v => v.selected);
-                    if (selectedVars.length > 0) {
-                        selectedVars.forEach(v => {
-                            const rowCopy = [...origRow];
-                            rowCopy[prodColIdx] = `${matchedItem.tabloidProduct} (${v.desc.replace(/^\*\*+/, '')})`;
-                            rowCopy.splice(prodColIdx, 0, v.code);
-                            newRows.push(rowCopy);
-                        });
-                        continue;
-                    }
-                }
-
-                const rowCopy = [...origRow];
                 rowCopy.splice(prodColIdx, 0, matchedItem.code || '');
+                rowCopy.push(matchedItem.promoNote || matchedItem.comboNote || '');
                 newRows.push(rowCopy);
             }
 
@@ -20536,9 +20551,9 @@ class TabloidApp {
         const items = this.getAllItems();
         if (items.length === 0) return;
 
-        let tsv = 'Status\tCódigo\tProduto Tabloide\tPreço\tProduto ERP\tConfiança\n';
+        let tsv = 'Status\tCódigo ERP\tProduto Tabloide\tPreço\tProduto ERP\tPromoção\tConfiança\n';
         items.forEach(i => {
-            tsv += `${i.status}\t${i.code || ''}\t${i.tabloidProduct}\t${i.price || ''}\t${i.erpProduct}\t${i.confidence}%\n`;
+            tsv += `${i.status}\t${i.code || ''}\t${i.tabloidProduct}\t${i.price || ''}\t${i.erpProduct}\t${i.promoNote || ''}\t${i.confidence}%\n`;
         });
 
         navigator.clipboard.writeText(tsv).then(() => {
