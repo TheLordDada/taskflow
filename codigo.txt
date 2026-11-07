@@ -4255,7 +4255,7 @@
                 }
             });
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=1794018080097').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=1794018388076').then(reg => {
                     if (reg) reg.update();
                 }).catch(() => {});
             });
@@ -23263,7 +23263,7 @@ window.tabloidApp = new TabloidApp();
                     <div>
                         <h3 class="font-bold text-sm sm:text-base text-gray-100 flex items-center gap-2">
                             <span id="chk-modal-model-title">Criar Questionário de Checklist</span>
-                            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60">v3 Simplificação</span>
+                            
                         </h3>
                         <p class="text-xs text-gray-400">Estruture seções, questões operacionais e tipos de resposta.</p>
                     </div>
