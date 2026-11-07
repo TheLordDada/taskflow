@@ -4255,7 +4255,7 @@
                 }
             });
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=1793938326954').then(reg => {
+                navigator.serviceWorker.register('sw.js?v=1794018080097').then(reg => {
                     if (reg) reg.update();
                 }).catch(() => {});
             });
@@ -20726,7 +20726,10 @@ class ChecklistApp {
         this.activeTab = 'today'; // 'today', 'history', 'manage'
         this.todayFilter = 'all'; // 'all', 'pending', 'completed'
         this.currentExecutionSession = null;
-        this.modelItemCounter = 0;
+        this.builderModel = null;
+        this.selectedSectionId = null;
+        this.selectedQuestionId = null;
+        this.signaturePads = {};
     }
 
     init() {
@@ -20766,7 +20769,8 @@ class ChecklistApp {
                 if (raw) u = JSON.parse(raw);
             } catch(e) {}
         }
-        return u ? (u.role || (u.isAdmin ? 'Administrador' : 'Colaborador')) : 'Administrador';
+        if (!u) return 'Administrador';
+        return u.role || (u.isAdmin ? 'Administrador' : 'Colaborador');
     }
 
     getCurrentUserName() {
@@ -20777,334 +20781,194 @@ class ChecklistApp {
                 if (raw) u = JSON.parse(raw);
             } catch(e) {}
         }
-        return u ? (u.displayName || u.name || 'Admin Emerson') : 'Admin Emerson';
+        if (!u) return 'Usuário Local';
+        return u.displayName || u.name || u.email || 'Colaborador';
     }
 
-    getTodayDate() {
-        const d = new Date();
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-    }
-
-    getCurrentShiftName() {
+    getCurrentShiftTag() {
         const hour = new Date().getHours();
-        if (hour >= 5 && hour < 14) return 'Manhã';
+        if (hour >= 6 && hour < 14) return 'Manhã';
         if (hour >= 14 && hour < 22) return 'Tarde';
         return 'Noite';
     }
 
     loadData() {
-        const savedModels = localStorage.getItem('taskflow_checklists');
-        if (savedModels) {
-            try { this.checklists = JSON.parse(savedModels); } catch(e) { this.checklists = []; }
-        }
-        if (!this.checklists || this.checklists.length === 0) {
-            this.seedInitialChecklists();
-        }
-
-        // Garante compatibilidade retroativa para tipos de resposta e fotos por item
-        if (this.checklists && this.checklists.length > 0) {
-            this.checklists.forEach(c => {
-                if (c.items) {
-                    c.items.forEach(it => {
-                        if (!it.type) it.type = 'conformity';
-                        if (it.requirePhoto === undefined) it.requirePhoto = false;
-                    });
-                }
-            });
+        try {
+            const rawM = localStorage.getItem('taskflow_checklists_models');
+            if (rawM) {
+                this.checklists = JSON.parse(rawM);
+            } else {
+                this.checklists = [];
+            }
+        } catch(e) {
+            this.checklists = [];
         }
 
-        const savedExecs = localStorage.getItem('taskflow_checklist_executions');
-        if (savedExecs) {
-            try { this.executions = JSON.parse(savedExecs); } catch(e) { this.executions = []; }
-        } else {
+        try {
+            const rawE = localStorage.getItem('taskflow_checklists_executions');
+            if (rawE) {
+                this.executions = JSON.parse(rawE);
+            } else {
+                this.executions = [];
+            }
+        } catch(e) {
             this.executions = [];
         }
     }
 
     saveData() {
-        localStorage.setItem('taskflow_checklists', JSON.stringify(this.checklists));
-        localStorage.setItem('taskflow_checklist_executions', JSON.stringify(this.executions));
-        this.render();
-        if (this.activeTab === 'manage') this.renderManageModels();
-        if (this.activeTab === 'history') this.renderHistory();
-    }
-
-    seedInitialChecklists() {
-        this.checklists = [
-            {
-                id: 'chk_abertura_caixa',
-                title: 'Checklist de Abertura - Frente de Caixa',
-                targetRole: 'Operador de Caixa',
-                dept: 'Frente de Caixa',
-                recurrence: 'shift',
-                requirePhotoOnNonConform: true,
-                description: 'Verificação obrigatória dos pontos de venda antes de iniciar o atendimento ao cliente.',
-                items: [
-                    { id: 'it_1', text: 'Quantos caixas foram abertos e estão operando no momento?', type: 'number', requirePhoto: false, category: 'Operação' },
-                    { id: 'it_2', text: 'Fundo de troco conferido na gaveta?', type: 'yes_no', requirePhoto: false, category: 'Financeiro' },
-                    { id: 'it_3', text: 'Bobinas térmicas sobressalentes abastecidas no checkout?', type: 'yes_no', requirePhoto: false, category: 'Materiais' },
-                    { id: 'it_4', text: 'Pinpad (máquina de cartão) e leitor óptico testados e sem falhas?', type: 'conformity', requirePhoto: true, category: 'Equipamentos' },
-                    { id: 'it_5', text: 'Sacolas plásticas abastecidas no suporte?', type: 'conformity', requirePhoto: false, category: 'Atendimento' }
-                ],
-                createdAt: Date.now() - 86400000,
-                createdBy: 'Administrador Geral',
-                active: true
-            },
-            {
-                id: 'chk_reposicao_mercearia',
-                title: 'Checklist Diário de Reposição & Gôndola - Mercearia',
-                targetRole: 'Repositor',
-                dept: 'Mercearia',
-                recurrence: 'daily',
-                requirePhotoOnNonConform: true,
-                description: 'Auditoria de frenteamento, conferência de PEPS e prevenção de rupturas nos corredores.',
-                items: [
-                    { id: 'it_1', text: 'Quantos repositores estão em atividade na loja hoje?', type: 'number', requirePhoto: false, category: 'Equipe' },
-                    { id: 'it_2', text: 'Houve faltas de colaboradores no setor hoje?', type: 'yes_no', requirePhoto: false, category: 'Equipe' },
-                    { id: 'it_3', text: 'Puxada de frente / frenteamento de todos os produtos do corredor', type: 'conformity', requirePhoto: true, category: 'Gôndola' },
-                    { id: 'it_4', text: 'Conferência de produtos com data de validade próxima (PEPS)', type: 'conformity', requirePhoto: false, category: 'Qualidade' },
-                    { id: 'it_5', text: 'Etiquetas de preços visíveis e legíveis em 100% dos itens?', type: 'yes_no', requirePhoto: false, category: 'Precificação' },
-                    { id: 'it_6', text: 'Quantas rupturas de gôndola foram identificadas para pedido?', type: 'number', requirePhoto: false, category: 'Estoque' }
-                ],
-                createdAt: Date.now() - 86400000,
-                createdBy: 'Administrador Geral',
-                active: true
-            },
-            {
-                id: 'chk_fechamento_loja',
-                title: 'Checklist de Fechamento de Loja',
-                targetRole: 'Líder Setorial',
-                dept: 'Geral',
-                recurrence: 'daily',
-                requirePhotoOnNonConform: true,
-                description: 'Conferência patrimonial e encerramento seguro das operações diárias.',
-                items: [
-                    { id: 'it_1', text: 'Desligamento de luzes das seções e ar-condicionado', type: 'conformity', requirePhoto: false, category: 'Economia' },
-                    { id: 'it_2', text: 'Portões, portas corta-fogo e docas trancadas com cadeado?', type: 'yes_no', requirePhoto: true, category: 'Segurança' },
-                    { id: 'it_3', text: 'Caixas registradoras abertas e valores recolhidos à tesouraria', type: 'conformity', requirePhoto: false, category: 'Financeiro' },
-                    { id: 'it_4', text: 'Quantos clientes ainda estavam no interior no encerramento?', type: 'number', requirePhoto: false, category: 'Operação' },
-                    { id: 'it_5', text: 'Alarme perimetral e sensores armados?', type: 'yes_no', requirePhoto: false, category: 'Segurança' }
-                ],
-                createdAt: Date.now() - 86400000,
-                createdBy: 'Administrador Geral',
-                active: true
+        try {
+            localStorage.setItem('taskflow_checklists_models', JSON.stringify(this.checklists));
+            localStorage.setItem('taskflow_checklists_executions', JSON.stringify(this.executions));
+            if (window.syncManager && typeof syncManager.saveAllData === 'function') {
+                syncManager.saveAllData();
             }
-        ];
-        this.saveData();
-    }
-
-    updateRoleBadge() {
-        const canManage = this.canManage();
-
-        // 1. Atualiza badge do cargo no topo
-        const badge = document.getElementById('checklist-user-role-badge') || document.getElementById('chk-user-role-badge');
-        if (badge) {
-            const role = this.getCurrentUserRole();
-            badge.innerText = canManage ? `${role} (Pode Criar Checklists)` : `Cargo: ${role}`;
-            badge.className = canManage 
-                ? "text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 inline-flex items-center gap-1"
-                : "text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-800 text-gray-300 border border-gray-700";
-        }
-
-        // 2. Unhide/hide aba '⚙️ Modelos'
-        const manageTab = document.getElementById('tab-checklist-manage') || document.getElementById('chk-subtab-manage');
-        if (manageTab) {
-            manageTab.classList.remove('hidden');
-            manageTab.style.display = canManage ? 'inline-block' : 'none';
-        }
-
-        // 3. Unhide/hide botão '+ Criar Checklist' no topo da aba
-        const newModelBtn = document.getElementById('checklist-btn-new-model') || document.getElementById('chk-btn-manage-models');
-        if (newModelBtn) {
-            newModelBtn.classList.remove('hidden');
-            newModelBtn.style.display = canManage ? 'inline-flex' : 'none';
-        }
-
-        // 4. Unhide/hide botão no topbar desktop
-        const topbarBtn = document.getElementById('topbar-new-checklist-btn');
-        if (topbarBtn) {
-            if (canManage && window.currentMainView === 'checklists') {
-                topbarBtn.classList.remove('hidden');
-                topbarBtn.style.display = (window.innerWidth >= 640) ? 'inline-flex' : 'none';
-            }
+        } catch(e) {
+            console.error('[ChecklistApp] Erro ao salvar dados:', e);
         }
     }
 
     switchTab(tab) {
         this.activeTab = tab;
+        const tabToday = document.getElementById('tab-checklist-today');
+        const tabHistory = document.getElementById('tab-checklist-history');
+        const tabManage = document.getElementById('tab-checklist-manage');
 
-        const pToday = document.getElementById('checklist-panel-today');
-        const pHistory = document.getElementById('checklist-panel-history');
-        const pManage = document.getElementById('checklist-panel-manage');
+        const panelToday = document.getElementById('checklist-panel-today');
+        const panelHistory = document.getElementById('checklist-panel-history');
+        const panelManage = document.getElementById('checklist-panel-manage');
 
-        if (pToday) {
-            pToday.style.display = (tab === 'today') ? 'block' : 'none';
-            pToday.classList.toggle('hidden', tab !== 'today');
-        }
-        if (pHistory) {
-            pHistory.style.display = (tab === 'history') ? 'block' : 'none';
-            pHistory.classList.toggle('hidden', tab !== 'history');
-        }
-        if (pManage) {
-            pManage.style.display = (tab === 'manage') ? 'block' : 'none';
-            pManage.classList.toggle('hidden', tab !== 'manage');
-        }
+        if (tabToday) tabToday.className = (tab === 'today') ? "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-cyan-600 text-white shadow-sm" : "px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-gray-200 transition";
+        if (tabHistory) tabHistory.className = (tab === 'history') ? "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-cyan-600 text-white shadow-sm" : "px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-gray-200 transition";
+        if (tabManage) tabManage.className = (tab === 'manage') ? "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-cyan-600 text-white shadow-sm" : "px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-400 hover:text-gray-200 transition";
 
-        ['today', 'history', 'manage'].forEach(t => {
-            const btn = document.getElementById('tab-checklist-' + t) || document.getElementById('chk-subtab-' + t);
-            if (btn) {
-                if (t === tab) {
-                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer bg-cyan-600 text-white shadow-md shadow-cyan-600/30";
-                } else {
-                    btn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer text-gray-400 hover:text-gray-200 hover:bg-gray-800";
-                }
-            }
-        });
+        if (panelToday) panelToday.style.display = (tab === 'today') ? 'block' : 'none';
+        if (panelHistory) panelHistory.style.display = (tab === 'history') ? 'block' : 'none';
+        if (panelManage) panelManage.style.display = (tab === 'manage') ? 'block' : 'none';
 
-        if (tab === 'history') this.renderHistory();
-        if (tab === 'manage') this.renderManageModels();
-        if (tab === 'today') this.renderTodayChecklists();
+        this.render();
     }
 
-    setTodayFilter(filter) {
-        this.todayFilter = filter;
-        ['all', 'pending', 'completed'].forEach(f => {
-            const btn = document.getElementById('chk-filter-' + f);
-            if (btn) {
-                if (f === filter) {
-                    btn.className = "px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer bg-cyan-500/20 text-cyan-300 border border-cyan-500/40";
-                } else {
-                    btn.className = "px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer text-gray-400 hover:text-gray-200 bg-gray-900 border border-gray-800";
-                }
-            }
-        });
-        this.renderTodayChecklists();
+    updateRoleBadge() {
+        const canManage = this.canManage();
+        const badge = document.getElementById('checklist-user-role-badge');
+        if (badge) {
+            const role = this.getCurrentUserRole();
+            badge.innerText = canManage ? `${role} (ADM/Gerente)` : `Cargo: ${role}`;
+            badge.className = canManage 
+                ? "text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 inline-flex items-center gap-1"
+                : "text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-800 text-gray-300 border border-gray-700";
+        }
+
+        const manageTab = document.getElementById('tab-checklist-manage');
+        if (manageTab) {
+            manageTab.style.display = canManage ? 'inline-block' : 'none';
+        }
+
+        const newModelBtn = document.getElementById('checklist-btn-new-model');
+        if (newModelBtn) {
+            newModelBtn.style.display = canManage ? 'inline-flex' : 'none';
+        }
     }
 
     render() {
         this.updateRoleBadge();
-        this.renderTodayChecklists();
-        if (this.activeTab === 'manage') this.renderManageModels();
-        if (this.activeTab === 'history') this.renderHistory();
+        if (this.activeTab === 'today') {
+            this.renderTodayList();
+        } else if (this.activeTab === 'history') {
+            this.renderHistory();
+        } else if (this.activeTab === 'manage') {
+            this.renderModelsList();
+        }
     }
 
-    getTodayChecklistItems() {
-        const today = this.getTodayDate();
-        const currentShift = this.getCurrentShiftName();
-        const userRole = (this.getCurrentUserRole() || '').toLowerCase();
-        const isAdmin = this.canManage();
+    filterToday(filter) {
+        this.todayFilter = filter;
+        const btnAll = document.getElementById('chk-filter-all');
+        const btnPend = document.getElementById('chk-filter-pending');
+        const btnComp = document.getElementById('chk-filter-completed');
 
-        const activeModels = this.checklists.filter(c => c.active !== false);
+        if (btnAll) btnAll.className = (filter === 'all') ? "px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-600 text-white" : "px-2.5 py-1 rounded-lg text-xs font-semibold text-gray-400 hover:text-white";
+        if (btnPend) btnPend.className = (filter === 'pending') ? "px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-600 text-white" : "px-2.5 py-1 rounded-lg text-xs font-semibold text-gray-400 hover:text-white";
+        if (btnComp) btnComp.className = (filter === 'completed') ? "px-2.5 py-1 rounded-lg text-xs font-bold bg-cyan-600 text-white" : "px-2.5 py-1 rounded-lg text-xs font-semibold text-gray-400 hover:text-white";
 
-        const items = [];
-        activeModels.forEach(model => {
-            // Filtro por Cargo: exibe se direcionado a "Todos os Cargos", ao cargo do usuário, ou se for ADM/Gerente
-            const targetRoleLower = (model.targetRole || '').toLowerCase();
-            const isMatch = isAdmin || 
-                            targetRoleLower === 'todos os cargos' || 
-                            userRole.includes(targetRoleLower) || 
-                            targetRoleLower.includes(userRole);
-
-            if (!isMatch) return;
-
-            if (model.recurrence === 'shift') {
-                const shiftExecId = `${model.id}_${today}_${currentShift}`;
-                const exec = this.executions.find(e => e.id === shiftExecId);
-                items.push({
-                    model,
-                    execId: shiftExecId,
-                    exec,
-                    shiftTag: currentShift,
-                    periodLabel: `Turno ${currentShift}`
-                });
-            } else if (model.recurrence === 'daily') {
-                const dailyExecId = `${model.id}_${today}_daily`;
-                const exec = this.executions.find(e => e.id === dailyExecId);
-                items.push({
-                    model,
-                    execId: dailyExecId,
-                    exec,
-                    shiftTag: null,
-                    periodLabel: 'Diário'
-                });
-            } else {
-                // Avulso / Por Demanda
-                const singleExecId = `${model.id}_${today}_single`;
-                const exec = this.executions.find(e => e.id === singleExecId);
-                items.push({
-                    model,
-                    execId: singleExecId,
-                    exec,
-                    shiftTag: null,
-                    periodLabel: 'Avulso'
-                });
-            }
-        });
-
-        return items;
+        this.renderTodayList();
     }
 
-    renderTodayChecklists() {
-        const container = document.getElementById('checklist-cards-container') || document.getElementById('chk-today-list');
+    getTodayDateString() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    renderTodayList() {
+        const container = document.getElementById('checklist-cards-container');
         if (!container) return;
 
-        const allItems = this.getTodayChecklistItems();
+        const userRole = this.getCurrentUserRole().toLowerCase();
+        const canManage = this.canManage();
+        const today = this.getTodayDateString();
+        const currentShift = this.getCurrentShiftTag();
 
-        // Atualiza estatísticas do topo
-        const total = allItems.length;
-        const completed = allItems.filter(i => i.exec && i.exec.completed).length;
-        const pending = total - completed;
+        const todayItems = [];
+        this.checklists.forEach(model => {
+            const targetRole = (model.targetRole || 'Todos os Cargos').toLowerCase();
+            const isMatch = canManage || targetRole.includes('todos') || targetRole.includes(userRole) || userRole.includes(targetRole);
+            if (!isMatch) return;
 
-        let totalConformity = 0;
-        let completedWithScore = 0;
-        allItems.forEach(i => {
-            if (i.exec && i.exec.completed && typeof i.exec.conformityScore === 'number') {
-                totalConformity += i.exec.conformityScore;
-                completedWithScore++;
+            const shiftExecId = model.recurrence === 'shift' 
+                ? `${model.id}_${today}_${currentShift}`
+                : `${model.id}_${today}`;
+
+            const exec = this.executions.find(e => e.id === shiftExecId);
+            todayItems.push({
+                model,
+                execId: shiftExecId,
+                exec,
+                shiftTag: model.recurrence === 'shift' ? currentShift : 'Diário',
+                periodLabel: model.recurrence === 'shift' ? `Turno ${currentShift}` : 'Checklist Diário'
+            });
+        });
+
+        // Stats
+        let totalCount = todayItems.length;
+        let completedCount = todayItems.filter(i => i.exec && i.exec.completed).length;
+        let pendingCount = totalCount - completedCount;
+        let scoreSum = 0;
+        let scoreTotal = 0;
+        todayItems.forEach(i => {
+            if (i.exec && i.exec.completed && typeof i.exec.score === 'number') {
+                scoreSum += i.exec.score;
+                scoreTotal++;
             }
         });
-        const avgConformity = completedWithScore > 0 ? Math.round(totalConformity / completedWithScore) : 100;
+        const conformPct = scoreTotal > 0 ? Math.round(scoreSum / scoreTotal) : 0;
 
-        const elTotal = document.getElementById('stat-chk-total') || document.getElementById('chk-stat-total');
-        const elPending = document.getElementById('stat-chk-pending') || document.getElementById('chk-stat-pending');
-        const elCompleted = document.getElementById('stat-chk-completed') || document.getElementById('chk-stat-completed');
-        const elScore = document.getElementById('stat-chk-conformity') || document.getElementById('chk-stat-conformity');
+        const elTot = document.getElementById('stat-chk-total');
+        const elDone = document.getElementById('stat-chk-completed');
+        const elPend = document.getElementById('stat-chk-pending');
+        const elConf = document.getElementById('stat-chk-conformity');
+        if (elTot) elTot.innerText = totalCount;
+        if (elDone) elDone.innerText = completedCount;
+        if (elPend) elPend.innerText = pendingCount;
+        if (elConf) elConf.innerText = scoreTotal > 0 ? `${conformPct}%` : '-%';
 
-        if (elTotal) elTotal.innerText = total;
-        if (elPending) elPending.innerText = pending;
-        if (elCompleted) elCompleted.innerText = completed;
-        if (elScore) elScore.innerText = `${avgConformity}%`;
-
-        const dateLabel = document.getElementById('chk-today-date-label');
-        if (dateLabel) {
-            const d = new Date();
-            dateLabel.innerText = `Data: ${d.toLocaleDateString('pt-BR')}`;
-        }
-
-        // Aplica filtro das pílulas
-        const filtered = allItems.filter(i => {
-            const isDone = !!(i.exec && i.exec.completed);
-            if (this.todayFilter === 'pending') return !isDone;
-            if (this.todayFilter === 'completed') return isDone;
-            return true;
-        });
+        let filtered = todayItems;
+        if (this.todayFilter === 'pending') filtered = filtered.filter(i => !(i.exec && i.exec.completed));
+        if (this.todayFilter === 'completed') filtered = filtered.filter(i => (i.exec && i.exec.completed));
 
         if (filtered.length === 0) {
             container.innerHTML = `
-                <div class="col-span-full py-12 text-center text-gray-500 bg-gray-950/60 rounded-2xl border border-dashed border-gray-800 space-y-3">
-                    <i class="fa-solid fa-clipboard-check text-4xl text-gray-600"></i>
-                    <div>
-                        <p class="text-sm font-semibold text-gray-300">Nenhum checklist para este filtro no momento.</p>
-                        <p class="text-xs text-gray-500 mt-0.5">Checklists criados aparecerão aqui organizados por cargo e turno.</p>
+                <div class="col-span-full py-12 text-center bg-gray-900/60 rounded-2xl border border-gray-800 space-y-3">
+                    <div class="w-12 h-12 mx-auto rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-clipboard-check"></i>
                     </div>
-                    ${this.canManage() ? `
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-200">Nenhum checklist pendente para seu cargo hoje</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">Clique em "+ Criar Checklist" no topo para criar questionários para a equipe.</p>
+                    </div>
+                    ${canManage ? `
                         <div>
-                            <button type="button" onclick="checklistApp.openNewChecklistModal()" class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-600/30 inline-flex items-center gap-1.5 cursor-pointer">
-                                <i class="fa-solid fa-plus text-xs"></i>
-                                <span>Criar Primeiro Checklist</span>
+                            <button type="button" onclick="checklistApp.openNewChecklistModal()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-600/30 inline-flex items-center gap-1.5 cursor-pointer">
+                                <i class="fa-solid fa-plus text-xs"></i> <span>Criar Primeiro Checklist</span>
                             </button>
                         </div>
                     ` : ''}
@@ -21115,51 +20979,53 @@ class ChecklistApp {
 
         let html = '';
         filtered.forEach(item => {
-            const model = item.model;
+            const m = item.model;
             const exec = item.exec;
             const isDone = !!(exec && exec.completed);
-            const totalItems = model.items.length;
+            const totalQuestions = m.items ? m.items.length : 0;
             const answeredCount = exec ? Object.keys(exec.answers || {}).length : 0;
-            const progressPct = totalItems > 0 ? Math.round((answeredCount / totalItems) * 100) : 0;
+            const pct = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
 
             html += `
-                <div class="bg-gray-950 p-4 rounded-2xl border ${isDone ? 'border-emerald-600/40 bg-emerald-950/5' : 'border-gray-800/80 hover:border-cyan-500/40'} transition flex flex-col justify-between space-y-3.5 shadow-lg shadow-black/40">
+                <div class="bg-gray-950 p-4 rounded-2xl border ${isDone ? 'border-emerald-600/40 bg-emerald-950/10' : 'border-gray-800/80 hover:border-cyan-500/40'} transition flex flex-col justify-between space-y-3.5 shadow-lg shadow-black/40">
                     <div>
                         <div class="flex items-center justify-between gap-2 mb-2">
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${model.recurrence === 'shift' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'}">
-                                ${item.periodLabel}
+                            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-cyan-950 text-cyan-300 border border-cyan-800/60">
+                                ${m.targetRole}
                             </span>
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isDone ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'}">
-                                ${isDone ? '✓ Concluído' : 'Pendente'}
+                            <span class="text-[10px] font-semibold text-gray-400 flex items-center gap-1">
+                                <i class="fa-regular fa-clock text-[9px]"></i> ${item.periodLabel}
                             </span>
                         </div>
+                        <h4 class="text-sm font-bold text-white line-clamp-1">${m.title}</h4>
+                        <p class="text-xs text-gray-400 line-clamp-2 mt-0.5">${m.description || (m.sections ? `${m.sections.length} etapas / seções estruturadas` : 'Validação diária de processos')}</p>
+                    </div>
 
-                        <h4 class="font-bold text-sm text-gray-100 leading-snug line-clamp-2">${model.title}</h4>
-                        <p class="text-xs text-gray-400 mt-1 line-clamp-2">${model.description || 'Preencha cada item com atenção e comprove não conformidades com foto.'}</p>
-
-                        <div class="mt-3 flex items-center gap-2 flex-wrap text-[11px] text-gray-400">
-                            <span class="px-2 py-0.5 rounded bg-gray-900 border border-gray-800 text-gray-300">
-                                <i class="fa-solid fa-user-tag text-[9px] text-cyan-400 mr-1"></i>${model.targetRole}
-                            </span>
-                            <span class="px-2 py-0.5 rounded bg-gray-900 border border-gray-800 text-gray-300">
-                                <i class="fa-solid fa-list-check text-[9px] text-cyan-400 mr-1"></i>${totalItems} Itens
-                            </span>
+                    <div class="space-y-1.5 bg-gray-900/60 p-2.5 rounded-xl border border-gray-800">
+                        <div class="flex justify-between text-[11px] font-semibold">
+                            <span class="text-gray-400">${isDone ? '✓ Concluído' : 'Progresso'}</span>
+                            <span class="${isDone ? 'text-emerald-400 font-bold' : 'text-gray-300'}">${answeredCount} / ${totalQuestions} questões (${pct}%)</span>
+                        </div>
+                        <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                            <div class="${isDone ? 'bg-emerald-500' : 'bg-cyan-500'} h-full rounded-full transition-all duration-300" style="width: ${pct}%"></div>
                         </div>
                     </div>
 
-                    <div class="pt-2 border-t border-gray-800/70 space-y-2">
-                        <!-- Barra de Progresso de Preenchimento -->
-                        <div class="flex items-center justify-between text-[11px]">
-                            <span class="text-gray-400">Progresso</span>
-                            <span class="font-mono font-bold ${isDone ? 'text-emerald-400' : 'text-cyan-400'}">${isDone ? `${exec.conformityScore}% Conforme` : `${answeredCount}/${totalItems}`}</span>
+                    <div class="flex items-center justify-between gap-2 pt-1 border-t border-gray-800/60">
+                        <div>
+                            ${isDone ? `
+                                <span class="text-[11px] font-extrabold text-emerald-400 flex items-center gap-1">
+                                    <i class="fa-solid fa-circle-check"></i> ${exec.score}% Conforme
+                                </span>
+                            ` : `
+                                <span class="text-[11px] font-semibold text-amber-400 flex items-center gap-1">
+                                    <i class="fa-solid fa-hourglass-half text-[10px]"></i> Aguardando
+                                </span>
+                            `}
                         </div>
-                        <div class="w-full bg-gray-900 rounded-full h-1.5 overflow-hidden">
-                            <div class="${isDone ? 'bg-emerald-500' : 'bg-cyan-500'} h-full rounded-full transition-all" style="width: ${isDone ? 100 : progressPct}%"></div>
-                        </div>
-
-                        <button onclick="checklistApp.openExecutionModal('${model.id}', '${item.shiftTag || ''}')" class="w-full py-2.5 text-xs font-bold rounded-xl transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer ${isDone ? 'bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700' : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-600/30'}">
-                            <i class="fa-solid ${isDone ? 'fa-eye' : 'fa-clipboard-check'}"></i>
-                            <span>${isDone ? 'Revisar Respostas' : (answeredCount > 0 ? 'Continuar Preenchimento' : 'Executar Checklist')}</span>
+                        <button type="button" onclick="checklistApp.openExecutionModal('${m.id}', '${item.execId}', '${item.shiftTag}')" class="px-3.5 py-1.5 ${isDone ? 'bg-gray-800 hover:bg-gray-700 text-gray-200' : 'bg-cyan-600 hover:bg-cyan-500 text-white font-bold'} text-xs rounded-xl transition active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-md">
+                            <i class="fa-solid ${isDone ? 'fa-eye' : 'fa-play'} text-[10px]"></i>
+                            <span>${isDone ? 'Revisar' : 'Executar'}</span>
                         </button>
                     </div>
                 </div>
@@ -21169,479 +21035,16 @@ class ChecklistApp {
         container.innerHTML = html;
     }
 
-    openExecutionModal(modelId, shiftTag = null) {
-        const model = this.checklists.find(c => c.id === modelId);
-        if (!model) return;
-
-        const today = this.getTodayDate();
-        const currentShift = shiftTag || (model.recurrence === 'shift' ? this.getCurrentShiftName() : null);
-        const execId = `${model.id}_${today}_${currentShift || 'daily'}`;
-
-        let exec = this.executions.find(e => e.id === execId);
-        if (!exec) {
-            exec = {
-                id: execId,
-                checklistId: model.id,
-                title: model.title,
-                targetRole: model.targetRole,
-                dept: model.dept,
-                date: today,
-                shift: currentShift,
-                completed: false,
-                completedBy: null,
-                completedAt: null,
-                conformityScore: 0,
-                answers: {}
-            };
-        }
-
-        this.currentExecutionSession = {
-            model,
-            exec,
-            // Clone respostas para edição antes de gravar
-            answers: JSON.parse(JSON.stringify(exec.answers || {}))
-        };
-
-        // Preenche cabeçalhos do modal
-        const titleEl = document.getElementById('chk-exec-title');
-        const descEl = document.getElementById('chk-exec-desc');
-        const roleEl = document.getElementById('chk-exec-role-badge');
-        const shiftEl = document.getElementById('chk-exec-shift-badge');
-        const dateEl = document.getElementById('chk-exec-date-badge');
-
-        if (titleEl) titleEl.innerText = model.title;
-        if (descEl) descEl.innerText = model.description || 'Preencha cada item com atenção e anexe comprovação em caso de não conformidade ou exigência de foto.';
-        if (roleEl) roleEl.innerText = `Cargo: ${model.targetRole}`;
-        if (shiftEl) {
-            shiftEl.innerText = currentShift ? `Turno ${currentShift}` : 'Diário';
-            shiftEl.style.display = 'inline-block';
-        }
-        if (dateEl) dateEl.innerText = `Data: ${today}`;
-
-        this.renderExecutionItems();
-        this.updateExecutionProgress();
-
-        const modal = document.getElementById('modal-checklist-execution');
-        if (modal) {
-            modal.style.display = 'flex';
-            modal.classList.remove('hidden');
-        }
-    }
-
-    closeExecutionModal() {
-        const modal = document.getElementById('modal-checklist-execution');
-        if (modal) {
-            modal.style.display = 'none';
-            modal.classList.add('hidden');
-        }
-        this.currentExecutionSession = null;
-    }
-
-    renderExecutionItems() {
-        const container = document.getElementById('chk-exec-items-list');
-        if (!container || !this.currentExecutionSession) return;
-
-        const model = this.currentExecutionSession.model;
-        const answers = this.currentExecutionSession.answers;
-
-        let html = '';
-        model.items.forEach((item, idx) => {
-            const ans = answers[item.id] || {};
-            const itemType = item.type || 'conformity';
-            const reqPhoto = !!item.requirePhoto;
-            const status = ans.status || null;
-            const value = ans.value !== undefined ? ans.value : '';
-            const obs = ans.observation || '';
-            const photo = ans.photo || null;
-            const justified = !!ans.justification;
-
-            const isConformity = (itemType === 'conformity');
-            const isYesNo = (itemType === 'yes_no');
-            const isNumber = (itemType === 'number');
-
-            const isNonConform = (isConformity && status === 'nao_conforme');
-            const isNo = (isYesNo && status === 'nao');
-
-            // Borda do card de acordo com status
-            let borderClass = 'border-gray-800';
-            let bgClass = 'bg-gray-950';
-            if (isConformity) {
-                if (status === 'conforme') { borderClass = 'border-emerald-600/50'; bgClass = 'bg-emerald-950/10'; }
-                else if (status === 'nao_conforme') { borderClass = 'border-red-600/50'; bgClass = 'bg-red-950/10'; }
-            } else if (isYesNo) {
-                if (status === 'sim') { borderClass = 'border-emerald-600/50'; bgClass = 'bg-emerald-950/10'; }
-                else if (status === 'nao') { borderClass = 'border-amber-600/50'; bgClass = 'bg-amber-950/10'; }
-            } else if (isNumber) {
-                if (status === 'respondido' && value !== '') { borderClass = 'border-cyan-600/50'; bgClass = 'bg-cyan-950/10'; }
-            }
-
-            html += `
-                <div class="p-3.5 rounded-xl border ${borderClass} ${bgClass} transition space-y-2.5">
-                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                                <span class="w-5 h-5 rounded-full bg-gray-800 text-cyan-300 text-[10px] font-mono font-bold flex items-center justify-center shrink-0">#${idx + 1}</span>
-                                ${item.category ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-800 text-gray-300 uppercase">${item.category}</span>` : ''}
-                                ${reqPhoto ? `<span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1"><i class="fa-solid fa-camera"></i> Foto Obrigatória</span>` : ''}
-                            </div>
-                            <p class="text-xs sm:text-sm font-semibold text-gray-100 leading-snug">${item.text}</p>
-                        </div>
-
-                        <!-- Controles de Resposta por Tipo -->
-                        <div class="shrink-0 flex items-center">
-                            ${isConformity ? `
-                                <div class="flex items-center gap-1.5">
-                                    <button type="button" onclick="checklistApp.setAnswer('${item.id}', 'conforme')" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1 cursor-pointer ${status === 'conforme' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/40 ring-2 ring-emerald-400' : 'bg-gray-800 text-gray-400 hover:text-emerald-300 hover:bg-gray-700'}">
-                                        <i class="fa-solid fa-check"></i>
-                                        <span>Conforme</span>
-                                    </button>
-                                    <button type="button" onclick="checklistApp.setAnswer('${item.id}', 'nao_conforme')" class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1 cursor-pointer ${status === 'nao_conforme' ? 'bg-red-600 text-white shadow-md shadow-red-600/40 ring-2 ring-red-400' : 'bg-gray-800 text-gray-400 hover:text-red-300 hover:bg-gray-700'}">
-                                        <i class="fa-solid fa-xmark"></i>
-                                        <span>Não Conforme</span>
-                                    </button>
-                                </div>
-                            ` : ''}
-
-                            ${isYesNo ? `
-                                <div class="flex items-center gap-1.5">
-                                    <button type="button" onclick="checklistApp.setAnswer('${item.id}', 'sim')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1 cursor-pointer ${status === 'sim' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/40 ring-2 ring-emerald-400' : 'bg-gray-800 text-gray-400 hover:text-emerald-300 hover:bg-gray-700'}">
-                                        <i class="fa-solid fa-thumbs-up"></i>
-                                        <span>Sim</span>
-                                    </button>
-                                    <button type="button" onclick="checklistApp.setAnswer('${item.id}', 'nao')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 flex items-center gap-1 cursor-pointer ${status === 'nao' ? 'bg-rose-600 text-white shadow-md shadow-rose-600/40 ring-2 ring-rose-400' : 'bg-gray-800 text-gray-400 hover:text-rose-300 hover:bg-gray-700'}">
-                                        <i class="fa-solid fa-thumbs-down"></i>
-                                        <span>Não</span>
-                                    </button>
-                                </div>
-                            ` : ''}
-
-                            ${isNumber ? `
-                                <div class="flex items-center gap-1.5 bg-gray-900 border border-gray-700/80 p-1 rounded-xl shadow-inner">
-                                    <button type="button" onclick="checklistApp.setNumberDelta('${item.id}', -1)" class="w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 font-black text-sm flex items-center justify-center active:scale-95 cursor-pointer select-none">－</button>
-                                    <input type="number" min="0" step="1" value="${value}" placeholder="0" oninput="checklistApp.handleNumberInput('${item.id}', this.value)" class="w-16 bg-transparent text-center font-mono font-black text-sm text-cyan-300 focus:outline-none">
-                                    <button type="button" onclick="checklistApp.setNumberDelta('${item.id}', 1)" class="w-8 h-8 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-black text-sm flex items-center justify-center active:scale-95 cursor-pointer select-none">＋</button>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-
-                    <!-- Observação para Não Conforme ou Resposta Não -->
-                    ${isNonConform ? `
-                        <div class="pt-2 border-t border-red-900/40 space-y-1.5 bg-red-950/20 p-2.5 rounded-lg">
-                            <label class="block text-[11px] font-bold text-red-300">
-                                Descreva o problema / motivo da não conformidade *
-                            </label>
-                            <textarea rows="2" placeholder="Ex: Produto sem etiqueta de preço no corredor 4..." oninput="checklistApp.setItemObservation('${item.id}', this.value)" class="w-full bg-gray-950 border border-red-800/60 rounded-xl px-3 py-1.5 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-red-500">${obs}</textarea>
-                        </div>
-                    ` : ''}
-
-                    ${isNo ? `
-                        <div class="pt-2 border-t border-amber-900/40 space-y-1.5 bg-amber-950/20 p-2.5 rounded-lg">
-                            <label class="block text-[11px] font-bold text-amber-300">
-                                Observação sobre a resposta "Não" (opcional):
-                            </label>
-                            <input type="text" value="${obs.replace(/"/g, '&quot;')}" placeholder="Ex: Setor com fila de 5 clientes, etc..." oninput="checklistApp.setItemObservation('${item.id}', this.value)" class="w-full bg-gray-950 border border-amber-800/60 rounded-xl px-3 py-1.5 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-amber-500">
-                        </div>
-                    ` : ''}
-
-                    <!-- Bloco de Foto (Exibido se o item exige foto OU se for Não Conforme) -->
-                    ${(reqPhoto || isNonConform) ? `
-                        <div class="pt-2 border-t border-gray-800/80 space-y-2 bg-gray-900/60 p-2.5 rounded-lg">
-                            <div class="flex items-center justify-between gap-2">
-                                <label class="text-[10px] font-extrabold ${reqPhoto ? 'text-cyan-300' : 'text-gray-400'} uppercase flex items-center gap-1">
-                                    <i class="fa-solid fa-camera"></i>
-                                    <span>${reqPhoto ? 'Foto Comprobatória Obrigatória *' : 'Foto Comprobatória (Opcional)'}</span>
-                                </label>
-                                <button type="button" onclick="document.getElementById('chk-photo-input-${item.id}').click()" class="text-xs font-bold ${photo ? 'text-cyan-400 hover:text-cyan-300' : 'bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1 rounded-lg shadow'} flex items-center gap-1 cursor-pointer active:scale-95">
-                                    <i class="fa-solid fa-camera"></i> ${photo ? 'Trocar Foto' : 'Tirar / Anexar Foto'}
-                                </button>
-                                <input type="file" id="chk-photo-input-${item.id}" accept="image/*" capture="environment" class="hidden" onchange="checklistApp.handleItemPhoto('${item.id}', event)">
-                            </div>
-
-                            ${photo ? `
-                                <div class="mt-1.5 relative inline-block rounded-xl overflow-hidden border border-gray-700 max-h-36 bg-black">
-                                    <img src="${photo}" class="max-h-36 object-contain rounded-lg">
-                                    <button type="button" onclick="checklistApp.removeItemPhoto('${item.id}')" class="absolute top-1 right-1 bg-black/80 text-white rounded-full p-1 hover:bg-red-600 text-[10px]" title="Remover Foto">✕</button>
-                                </div>
-                            ` : ''}
-
-                            <div class="mt-1">
-                                <label class="flex items-center gap-2 cursor-pointer select-none">
-                                    <input type="checkbox" ${justified ? 'checked' : ''} onchange="checklistApp.toggleNoPhotoJustification('${item.id}', this.checked)" class="accent-amber-500 rounded text-xs">
-                                    <span class="text-[11px] text-amber-300">Justificar ausência de foto (ex: fila com clientes, desconforto ao cliente)</span>
-                                </label>
-                                ${justified ? `
-                                    <input type="text" value="${(ans.justificationText || '').replace(/"/g, '&quot;')}" placeholder="Digite o motivo de não anexar a foto..." oninput="checklistApp.setPhotoJustificationText('${item.id}', this.value)" class="mt-1.5 w-full bg-gray-950 border border-amber-800/60 rounded-xl px-3 py-1.5 text-xs text-amber-200 placeholder-gray-500 focus:outline-none focus:border-amber-500">
-                                ` : ''}
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        });
-
-        container.innerHTML = html;
-    }
-
-    setAnswer(itemId, status) {
-        if (!this.currentExecutionSession) return;
-        const answers = this.currentExecutionSession.answers;
-        if (!answers[itemId]) {
-            answers[itemId] = {
-                status: null,
-                value: '',
-                observation: '',
-                photo: null,
-                justification: null,
-                justificationText: '',
-                answeredBy: this.getCurrentUserName(),
-                answeredAt: Date.now()
-            };
-        }
-
-        answers[itemId].status = status;
-        this.renderExecutionItems();
-        this.updateExecutionProgress();
-    }
-
-    setNumberDelta(itemId, delta) {
-        if (!this.currentExecutionSession) return;
-        const answers = this.currentExecutionSession.answers;
-        if (!answers[itemId]) {
-            answers[itemId] = {
-                status: 'respondido',
-                value: 0,
-                observation: '',
-                photo: null,
-                justification: null,
-                justificationText: '',
-                answeredBy: this.getCurrentUserName(),
-                answeredAt: Date.now()
-            };
-        }
-        let cur = parseInt(answers[itemId].value, 10);
-        if (isNaN(cur)) cur = 0;
-        const nextVal = Math.max(0, cur + delta);
-        answers[itemId].value = nextVal;
-        answers[itemId].status = 'respondido';
-        this.renderExecutionItems();
-        this.updateExecutionProgress();
-    }
-
-    handleNumberInput(itemId, val) {
-        if (!this.currentExecutionSession) return;
-        const answers = this.currentExecutionSession.answers;
-        if (!answers[itemId]) {
-            answers[itemId] = {
-                status: 'respondido',
-                value: 0,
-                observation: '',
-                photo: null,
-                justification: null,
-                justificationText: '',
-                answeredBy: this.getCurrentUserName(),
-                answeredAt: Date.now()
-            };
-        }
-        const num = (val === '') ? '' : Math.max(0, parseInt(val, 10) || 0);
-        answers[itemId].value = num;
-        answers[itemId].status = (num !== '') ? 'respondido' : null;
-        this.updateExecutionProgress();
-    }
-
-    setItemObservation(itemId, val) {
-        if (!this.currentExecutionSession) return;
-        const ans = this.currentExecutionSession.answers[itemId];
-        if (ans) ans.observation = val;
-    }
-
-    setPhotoJustificationText(itemId, text) {
-        if (!this.currentExecutionSession) return;
-        const ans = this.currentExecutionSession.answers[itemId];
-        if (ans) {
-            ans.justificationText = text;
-            ans.justification = text ? text : 'Foto dispensada com justificativa operacional.';
-        }
-    }
-
-    handleItemPhoto(itemId, event) {
-        const file = event.target.files && event.target.files[0];
-        if (!file || !this.currentExecutionSession) return;
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const ans = this.currentExecutionSession.answers[itemId];
-            if (ans) {
-                ans.photo = e.target.result;
-                ans.justification = null;
-                ans.justificationText = '';
-            }
-            this.renderExecutionItems();
-        };
-        reader.readAsDataURL(file);
-    }
-
-    removeItemPhoto(itemId) {
-        if (!this.currentExecutionSession) return;
-        const ans = this.currentExecutionSession.answers[itemId];
-        if (ans) ans.photo = null;
-        this.renderExecutionItems();
-    }
-
-    toggleNoPhotoJustification(itemId, checked) {
-        if (!this.currentExecutionSession) return;
-        const ans = this.currentExecutionSession.answers[itemId];
-        if (ans) {
-            ans.justification = checked ? (ans.justificationText || 'Foto dispensada com justificativa operacional.') : null;
-            if (checked) ans.photo = null;
-        }
-        this.renderExecutionItems();
-    }
-
-    updateExecutionProgress() {
-        if (!this.currentExecutionSession) return;
-        const model = this.currentExecutionSession.model;
-        const answers = this.currentExecutionSession.answers;
-
-        const total = model.items.length;
-        let answered = 0;
-        let conformingCount = 0;
-
-        model.items.forEach(item => {
-            const ans = answers[item.id];
-            const itemType = item.type || 'conformity';
-            if (ans && ans.status) {
-                if (itemType === 'conformity') {
-                    answered++;
-                    if (ans.status === 'conforme') conformingCount++;
-                } else if (itemType === 'yes_no') {
-                    answered++;
-                    if (ans.status === 'sim') conformingCount++;
-                } else if (itemType === 'number') {
-                    if (ans.value !== '' && ans.value !== null && ans.value !== undefined) {
-                        answered++;
-                        conformingCount++;
-                    }
-                }
-            }
-        });
-
-        const progressPct = total > 0 ? Math.round((answered / total) * 100) : 0;
-        const scorePct = answered > 0 ? Math.round((conformingCount / answered) * 100) : 0;
-
-        const pLabel = document.getElementById('chk-exec-progress-label');
-        const pBar = document.getElementById('chk-exec-progress-bar');
-        const sBadge = document.getElementById('chk-exec-score-badge');
-
-        if (pLabel) pLabel.innerText = `${answered} / ${total} Itens Respondidos`;
-        if (pBar) pBar.style.width = `${progressPct}%`;
-        if (sBadge) {
-            sBadge.innerText = `${scorePct}% Conforme`;
-            sBadge.className = scorePct >= 80 
-                ? "px-2.5 py-1 rounded-xl text-xs font-black bg-emerald-950 text-emerald-300 border border-emerald-700/50 shrink-0"
-                : "px-2.5 py-1 rounded-xl text-xs font-black bg-amber-950 text-amber-300 border border-amber-700/50 shrink-0";
-        }
-    }
-
-    submitExecution() {
-        if (!this.currentExecutionSession) return;
-        const session = this.currentExecutionSession;
-        const model = session.model;
-        const answers = session.answers;
-
-        // 1. Validação: Todos os itens precisam ter resposta
-        for (const it of model.items) {
-            const itType = it.type || 'conformity';
-            const ans = answers[it.id];
-            if (!ans || !ans.status) {
-                const msg = `O item "${it.text}" ainda não foi respondido.`;
-                if (typeof showCustomAlert === 'function') showCustomAlert('Item Pendente', msg, 'warning');
-                else alert(msg);
-                return;
-            }
-            if (itType === 'number' && (ans.value === '' || ans.value === null || ans.value === undefined)) {
-                const msg = `Por favor, informe a quantidade para "${it.text}".`;
-                if (typeof showCustomAlert === 'function') showCustomAlert('Quantidade Pendente', msg, 'warning');
-                else alert(msg);
-                return;
-            }
-        }
-
-        // 2. Validação: Não Conforme exige descrição
-        for (const it of model.items) {
-            const itType = it.type || 'conformity';
-            const ans = answers[it.id];
-            if (itType === 'conformity' && ans.status === 'nao_conforme' && (!ans.observation || !ans.observation.trim())) {
-                const msg = `O item "${it.text}" foi marcado como Não Conforme. Descreva o problema encontrado.`;
-                if (typeof showCustomAlert === 'function') showCustomAlert('Observação Obrigatória', msg, 'warning');
-                else alert(msg);
-                return;
-            }
-        }
-
-        // 3. Validação: Itens com Foto Obrigatória precisam de foto ou justificativa preenchida
-        for (const it of model.items) {
-            const reqPhoto = !!it.requirePhoto;
-            const ans = answers[it.id];
-            if (reqPhoto) {
-                const hasPhoto = !!ans.photo;
-                const hasJustification = !!(ans.justification && (ans.justificationText || ans.justification).trim());
-                if (!hasPhoto && !hasJustification) {
-                    const msg = `O item "${it.text}" exige uma foto comprobatória (ou preencha a justificativa).`;
-                    if (typeof showCustomAlert === 'function') showCustomAlert('Foto Obrigatória', msg, 'warning');
-                    else alert(msg);
-                    return;
-                }
-            }
-        }
-
-        // Calcula taxa final de conformidade
-        let positiveCount = 0;
-        model.items.forEach(it => {
-            const itType = it.type || 'conformity';
-            const ans = answers[it.id];
-            if (itType === 'conformity' && ans.status === 'conforme') positiveCount++;
-            if (itType === 'yes_no' && ans.status === 'sim') positiveCount++;
-            if (itType === 'number' && ans.status === 'respondido') positiveCount++;
-        });
-        const finalScore = Math.round((positiveCount / model.items.length) * 100);
-
-        // Atualiza ou cria execução no histórico
-        const execIndex = this.executions.findIndex(e => e.id === session.exec.id);
-        const savedExec = {
-            ...session.exec,
-            completed: true,
-            completedBy: this.getCurrentUserName(),
-            completedAt: Date.now(),
-            conformityScore: finalScore,
-            answers: answers
-        };
-
-        if (execIndex >= 0) {
-            this.executions[execIndex] = savedExec;
-        } else {
-            this.executions.unshift(savedExec);
-        }
-
-        this.saveData();
-        this.closeExecutionModal();
-
-        if (typeof showCustomAlert === 'function') {
-            showCustomAlert('Checklist Concluído!', `Checklist "${model.title}" salvo com sucesso! Taxa de conformidade: ${finalScore}%.`, 'success');
-        } else {
-            alert(`Checklist salvo com sucesso! Conformidade: ${finalScore}%`);
-        }
-    }
-
     renderHistory() {
-        const tbody = document.getElementById('chk-history-table-body') || document.getElementById('chk-history-tbody');
+        const tbody = document.getElementById('chk-history-table-body');
         if (!tbody) return;
 
-        if (this.executions.length === 0) {
+        const list = [...this.executions].sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+        if (list.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="py-8 text-center text-gray-500">
-                        Nenhum histórico de checklist registrado até o momento.
+                    <td colspan="7" class="py-8 text-center text-gray-500 text-xs">
+                        Nenhum checklist executado até o momento.
                     </td>
                 </tr>
             `;
@@ -21649,27 +21052,32 @@ class ChecklistApp {
         }
 
         let html = '';
-        this.executions.forEach(e => {
-            const d = new Date(e.completedAt || Date.now());
-            const dateStr = d.toLocaleDateString('pt-BR');
-            const timeStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-            const score = typeof e.conformityScore === 'number' ? e.conformityScore : 100;
-            const scoreBadge = score >= 80
-                ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-950 text-emerald-300 border border-emerald-800/60">${score}%</span>`
-                : `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-red-950 text-red-300 border border-red-800/60">${score}%</span>`;
-
+        list.forEach(ex => {
+            const dateStr = ex.date ? ex.date.split('-').reverse().join('/') : '-';
             html += `
                 <tr class="border-b border-gray-800/60 hover:bg-gray-800/30 transition text-xs">
-                    <td class="py-3 px-3 font-semibold text-gray-200">${e.title}</td>
-                    <td class="py-3 px-3 text-cyan-300 font-medium">${e.targetRole}</td>
-                    <td class="py-3 px-3 text-gray-400">${dateStr} ${timeStr}</td>
-                    <td class="py-3 px-3 text-gray-300">${e.shift ? `Turno ${e.shift}` : 'Diário'}</td>
-                    <td class="py-3 px-3 text-gray-300">${e.completedBy || 'Colaborador'}</td>
-                    <td class="py-3 px-3 text-center">${scoreBadge}</td>
+                    <td class="py-3 px-3 text-gray-300 font-mono">${dateStr}</td>
+                    <td class="py-3 px-3">
+                        <span class="text-gray-100 font-bold block">${ex.title}</span>
+                        <span class="text-[10px] text-gray-400">${ex.shift || 'Diário'}</span>
+                    </td>
+                    <td class="py-3 px-3">
+                        <span class="px-2 py-0.5 rounded-md bg-gray-800 text-cyan-300 font-semibold text-[10px] border border-gray-700">
+                            ${ex.targetRole || 'Geral'}
+                        </span>
+                    </td>
+                    <td class="py-3 px-3 text-gray-300">${ex.submittedBy || 'Colaborador'}</td>
+                    <td class="py-3 px-3 text-center">
+                        <span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold ${ex.score >= 80 ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/40' : (ex.score >= 50 ? 'bg-amber-950 text-amber-400 border border-amber-800/40' : 'bg-rose-950 text-rose-400 border border-rose-800/40')}">
+                            ${ex.score}% Conforme
+                        </span>
+                    </td>
+                    <td class="py-3 px-3 text-center">
+                        <span class="text-[11px] font-bold text-emerald-400">✓ Concluído</span>
+                    </td>
                     <td class="py-3 px-3 text-right">
-                        <button onclick="checklistApp.viewHistoryDetail('${e.id}')" class="px-2.5 py-1 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg border border-gray-700 transition active:scale-95 cursor-pointer">
-                            <i class="fa-solid fa-eye text-[10px] mr-1"></i> Detalhes
+                        <button type="button" onclick="checklistApp.viewExecutionDetail('${ex.id}')" class="p-1.5 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg transition" title="Ver Detalhes">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         </button>
                     </td>
                 </tr>
@@ -21679,186 +21087,158 @@ class ChecklistApp {
         tbody.innerHTML = html;
     }
 
-    viewHistoryDetail(execId) {
-        const exec = this.executions.find(e => e.id === execId);
-        if (!exec) return;
-
-        const titleEl = document.getElementById('chk-detail-title');
-        const metaEl = document.getElementById('chk-detail-meta');
-        const container = document.getElementById('chk-detail-items-container');
-
-        if (titleEl) titleEl.innerText = exec.title;
-        if (metaEl) {
-            const d = new Date(exec.completedAt || Date.now());
-            metaEl.innerText = `Executado por ${exec.completedBy} em ${d.toLocaleString('pt-BR')} • ${exec.conformityScore}% Conforme`;
-        }
-
-        const model = this.checklists.find(c => c.id === exec.checklistId);
-        const items = model ? model.items : [];
-
-        let html = '';
-        if (items.length > 0) {
-            items.forEach((it, idx) => {
-                const ans = exec.answers ? exec.answers[it.id] : null;
-                const itType = it.type || 'conformity';
-                const status = ans ? ans.status : 'pendente';
-
-                let badgeHtml = '';
-                let borderClass = 'border-gray-800';
-
-                if (itType === 'conformity') {
-                    const isConf = (status === 'conforme');
-                    borderClass = isConf ? 'border-emerald-900/50' : 'border-red-900/50';
-                    badgeHtml = isConf 
-                        ? `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-950 text-emerald-300 border border-emerald-800/60">CONFORME</span>`
-                        : `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-red-950 text-red-300 border border-red-800/60">NÃO CONFORME</span>`;
-                } else if (itType === 'yes_no') {
-                    const isSim = (status === 'sim');
-                    borderClass = isSim ? 'border-emerald-900/50' : 'border-amber-900/50';
-                    badgeHtml = isSim 
-                        ? `<span class="px-2.5 py-0.5 rounded text-[10px] font-black bg-emerald-950 text-emerald-300 border border-emerald-800/60">👍 SIM</span>`
-                        : `<span class="px-2.5 py-0.5 rounded text-[10px] font-black bg-rose-950 text-rose-300 border border-rose-800/60">👎 NÃO</span>`;
-                } else if (itType === 'number') {
-                    borderClass = 'border-cyan-900/50';
-                    badgeHtml = `<span class="px-2.5 py-0.5 rounded text-[11px] font-black bg-cyan-950 text-cyan-300 border border-cyan-800/60 font-mono">🔢 QUANTIDADE: ${ans ? ans.value : 0}</span>`;
-                }
-
-                html += `
-                    <div class="bg-gray-950 p-3 rounded-xl border ${borderClass} space-y-1.5">
-                        <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <span class="text-xs font-semibold text-gray-200 flex-1">${idx + 1}. ${it.text}</span>
-                            <div>${badgeHtml}</div>
-                        </div>
-
-                        ${ans && ans.observation ? `
-                            <div class="p-2 rounded bg-gray-900/80 text-xs text-gray-300 mt-1 border border-gray-800">
-                                <span class="font-bold text-gray-400">Observação:</span> ${ans.observation}
-                            </div>
-                        ` : ''}
-
-                        ${ans && ans.photo ? `
-                            <div class="mt-2">
-                                <span class="text-[10px] font-bold text-cyan-400 uppercase block mb-1">Foto Comprobatória:</span>
-                                <img src="${ans.photo}" class="max-h-40 rounded-xl border border-gray-700 object-contain bg-black cursor-pointer hover:opacity-90" onclick="window.open('${ans.photo}', '_blank')">
-                            </div>
-                        ` : ''}
-
-                        ${ans && ans.justification ? `
-                            <div class="p-2 rounded bg-amber-950/30 border border-amber-900/40 text-[11px] text-amber-300 mt-1">
-                                <span class="font-bold">Foto dispensada:</span> ${ans.justificationText || ans.justification}
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            });
-        }
-
-        if (container) container.innerHTML = html;
-
-        const modal = document.getElementById('modal-checklist-detail');
-        if (modal) {
-            modal.style.display = 'flex';
-            modal.classList.remove('hidden');
-        }
-    }
-
-    closeDetailModal() {
-        const modal = document.getElementById('modal-checklist-detail');
-        if (modal) {
-            modal.style.display = 'none';
-            modal.classList.add('hidden');
-        }
-    }
-
-    renderManageModels() {
-        const container = document.getElementById('chk-models-list');
+    renderModelsList() {
+        const container = document.getElementById('chk-models-list-container');
         if (!container) return;
 
-        let html = '';
         if (this.checklists.length === 0) {
-            html = `
-                <div class="py-8 text-center text-gray-500 bg-gray-950/60 rounded-xl border border-dashed border-gray-800">
-                    <p class="text-xs text-gray-400">Nenhum modelo cadastrado.</p>
+            container.innerHTML = `
+                <div class="col-span-full py-12 text-center bg-gray-900/60 rounded-2xl border border-gray-800 space-y-3">
+                    <div class="w-12 h-12 mx-auto rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-gray-200">Nenhum modelo de checklist criado ainda</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">Crie modelos por cargo para que a equipe valide processos e conformidade.</p>
+                    </div>
+                    <div>
+                        <button type="button" onclick="checklistApp.openNewChecklistModal()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-600/30 inline-flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-plus text-xs"></i> <span>Criar Modelo</span>
+                        </button>
+                    </div>
                 </div>
             `;
-        } else {
-            this.checklists.forEach((model, idx) => {
-                html += `
-                    <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-cyan-500/40 transition">
-                        <div>
-                            <div class="flex items-center gap-2 mb-1 flex-wrap">
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800/60">${model.targetRole}</span>
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-800 text-gray-300">${model.recurrence === 'shift' ? 'Por Turno' : (model.recurrence === 'daily' ? 'Diário' : 'Avulso')}</span>
-                                <span class="text-[11px] text-gray-500">${model.items.length} itens</span>
-                            </div>
-                            <h4 class="font-bold text-sm text-gray-100">${model.title}</h4>
-                            <p class="text-xs text-gray-400 mt-0.5">${model.description || 'Sem descrição cadastrada'}</p>
-                        </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <button type="button" onclick="checklistApp.openNewChecklistModal('${model.id}')" class="px-3 py-1.5 text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-cyan-300 rounded-xl border border-gray-700 transition active:scale-95 cursor-pointer">
-                                <i class="fa-solid fa-pen text-[10px] mr-1"></i> Editar
-                            </button>
-                            <button type="button" onclick="checklistApp.deleteModel('${model.id}')" class="px-3 py-1.5 text-xs font-semibold bg-gray-800 hover:bg-red-950 text-red-400 rounded-xl border border-gray-700 hover:border-red-700 transition active:scale-95 cursor-pointer">
-                                <i class="fa-solid fa-trash text-[10px]"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
+            return;
         }
+
+        let html = '';
+        this.checklists.forEach(m => {
+            const count = m.items ? m.items.length : 0;
+            const secCount = m.sections ? m.sections.length : 1;
+            html += `
+                <div class="bg-gray-950 p-4 rounded-2xl border border-gray-800/80 hover:border-cyan-500/40 transition flex flex-col justify-between space-y-3.5 shadow-lg">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-1.5">
+                            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-cyan-950 text-cyan-300 border border-cyan-800/60">
+                                ${m.targetRole}
+                            </span>
+                            <span class="text-[10px] text-gray-400 font-mono">${count} questões | ${secCount} seções</span>
+                        </div>
+                        <h4 class="text-sm font-bold text-white">${m.title}</h4>
+                        <p class="text-xs text-gray-400 mt-0.5 line-clamp-2">${m.description || 'Modelo de questionário operacional'}</p>
+                    </div>
+                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-800">
+                        <button type="button" onclick="checklistApp.openNewChecklistModal('${m.id}')" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-cyan-300 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                            <i class="fa-solid fa-pen-to-square text-[10px]"></i> <span>Editar</span>
+                        </button>
+                        <button type="button" onclick="checklistApp.deleteModelPrompt('${m.id}')" class="p-1.5 hover:bg-rose-950/60 text-gray-400 hover:text-rose-400 rounded-xl text-xs transition">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
 
         container.innerHTML = html;
     }
 
+    // =========================================================================
+    // BUILDER MODAL - ESTILO SIMPLIFICAÇÃO V3 (PAINEL DUPLO: ÁRVORE + EDITOR)
+    // =========================================================================
+
     openNewChecklistModal(modelId = null) {
         if (!this.canManage()) {
-            if (typeof showCustomAlert === 'function') {
-                showCustomAlert('Acesso Restrito', 'Apenas Administradores e Gerentes podem criar ou editar modelos de checklist.', 'warning');
-            } else {
-                alert('Acesso restrito a Gerentes e Administradores.');
-            }
+            alert('Apenas Administradores e Gerentes podem criar ou editar checklists.');
             return;
         }
 
-        const modal = document.getElementById('modal-checklist-new');
-        const titleModal = document.getElementById('chk-modal-model-title');
-        const idInput = document.getElementById('chk-model-id');
-        const titleInput = document.getElementById('chk-model-title-input');
-        const descInput = document.getElementById('chk-model-desc-input');
-        const roleSelect = document.getElementById('chk-model-role-select');
-        const recSelect = document.getElementById('chk-model-recurrence-select');
-        const reqPhotoCheck = document.getElementById('chk-model-require-photo');
-        const builder = document.getElementById('chk-model-items-builder');
-
         this.populateModelRoleSelect();
-        if (builder) builder.innerHTML = '';
-        this.modelItemCounter = 0;
 
         if (modelId) {
             const m = this.checklists.find(c => c.id === modelId);
             if (!m) return;
-            if (titleModal) titleModal.innerText = 'Editar Modelo de Checklist';
-            if (idInput) idInput.value = m.id;
-            if (titleInput) titleInput.value = m.title;
-            if (descInput) descInput.value = m.description || '';
-            if (roleSelect) roleSelect.value = m.targetRole;
-            if (recSelect) recSelect.value = m.recurrence || 'daily';
-            if (reqPhotoCheck) reqPhotoCheck.checked = m.requirePhotoOnNonConform !== false;
 
-            m.items.forEach(it => this.addEmptyModelItem(it.text, it.category, it.type || 'conformity', !!it.requirePhoto));
+            // Se o modelo antigo não tiver sections estruturadas, cria a partir de m.items
+            let sections = m.sections;
+            if (!sections || sections.length === 0) {
+                const grouped = {};
+                (m.items || []).forEach(it => {
+                    const secName = it.category || 'Geral';
+                    if (!grouped[secName]) grouped[secName] = [];
+                    grouped[secName].push({
+                        id: it.id || ('q_' + Math.random().toString(36).substr(2, 6)),
+                        text: it.text || '',
+                        hint: it.hint || '',
+                        type: it.type || 'yes_no',
+                        required: it.required !== false,
+                        requirePhotoOnNonConform: !!it.requirePhoto,
+                        days: it.days || ['DOM','SEG','TER','QUA','QUI','SEX','SAB']
+                    });
+                });
+                sections = Object.keys(grouped).map((sTitle, idx) => ({
+                    id: 'sec_' + (idx + 1),
+                    title: sTitle,
+                    questions: grouped[sTitle]
+                }));
+            }
+
+            this.builderModel = {
+                id: m.id,
+                title: m.title || '',
+                description: m.description || '',
+                targetRole: m.targetRole || 'Todos os Cargos',
+                recurrence: m.recurrence || 'daily',
+                sections: JSON.parse(JSON.stringify(sections))
+            };
         } else {
-            if (titleModal) titleModal.innerText = 'Criar Novo Modelo de Checklist';
-            if (idInput) idInput.value = '';
-            if (titleInput) titleInput.value = '';
-            if (descInput) descInput.value = '';
-            if (reqPhotoCheck) reqPhotoCheck.checked = true;
-
-            // Modelos padrão com os tipos solicitados pelo usuário
-            this.addEmptyModelItem('Quantos caixas abertos no momento?', 'Operação', 'number', false);
-            this.addEmptyModelItem('As esteiras e balcões estão limpos?', 'Limpeza', 'yes_no', false);
-            this.addEmptyModelItem('Produtos organizados e precificados na gôndola', 'Qualidade', 'conformity', true);
+            // Modelo em branco do zero conforme o usuário escolheu
+            this.builderModel = {
+                id: 'chk_' + Date.now(),
+                title: '',
+                description: '',
+                targetRole: 'Todos os Cargos',
+                recurrence: 'daily',
+                sections: [
+                    {
+                        id: 'sec_1',
+                        title: 'Início do Expediente',
+                        questions: [
+                            {
+                                id: 'q_1',
+                                text: '',
+                                hint: '',
+                                type: 'yes_no',
+                                required: true,
+                                requirePhotoOnNonConform: false,
+                                days: ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB']
+                            }
+                        ]
+                    }
+                ]
+            };
         }
 
+        const titleInput = document.getElementById('chk-model-title-input');
+        const roleSelect = document.getElementById('chk-model-role-select');
+        const recSelect = document.getElementById('chk-model-recurrence-select');
+        const idInput = document.getElementById('chk-model-id');
+        const modalTitle = document.getElementById('chk-modal-model-title');
+
+        if (titleInput) titleInput.value = this.builderModel.title;
+        if (roleSelect) roleSelect.value = this.builderModel.targetRole;
+        if (recSelect) recSelect.value = this.builderModel.recurrence;
+        if (idInput) idInput.value = this.builderModel.id;
+        if (modalTitle) modalTitle.innerText = modelId ? 'Editar Questionário de Checklist' : 'Criar Questionário de Checklist';
+
+        // Seleciona a primeira questão da primeira seção
+        const firstSec = this.builderModel.sections[0];
+        this.selectedSectionId = firstSec ? firstSec.id : null;
+        this.selectedQuestionId = (firstSec && firstSec.questions[0]) ? firstSec.questions[0].id : null;
+
+        this.renderBuilderTree();
+        this.renderBuilderEditor();
+
+        const modal = document.getElementById('modal-checklist-new');
         if (modal) {
             modal.style.display = 'flex';
             modal.classList.remove('hidden');
@@ -21871,6 +21251,9 @@ class ChecklistApp {
             modal.style.display = 'none';
             modal.classList.add('hidden');
         }
+        this.builderModel = null;
+        this.selectedSectionId = null;
+        this.selectedQuestionId = null;
     }
 
     populateModelRoleSelect() {
@@ -21884,145 +21267,1043 @@ class ChecklistApp {
                 roles = ["Todos os Cargos", ...adminRoles];
             }
         }
-
         select.innerHTML = roles.map(r => `<option value="${r}">${r}</option>`).join('');
     }
 
-    addEmptyModelItem(text = '', category = '', type = 'conformity', requirePhoto = false) {
-        const builder = document.getElementById('chk-model-items-builder');
-        if (!builder) return;
-
-        this.modelItemCounter++;
-        const id = 'chk_item_input_' + this.modelItemCounter;
-        const curCount = this.modelItemCounter;
-
-        const row = document.createElement('div');
-        row.id = id;
-        row.className = "p-2.5 bg-gray-950 rounded-xl border border-gray-800 space-y-2 hover:border-gray-700 transition";
-        row.innerHTML = `
-            <div class="flex items-center gap-2">
-                <span class="w-5 text-center text-xs text-cyan-400 font-mono font-bold shrink-0">#${curCount}</span>
-                <input type="text" value="${text.replace(/"/g, '&quot;')}" placeholder="Pergunta ou item a verificar (ex: Quantos caixas abertos?, Chão limpo?)..." required class="chk-item-text-field flex-1 bg-transparent text-xs text-gray-100 placeholder-gray-500 focus:outline-none border-b border-gray-800 focus:border-cyan-500 pb-1">
-                <button type="button" onclick="document.getElementById('${id}').remove()" class="text-gray-500 hover:text-red-400 p-1 shrink-0 text-sm active:scale-95 cursor-pointer" title="Remover item">✕</button>
-            </div>
-            <div class="flex items-center gap-2 flex-wrap pl-7">
-                <div class="flex items-center gap-1">
-                    <span class="text-[10px] text-gray-400 font-bold uppercase">Tipo:</span>
-                    <select class="chk-item-type-field bg-gray-900 border border-gray-700 rounded-lg px-2 py-1 text-[11px] text-cyan-300 font-bold focus:outline-none focus:border-cyan-500 cursor-pointer">
-                        <option value="conformity" ${type === 'conformity' ? 'selected' : ''}>🟢 Conforme / Não Conforme</option>
-                        <option value="yes_no" ${type === 'yes_no' ? 'selected' : ''}>👍 Pergunta Sim / Não</option>
-                        <option value="number" ${type === 'number' ? 'selected' : ''}>🔢 Numérico (Quantidade)</option>
-                    </select>
-                </div>
-                <label class="flex items-center gap-1.5 px-2.5 py-1 bg-gray-900 border border-gray-700 rounded-lg cursor-pointer hover:border-cyan-500/80 text-[11px] select-none">
-                    <input type="checkbox" ${requirePhoto ? 'checked' : ''} class="chk-item-require-photo-field accent-cyan-500 rounded w-3.5 h-3.5">
-                    <span class="text-cyan-300 font-bold flex items-center gap-1"><i class="fa-solid fa-camera text-[10px]"></i> Exigir Foto</span>
-                </label>
-                <input type="text" value="${category.replace(/"/g, '&quot;')}" placeholder="Categoria (ex: Caixa, Faltas)" class="chk-item-cat-field w-32 bg-gray-900 border border-gray-700/60 rounded-lg px-2 py-1 text-[11px] text-gray-300 focus:outline-none">
-            </div>
-        `;
-        builder.appendChild(row);
+    getTypeIcon(type) {
+        switch(type) {
+            case 'yes_no': return { icon: 'fa-regular fa-circle-question', color: 'text-cyan-400', label: 'Sim/Não' };
+            case 'evaluative': return { icon: 'fa-regular fa-face-smile', color: 'text-amber-400', label: 'Avaliativa' };
+            case 'number': return { icon: 'fa-solid fa-hashtag', color: 'text-emerald-400', label: 'Numérica' };
+            case 'photo': return { icon: 'fa-solid fa-camera', color: 'text-purple-400', label: 'Exigir Foto' };
+            case 'signature': return { icon: 'fa-solid fa-signature', color: 'text-rose-400', label: 'Assinatura' };
+            case 'text': return { icon: 'fa-regular fa-comment-dots', color: 'text-blue-400', label: 'Texto Aberto' };
+            default: return { icon: 'fa-solid fa-check', color: 'text-gray-400', label: 'Geral' };
+        }
     }
 
-    handleSaveModel(event) {
-        event.preventDefault();
-        const idInput = document.getElementById('chk-model-id')?.value;
-        const title = document.getElementById('chk-model-title-input')?.value.trim();
-        const desc = document.getElementById('chk-model-desc-input')?.value.trim();
-        const targetRole = document.getElementById('chk-model-role-select')?.value;
-        const recurrence = document.getElementById('chk-model-recurrence-select')?.value;
-        const requirePhoto = document.getElementById('chk-model-require-photo')?.checked;
+    renderBuilderTree() {
+        const container = document.getElementById('chk-tree-container');
+        const countBadge = document.getElementById('chk-tree-count-badge');
+        if (!container || !this.builderModel) return;
 
-        if (!title) {
-            if (typeof showCustomAlert === 'function') {
-                showCustomAlert('Título Obrigatório', 'Por favor, informe o título do checklist.', 'warning');
-            } else {
-                alert('Por favor, informe o título do checklist.');
-            }
-            return;
-        }
+        let totalQuestions = 0;
+        let globalQIndex = 1;
 
-        // Coleta itens do builder com tipo e foto
-        const rows = document.querySelectorAll('#chk-model-items-builder > div');
-        const items = [];
-        rows.forEach((row, idx) => {
-            const text = row.querySelector('.chk-item-text-field')?.value.trim();
-            const type = row.querySelector('.chk-item-type-field')?.value || 'conformity';
-            const reqPhoto = !!row.querySelector('.chk-item-require-photo-field')?.checked;
-            const cat = row.querySelector('.chk-item-cat-field')?.value.trim();
-            if (text) {
-                items.push({
-                    id: 'it_' + (idx + 1),
-                    text,
-                    type,
-                    requirePhoto: reqPhoto,
-                    category: cat || 'Geral'
-                });
+        let html = '';
+        this.builderModel.sections.forEach(sec => {
+            const isSecSelected = (this.selectedSectionId === sec.id && !this.selectedQuestionId);
+            html += `
+                <div class="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+                    <!-- Cabeçalho da Seção -->
+                    <div onclick="checklistApp.selectSection('${sec.id}')" class="p-2 flex items-center justify-between cursor-pointer transition ${isSecSelected ? 'bg-cyan-950/50 border-l-4 border-cyan-400' : 'hover:bg-gray-800/60'}">
+                        <span class="text-xs font-bold text-gray-200 flex items-center gap-1.5 truncate">
+                            <i class="fa-solid fa-folder-open text-cyan-400 text-xs"></i>
+                            <span class="truncate">${sec.title || 'Seção Sem Nome'}</span>
+                        </span>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span class="text-[10px] text-gray-400 font-mono">${sec.questions.length}</span>
+                            <button type="button" onclick="event.stopPropagation(); checklistApp.addNewQuestionToSection('${sec.id}')" title="Adicionar pergunta nesta seção" class="p-1 hover:bg-gray-700 text-cyan-400 rounded transition text-xs">
+                                <i class="fa-solid fa-plus text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Questões da Seção -->
+                    <div class="p-1.5 space-y-1 bg-gray-950/60 border-t border-gray-800/60">
+            `;
+
+            sec.questions.forEach(q => {
+                totalQuestions++;
+                const isSelected = (this.selectedQuestionId === q.id);
+                const tInfo = this.getTypeIcon(q.type);
+                const qNum = `Q${globalQIndex++}`;
+
+                html += `
+                    <div onclick="checklistApp.selectQuestion('${sec.id}', '${q.id}')" class="p-2 rounded-lg border transition cursor-pointer flex items-center justify-between gap-2 ${isSelected ? 'border-cyan-500 bg-cyan-950/40 text-white shadow-sm' : 'border-gray-800 hover:border-gray-700 bg-gray-900/70 text-gray-300'}">
+                        <div class="flex items-center gap-2 truncate">
+                            <span class="text-[10px] font-mono font-bold text-cyan-300 shrink-0">${qNum}</span>
+                            <i class="${tInfo.icon} ${tInfo.color} text-xs shrink-0" title="${tInfo.label}"></i>
+                            <span class="text-xs truncate ${q.text ? 'font-medium text-gray-200' : 'italic text-gray-500'}">
+                                ${q.text || 'Pergunta sem texto...'}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            ${q.requirePhotoOnNonConform ? '<i class="fa-solid fa-camera text-[9px] text-purple-400" title="Exige Foto"></i>' : ''}
+                            ${q.required ? '<span class="text-[9px] text-rose-400 font-bold" title="Obrigatória">*</span>' : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            if (sec.questions.length === 0) {
+                html += `
+                    <div class="p-3 text-center text-[11px] text-gray-500 italic">
+                        Nenhuma pergunta nesta seção. Clique no + acima.
+                    </div>
+                `;
             }
+
+            html += `
+                    </div>
+                </div>
+            `;
         });
 
-        if (items.length === 0) {
-            if (typeof showCustomAlert === 'function') {
-                showCustomAlert('Itens Obrigatórios', 'Por favor, adicione pelo menos 1 item de verificação para o checklist.', 'warning');
-            } else {
-                alert('Por favor, adicione pelo menos 1 item de verificação para o checklist.');
+        container.innerHTML = html;
+        if (countBadge) countBadge.innerText = `${this.builderModel.sections.length} seções | ${totalQuestions} questões`;
+    }
+
+    renderBuilderEditor() {
+        const panel = document.getElementById('chk-editor-panel');
+        if (!panel || !this.builderModel) return;
+
+        // Se uma questão está selecionada
+        if (this.selectedQuestionId && this.selectedSectionId) {
+            const sec = this.builderModel.sections.find(s => s.id === this.selectedSectionId);
+            const q = sec ? sec.questions.find(item => item.id === this.selectedQuestionId) : null;
+
+            if (!q) {
+                panel.innerHTML = '<div class="p-8 text-center text-gray-500 text-xs">Selecione uma questão à esquerda.</div>';
+                return;
             }
+
+            const days = q.days || ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
+
+            panel.innerHTML = `
+                <!-- Barra de Tipos de Pergunta Estilo Simplificação -->
+                <div class="space-y-1.5 shrink-0">
+                    <label class="block text-[11px] font-bold text-gray-300 uppercase tracking-wider">
+                        Tipo de Resposta:
+                    </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                        <button type="button" onclick="checklistApp.setQuestionType('yes_no')" class="p-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${q.type === 'yes_no' ? 'bg-cyan-600 text-white border-cyan-400 shadow-md' : 'bg-gray-900 text-gray-300 border-gray-800 hover:bg-gray-800'}">
+                            <i class="fa-regular fa-circle-question"></i> <span>Sim / Não</span>
+                        </button>
+                        <button type="button" onclick="checklistApp.setQuestionType('evaluative')" class="p-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${q.type === 'evaluative' ? 'bg-cyan-600 text-white border-cyan-400 shadow-md' : 'bg-gray-900 text-gray-300 border-gray-800 hover:bg-gray-800'}">
+                            <i class="fa-regular fa-face-smile"></i> <span>Avaliativa 😊</span>
+                        </button>
+                        <button type="button" onclick="checklistApp.setQuestionType('number')" class="p-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${q.type === 'number' ? 'bg-cyan-600 text-white border-cyan-400 shadow-md' : 'bg-gray-900 text-gray-300 border-gray-800 hover:bg-gray-800'}">
+                            <i class="fa-solid fa-hashtag"></i> <span>Numérica (Qtd)</span>
+                        </button>
+                        <button type="button" onclick="checklistApp.setQuestionType('photo')" class="p-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${q.type === 'photo' ? 'bg-cyan-600 text-white border-cyan-400 shadow-md' : 'bg-gray-900 text-gray-300 border-gray-800 hover:bg-gray-800'}">
+                            <i class="fa-solid fa-camera"></i> <span>Exigir Foto</span>
+                        </button>
+                        <button type="button" onclick="checklistApp.setQuestionType('signature')" class="p-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${q.type === 'signature' ? 'bg-cyan-600 text-white border-cyan-400 shadow-md' : 'bg-gray-900 text-gray-300 border-gray-800 hover:bg-gray-800'}">
+                            <i class="fa-solid fa-signature"></i> <span>Assinatura Digital</span>
+                        </button>
+                        <button type="button" onclick="checklistApp.setQuestionType('text')" class="p-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border ${q.type === 'text' ? 'bg-cyan-600 text-white border-cyan-400 shadow-md' : 'bg-gray-900 text-gray-300 border-gray-800 hover:bg-gray-800'}">
+                            <i class="fa-regular fa-comment-dots"></i> <span>Texto Aberto</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Formulário da Questão -->
+                <div class="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-1">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Título / Texto da Questão *</label>
+                        <textarea rows="3" oninput="checklistApp.updateActiveQuestionText(this.value)" placeholder="Ex: Conferiu uniforme, EPI e crachá de todos os colaboradores?" class="w-full bg-gray-900 border border-gray-800 rounded-xl p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500 leading-relaxed custom-scrollbar">${q.text || ''}</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Instrução / Dica para o Colaborador (Opcional)</label>
+                        <input type="text" value="${q.hint || ''}" oninput="checklistApp.updateActiveQuestionHint(this.value)" placeholder="Ex: Verificar se os sapatos de segurança estão limpos e sem rasgos" class="w-full bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500">
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 mb-1">Seção / Etapa</label>
+                            <select onchange="checklistApp.moveQuestionToSection('${q.id}', this.value)" class="w-full bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                                ${this.builderModel.sections.map(s => `<option value="${s.id}" ${s.id === sec.id ? 'selected' : ''}>${s.title}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="flex flex-col justify-end space-y-2">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" ${q.required ? 'checked' : ''} onchange="checklistApp.toggleActiveQuestionRequired(this.checked)" class="accent-cyan-500 rounded w-4 h-4">
+                                <span class="text-xs text-gray-300 font-semibold">Resposta Obrigatória</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" ${q.requirePhotoOnNonConform ? 'checked' : ''} onchange="checklistApp.toggleActiveQuestionPhoto(this.checked)" class="accent-purple-500 rounded w-4 h-4">
+                                <span class="text-xs text-purple-300 font-semibold">Exigir Foto se Não Conforme</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Seletor de Dias da Semana -->
+                    <div class="p-3 bg-gray-900/60 rounded-xl border border-gray-800/80 space-y-1.5">
+                        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                            Dias da Semana em que esta questão deve aparecer:
+                        </label>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            ${['DOM','SEG','TER','QUA','QUI','SEX','SAB'].map(day => `
+                                <button type="button" onclick="checklistApp.toggleDay('${day}')" class="px-2.5 py-1 rounded-lg text-xs font-bold transition ${days.includes(day) ? 'bg-cyan-600 text-white shadow-sm' : 'bg-gray-800 text-gray-500 hover:text-gray-300'}">
+                                    ${day}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
             return;
         }
 
-        if (idInput) {
-            const idx = this.checklists.findIndex(c => c.id === idInput);
-            if (idx >= 0) {
-                this.checklists[idx] = {
-                    ...this.checklists[idx],
-                    title,
-                    description: desc,
-                    targetRole,
-                    recurrence,
-                    requirePhotoOnNonConform: requirePhoto,
-                    items
-                };
+        // Se uma seção está selecionada
+        if (this.selectedSectionId && !this.selectedQuestionId) {
+            const sec = this.builderModel.sections.find(s => s.id === this.selectedSectionId);
+            if (!sec) return;
+
+            panel.innerHTML = `
+                <div class="p-4 space-y-4">
+                    <div class="flex items-center gap-2 border-b border-gray-800 pb-3">
+                        <i class="fa-solid fa-folder-open text-cyan-400 text-lg"></i>
+                        <h4 class="text-sm font-bold text-white">Configuração da Seção</h4>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Título da Seção *</label>
+                        <input type="text" value="${sec.title || ''}" oninput="checklistApp.updateSectionTitle('${sec.id}', this.value)" placeholder="Ex: Início do Expediente" class="w-full bg-gray-900 border border-gray-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500">
+                    </div>
+
+                    <div class="pt-2 flex items-center gap-2">
+                        <button type="button" onclick="checklistApp.addNewQuestionToSection('${sec.id}')" class="px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-plus text-xs"></i> <span>Adicionar Pergunta Nesta Seção</span>
+                        </button>
+                        <button type="button" onclick="checklistApp.deleteSection('${sec.id}')" class="px-3 py-2 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 font-semibold text-xs rounded-xl border border-rose-800/40 transition flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-regular fa-trash-can text-xs"></i> <span>Excluir Seção</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        panel.innerHTML = `
+            <div class="flex-1 flex flex-col items-center justify-center p-8 text-center text-gray-500 space-y-2">
+                <i class="fa-solid fa-arrow-left text-2xl text-gray-600"></i>
+                <p class="text-xs">Selecione uma questão ou seção na árvore à esquerda para configurar.</p>
+            </div>
+        `;
+    }
+
+    selectSection(secId) {
+        this.selectedSectionId = secId;
+        this.selectedQuestionId = null;
+        this.renderBuilderTree();
+        this.renderBuilderEditor();
+    }
+
+    selectQuestion(secId, qId) {
+        this.selectedSectionId = secId;
+        this.selectedQuestionId = qId;
+        this.renderBuilderTree();
+        this.renderBuilderEditor();
+    }
+
+    setQuestionType(type) {
+        if (!this.selectedQuestionId || !this.selectedSectionId) return;
+        const sec = this.builderModel.sections.find(s => s.id === this.selectedSectionId);
+        const q = sec ? sec.questions.find(item => item.id === this.selectedQuestionId) : null;
+        if (q) {
+            q.type = type;
+            this.renderBuilderTree();
+            this.renderBuilderEditor();
+        }
+    }
+
+    updateActiveQuestionText(text) {
+        if (!this.selectedQuestionId || !this.selectedSectionId) return;
+        const sec = this.builderModel.sections.find(s => s.id === this.selectedSectionId);
+        const q = sec ? sec.questions.find(item => item.id === this.selectedQuestionId) : null;
+        if (q) {
+            q.text = text;
+            this.renderBuilderTree();
+        }
+    }
+
+    updateActiveQuestionHint(hint) {
+        if (!this.selectedQuestionId || !this.selectedSectionId) return;
+        const sec = this.builderModel.sections.find(s => s.id === this.selectedSectionId);
+        const q = sec ? sec.questions.find(item => item.id === this.selectedQuestionId) : null;
+        if (q) q.hint = hint;
+    }
+
+    toggleActiveQuestionRequired(checked) {
+        if (!this.selectedQuestionId || !this.selectedSectionId) return;
+        const sec = this.builderModel.sections.find(s => s.id === this.selectedSectionId);
+        const q = sec ? sec.questions.find(item => item.id === this.selectedQuestionId) : null;
+        if (q) {
+            q.required = checked;
+            this.renderBuilderTree();
+        }
+    }
+
+    toggleActiveQuestionPhoto(checked) {
+        if (!this.selectedQuestionId || !this.selectedSectionId) return;
+        const sec = this.builderModel.sections.find(s => s.id === this.selectedSectionId);
+        const q = sec ? sec.questions.find(item => item.id === this.selectedQuestionId) : null;
+        if (q) {
+            q.requirePhotoOnNonConform = checked;
+            this.renderBuilderTree();
+        }
+    }
+
+    toggleDay(day) {
+        if (!this.selectedQuestionId || !this.selectedSectionId) return;
+        const sec = this.builderModel.sections.find(s => s.id === this.selectedSectionId);
+        const q = sec ? sec.questions.find(item => item.id === this.selectedQuestionId) : null;
+        if (q) {
+            if (!q.days) q.days = ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
+            if (q.days.includes(day)) {
+                q.days = q.days.filter(d => d !== day);
+            } else {
+                q.days.push(day);
             }
+            this.renderBuilderEditor();
+        }
+    }
+
+    updateSectionTitle(secId, title) {
+        const sec = this.builderModel.sections.find(s => s.id === secId);
+        if (sec) {
+            sec.title = title;
+            this.renderBuilderTree();
+        }
+    }
+
+    moveQuestionToSection(qId, targetSecId) {
+        if (!this.selectedSectionId) return;
+        const curSec = this.builderModel.sections.find(s => s.id === this.selectedSectionId);
+        const targetSec = this.builderModel.sections.find(s => s.id === targetSecId);
+        if (!curSec || !targetSec || curSec.id === targetSec.id) return;
+
+        const qIdx = curSec.questions.findIndex(q => q.id === qId);
+        if (qIdx !== -1) {
+            const [q] = curSec.questions.splice(qIdx, 1);
+            targetSec.questions.push(q);
+            this.selectedSectionId = targetSecId;
+            this.renderBuilderTree();
+            this.renderBuilderEditor();
+        }
+    }
+
+    addNewSectionPrompt() {
+        const name = prompt('Digite o nome da nova seção (ex: Fechamento de Loja):', 'Nova Seção');
+        if (!name || !name.trim()) return;
+
+        const newSec = {
+            id: 'sec_' + Date.now(),
+            title: name.trim(),
+            questions: [
+                {
+                    id: 'q_' + Date.now(),
+                    text: '',
+                    hint: '',
+                    type: 'yes_no',
+                    required: true,
+                    requirePhotoOnNonConform: false,
+                    days: ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB']
+                }
+            ]
+        };
+
+        this.builderModel.sections.push(newSec);
+        this.selectedSectionId = newSec.id;
+        this.selectedQuestionId = newSec.questions[0].id;
+        this.renderBuilderTree();
+        this.renderBuilderEditor();
+    }
+
+    addNewQuestionToSection(secId) {
+        const sec = this.builderModel.sections.find(s => s.id === secId);
+        if (!sec) return;
+
+        const newQ = {
+            id: 'q_' + Date.now() + Math.random().toString(36).substr(2, 4),
+            text: '',
+            hint: '',
+            type: 'yes_no',
+            required: true,
+            requirePhotoOnNonConform: false,
+            days: ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB']
+        };
+
+        sec.questions.push(newQ);
+        this.selectedSectionId = sec.id;
+        this.selectedQuestionId = newQ.id;
+        this.renderBuilderTree();
+        this.renderBuilderEditor();
+    }
+
+    addNewQuestionToActiveSection() {
+        let secId = this.selectedSectionId;
+        if (!secId && this.builderModel.sections.length > 0) {
+            secId = this.builderModel.sections[0].id;
+        }
+        if (secId) this.addNewQuestionToSection(secId);
+    }
+
+    duplicateSelectedQuestion() {
+        if (!this.selectedSectionId || !this.selectedQuestionId) return;
+        const sec = this.builderModel.sections.find(s => s.id === this.selectedSectionId);
+        if (!sec) return;
+
+        const q = sec.questions.find(item => item.id === this.selectedQuestionId);
+        if (!q) return;
+
+        const copy = JSON.parse(JSON.stringify(q));
+        copy.id = 'q_' + Date.now() + Math.random().toString(36).substr(2, 4);
+        copy.text = (copy.text || '') + ' (Cópia)';
+
+        const idx = sec.questions.findIndex(item => item.id === this.selectedQuestionId);
+        sec.questions.splice(idx + 1, 0, copy);
+        this.selectedQuestionId = copy.id;
+        this.renderBuilderTree();
+        this.renderBuilderEditor();
+    }
+
+    moveSelectedQuestion(direction) {
+        if (!this.selectedSectionId || !this.selectedQuestionId) return;
+        const sec = this.builderModel.sections.find(s => s.id === this.selectedSectionId);
+        if (!sec) return;
+
+        const idx = sec.questions.findIndex(item => item.id === this.selectedQuestionId);
+        if (idx === -1) return;
+
+        const newIdx = idx + direction;
+        if (newIdx < 0 || newIdx >= sec.questions.length) return;
+
+        const [item] = sec.questions.splice(idx, 1);
+        sec.questions.splice(newIdx, 0, item);
+        this.renderBuilderTree();
+    }
+
+    deleteSelectedNode() {
+        if (this.selectedQuestionId && this.selectedSectionId) {
+            const sec = this.builderModel.sections.find(s => s.id === this.selectedSectionId);
+            if (!sec) return;
+            if (!confirm('Deseja realmente excluir esta questão?')) return;
+            sec.questions = sec.questions.filter(q => q.id !== this.selectedQuestionId);
+            this.selectedQuestionId = sec.questions[0] ? sec.questions[0].id : null;
+            this.renderBuilderTree();
+            this.renderBuilderEditor();
+            return;
+        }
+
+        if (this.selectedSectionId && !this.selectedQuestionId) {
+            this.deleteSection(this.selectedSectionId);
+        }
+    }
+
+    deleteSection(secId) {
+        if (!confirm('Deseja excluir esta seção e todas as suas perguntas?')) return;
+        this.builderModel.sections = this.builderModel.sections.filter(s => s.id !== secId);
+        const first = this.builderModel.sections[0];
+        this.selectedSectionId = first ? first.id : null;
+        this.selectedQuestionId = (first && first.questions[0]) ? first.questions[0].id : null;
+        this.renderBuilderTree();
+        this.renderBuilderEditor();
+    }
+
+    saveModelV3() {
+        if (!this.builderModel) return;
+
+        const titleInput = document.getElementById('chk-model-title-input');
+        const roleSelect = document.getElementById('chk-model-role-select');
+        const recSelect = document.getElementById('chk-model-recurrence-select');
+
+        const title = titleInput ? titleInput.value.trim() : '';
+        const targetRole = roleSelect ? roleSelect.value : 'Todos os Cargos';
+        const recurrence = recSelect ? recSelect.value : 'daily';
+
+        if (!title) {
+            alert('Por favor, informe o título do checklist.');
+            if (titleInput) titleInput.focus();
+            return;
+        }
+
+        // Valida que há pelo menos uma pergunta com texto
+        let flatItems = [];
+        this.builderModel.sections.forEach(sec => {
+            sec.questions.forEach(q => {
+                if (q.text && q.text.trim()) {
+                    flatItems.push({
+                        id: q.id,
+                        text: q.text.trim(),
+                        category: sec.title || 'Geral',
+                        type: q.type || 'yes_no',
+                        hint: q.hint || '',
+                        required: q.required !== false,
+                        requirePhoto: !!q.requirePhotoOnNonConform,
+                        days: q.days || ['DOM','SEG','TER','QUA','QUI','SEX','SAB']
+                    });
+                }
+            });
+        });
+
+        if (flatItems.length === 0) {
+            alert('Adicione pelo menos uma pergunta com texto ao checklist.');
+            return;
+        }
+
+        this.builderModel.title = title;
+        this.builderModel.targetRole = targetRole;
+        this.builderModel.recurrence = recurrence;
+        this.builderModel.items = flatItems; // Retrocompatibilidade
+
+        const existingIdx = this.checklists.findIndex(c => c.id === this.builderModel.id);
+        if (existingIdx !== -1) {
+            this.checklists[existingIdx] = this.builderModel;
         } else {
-            const newModel = {
-                id: 'chk_' + Date.now(),
-                title,
-                description: desc,
-                targetRole,
-                dept: 'Operação',
-                recurrence,
-                requirePhotoOnNonConform: requirePhoto,
-                items,
-                createdAt: Date.now(),
-                createdBy: this.getCurrentUserName(),
-                active: true
-            };
-            this.checklists.push(newModel);
+            this.checklists.push(this.builderModel);
         }
 
         this.saveData();
         this.closeNewChecklistModal();
-        this.renderManageModels();
-        this.renderTodayChecklists();
+        this.render();
 
-        if (typeof showCustomAlert === 'function') {
-            showCustomAlert('Checklist Salvo!', `O modelo "${title}" foi gravado com sucesso e já está disponível para ${targetRole}.`, 'success');
-        } else {
-            alert(`Modelo de checklist "${title}" gravado com sucesso!`);
+        if (window.syncManager) {
+            syncManager.showToast(`✓ Checklist "${title}" gravado com sucesso!`);
         }
     }
 
-    deleteModel(id) {
-        if (!confirm('Deseja realmente excluir este modelo de checklist?')) return;
-        this.checklists = this.checklists.filter(c => c.id !== id);
+    deleteModelPrompt(modelId) {
+        const m = this.checklists.find(c => c.id === modelId);
+        if (!m) return;
+        if (confirm(`Deseja realmente excluir o modelo "${m.title}"?`)) {
+            this.checklists = this.checklists.filter(c => c.id !== modelId);
+            this.saveData();
+            this.render();
+            if (window.syncManager) syncManager.showToast('✓ Modelo excluído.');
+        }
+    }
+
+    // =========================================================================
+    // EXECUÇÃO DE CHECKLIST (PREENCHIMENTO COM SEÇÕES E ASSINATURA)
+    // =========================================================================
+
+    openExecutionModal(modelId, execId, shiftTag) {
+        const model = this.checklists.find(c => c.id === modelId);
+        if (!model) return;
+
+        let exec = this.executions.find(e => e.id === execId);
+        if (!exec) {
+            exec = {
+                id: execId,
+                modelId: model.id,
+                title: model.title,
+                targetRole: model.targetRole,
+                shift: shiftTag,
+                date: this.getTodayDateString(),
+                completed: false,
+                score: 0,
+                submittedBy: this.getCurrentUserName(),
+                answers: {}
+            };
+        }
+
+        this.currentExecutionSession = {
+            model,
+            execId,
+            shiftTag,
+            answers: JSON.parse(JSON.stringify(exec.answers || {})),
+            completed: !!exec.completed
+        };
+
+        const titleEl = document.getElementById('chk-exec-title');
+        const descEl = document.getElementById('chk-exec-desc');
+        const roleBadge = document.getElementById('chk-exec-role-badge');
+        const shiftBadge = document.getElementById('chk-exec-shift-badge');
+        const dateBadge = document.getElementById('chk-exec-date-badge');
+
+        if (titleEl) titleEl.innerText = model.title;
+        if (descEl) descEl.innerText = model.description || 'Preencha todos os itens de verificação.';
+        if (roleBadge) roleBadge.innerText = model.targetRole;
+        if (shiftBadge) shiftBadge.innerText = `Turno: ${shiftTag}`;
+        if (dateBadge) dateBadge.innerText = this.getTodayDateString().split('-').reverse().join('/');
+
+        this.renderExecutionItems();
+        this.updateExecutionProgress();
+
+        const modal = document.getElementById('modal-checklist-execution');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+        }
+
+        // Inicializa pads de assinatura após o modal abrir no DOM
+        setTimeout(() => this.initExecutionSignaturePads(), 100);
+    }
+
+    closeExecutionModal() {
+        const modal = document.getElementById('modal-checklist-execution');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+        }
+        this.currentExecutionSession = null;
+        this.signaturePads = {};
+    }
+
+    initExecutionSignaturePads() {
+        if (!this.currentExecutionSession) return;
+        const model = this.currentExecutionSession.model;
+        const items = model.items || [];
+
+        items.filter(it => it.type === 'signature').forEach(it => {
+            const canvas = document.getElementById(`sig_canvas_${it.id}`);
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width || 400;
+            canvas.height = 130;
+
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#22d3ee';
+
+            let isDrawing = false;
+            let hasDrawn = false;
+
+            // Se já tiver assinatura salva no session
+            const savedSig = this.currentExecutionSession.answers[it.id] ? this.currentExecutionSession.answers[it.id].signature : null;
+            if (savedSig) {
+                const img = new Image();
+                img.onload = () => ctx.drawImage(img, 0, 0);
+                img.src = savedSig;
+                hasDrawn = true;
+            }
+
+            const getPos = (e) => {
+                const r = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: clientX - r.left, y: clientY - r.top };
+            };
+
+            const start = (e) => {
+                if (this.currentExecutionSession.completed) return;
+                e.preventDefault();
+                isDrawing = true;
+                hasDrawn = true;
+                const pos = getPos(e);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+            };
+
+            const draw = (e) => {
+                if (!isDrawing || this.currentExecutionSession.completed) return;
+                e.preventDefault();
+                const pos = getPos(e);
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            };
+
+            const stop = () => {
+                if (isDrawing) {
+                    isDrawing = false;
+                    if (!this.currentExecutionSession.answers[it.id]) this.currentExecutionSession.answers[it.id] = {};
+                    this.currentExecutionSession.answers[it.id].signature = canvas.toDataURL('image/png');
+                    this.currentExecutionSession.answers[it.id].status = 'conforme';
+                    this.updateExecutionProgress();
+                }
+            };
+
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('mousemove', draw);
+            window.addEventListener('mouseup', stop);
+
+            canvas.addEventListener('touchstart', start, { passive: false });
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            window.addEventListener('touchend', stop);
+
+            this.signaturePads[it.id] = {
+                canvas,
+                ctx,
+                clear: () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    hasDrawn = false;
+                    if (this.currentExecutionSession.answers[it.id]) {
+                        delete this.currentExecutionSession.answers[it.id].signature;
+                        delete this.currentExecutionSession.answers[it.id].status;
+                    }
+                    this.updateExecutionProgress();
+                }
+            };
+        });
+    }
+
+    clearSignature(itemId) {
+        if (this.signaturePads[itemId]) {
+            this.signaturePads[itemId].clear();
+        }
+    }
+
+    renderExecutionItems() {
+        const container = document.getElementById('chk-exec-items-list');
+        if (!container || !this.currentExecutionSession) return;
+
+        const model = this.currentExecutionSession.model;
+        const answers = this.currentExecutionSession.answers;
+        const isLocked = this.currentExecutionSession.completed;
+
+        // Agrupa por seção
+        const sections = {};
+        (model.items || []).forEach(it => {
+            const secName = it.category || 'Geral';
+            if (!sections[secName]) sections[secName] = [];
+            sections[secName].push(it);
+        });
+
+        let html = '';
+        Object.keys(sections).forEach((secTitle, sIdx) => {
+            html += `
+                <div class="space-y-2.5 pt-2">
+                    <div class="text-xs font-black text-cyan-300 uppercase tracking-wider flex items-center gap-2 pb-1 border-b border-gray-800">
+                        <i class="fa-solid fa-folder-open text-cyan-400"></i>
+                        <span>${secTitle}</span>
+                    </div>
+            `;
+
+            sections[secTitle].forEach(item => {
+                const ans = answers[item.id] || {};
+                const type = item.type || 'yes_no';
+                const status = ans.status || null;
+                const reqPhoto = !!item.requirePhoto;
+                const isNonConform = (status === 'nao' || status === 'nao_conforme');
+
+                html += `
+                    <div class="bg-gray-950 p-3.5 rounded-xl border ${isNonConform ? 'border-rose-600/50 bg-rose-950/10' : (status ? 'border-emerald-600/40 bg-emerald-950/5' : 'border-gray-800')} transition space-y-2.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <h5 class="text-xs font-bold text-gray-100 leading-snug">${item.text}</h5>
+                                ${item.hint ? `<p class="text-[11px] text-gray-400 mt-0.5">${item.hint}</p>` : ''}
+                            </div>
+                            ${item.required ? '<span class="text-[10px] text-rose-400 font-bold shrink-0">*</span>' : ''}
+                        </div>
+                `;
+
+                // 1. Tipo: Sim / Não
+                if (type === 'yes_no') {
+                    html += `
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <button type="button" ${isLocked ? 'disabled' : ''} onclick="checklistApp.setExecAnswer('${item.id}', 'sim', 'conforme')" class="py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border cursor-pointer ${status === 'sim' ? 'bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-600/30' : 'bg-gray-900 text-gray-300 border-gray-800 hover:border-emerald-500/50'}">
+                                <i class="fa-solid fa-check"></i> <span>SIM</span>
+                            </button>
+                            <button type="button" ${isLocked ? 'disabled' : ''} onclick="checklistApp.setExecAnswer('${item.id}', 'nao', 'nao_conforme')" class="py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border cursor-pointer ${status === 'nao' ? 'bg-rose-600 text-white border-rose-400 shadow-md shadow-rose-600/30' : 'bg-gray-900 text-gray-300 border-gray-800 hover:border-rose-500/50'}">
+                                <i class="fa-solid fa-xmark"></i> <span>NÃO</span>
+                            </button>
+                        </div>
+                    `;
+                }
+                // 2. Tipo: Avaliativa (Carinhas)
+                else if (type === 'evaluative') {
+                    html += `
+                        <div class="grid grid-cols-3 gap-1.5 pt-1">
+                            <button type="button" ${isLocked ? 'disabled' : ''} onclick="checklistApp.setExecAnswer('${item.id}', 'conforme', 'conforme')" class="py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 border cursor-pointer ${status === 'conforme' ? 'bg-emerald-600 text-white border-emerald-400 shadow-md' : 'bg-gray-900 text-gray-300 border-gray-800 hover:border-emerald-500/50'}">
+                                <span>Conforme 😊</span>
+                            </button>
+                            <button type="button" ${isLocked ? 'disabled' : ''} onclick="checklistApp.setExecAnswer('${item.id}', 'regular', 'conforme')" class="py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 border cursor-pointer ${status === 'regular' ? 'bg-amber-600 text-white border-amber-400 shadow-md' : 'bg-gray-900 text-gray-300 border-gray-800 hover:border-amber-500/50'}">
+                                <span>Regular 😐</span>
+                            </button>
+                            <button type="button" ${isLocked ? 'disabled' : ''} onclick="checklistApp.setExecAnswer('${item.id}', 'nao_conforme', 'nao_conforme')" class="py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 border cursor-pointer ${status === 'nao_conforme' ? 'bg-rose-600 text-white border-rose-400 shadow-md' : 'bg-gray-900 text-gray-300 border-gray-800 hover:border-rose-500/50'}">
+                                <span>Não Conforme 🙁</span>
+                            </button>
+                        </div>
+                    `;
+                }
+                // 3. Tipo: Numérica
+                else if (type === 'number') {
+                    const numVal = ans.value !== undefined ? ans.value : 0;
+                    html += `
+                        <div class="flex items-center gap-3 pt-1">
+                            <button type="button" ${isLocked ? 'disabled' : ''} onclick="checklistApp.adjustExecNumber('${item.id}', -1)" class="w-10 h-10 rounded-xl bg-gray-900 border border-gray-700 text-white text-base font-bold flex items-center justify-center active:scale-95 cursor-pointer">-</button>
+                            <input type="number" ${isLocked ? 'disabled' : ''} value="${numVal}" oninput="checklistApp.setExecNumberValue('${item.id}', this.value)" class="w-24 bg-gray-900 border border-gray-700 rounded-xl py-2 text-center text-sm font-bold text-white focus:outline-none focus:border-cyan-500">
+                            <button type="button" ${isLocked ? 'disabled' : ''} onclick="checklistApp.adjustExecNumber('${item.id}', 1)" class="w-10 h-10 rounded-xl bg-gray-900 border border-gray-700 text-white text-base font-bold flex items-center justify-center active:scale-95 cursor-pointer">+</button>
+                        </div>
+                    `;
+                }
+                // 4. Tipo: Exigir Foto
+                else if (type === 'photo') {
+                    html += `
+                        <div class="pt-1 flex items-center gap-3">
+                            <button type="button" ${isLocked ? 'disabled' : ''} onclick="document.getElementById('chk_file_${item.id}').click()" class="px-3.5 py-2 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800/60 text-purple-300 font-bold text-xs rounded-xl flex items-center gap-1.5 transition cursor-pointer">
+                                <i class="fa-solid fa-camera"></i> <span>${ans.photo ? 'Trocar Foto' : 'Tirar / Anexar Foto'}</span>
+                            </button>
+                            <input type="file" id="chk_file_${item.id}" accept="image/*" capture="environment" class="hidden" onchange="checklistApp.handleExecPhoto('${item.id}', event)">
+                            ${ans.photo ? `
+                                <div class="relative w-12 h-12 rounded-lg overflow-hidden border border-purple-500/40">
+                                    <img src="${ans.photo}" class="w-full h-full object-cover">
+                                </div>
+                            ` : '<span class="text-[11px] text-gray-500">Nenhuma foto anexada</span>'}
+                        </div>
+                    `;
+                }
+                // 5. Tipo: Assinatura Digital
+                else if (type === 'signature') {
+                    html += `
+                        <div class="pt-1 space-y-1.5">
+                            <div class="flex items-center justify-between text-[11px] text-gray-400">
+                                <span>Rubrica / Assinatura do Responsável na tela:</span>
+                                ${!isLocked ? `
+                                    <button type="button" onclick="checklistApp.clearSignature('${item.id}')" class="text-rose-400 hover:text-rose-300 text-xs font-semibold cursor-pointer">
+                                        Limpar
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <canvas id="sig_canvas_${item.id}" class="w-full h-28 bg-gray-900 border border-gray-800 rounded-xl cursor-crosshair touch-none"></canvas>
+                        </div>
+                    `;
+                }
+                // 6. Tipo: Texto Aberto
+                else if (type === 'text') {
+                    html += `
+                        <div class="pt-1">
+                            <textarea rows="2" ${isLocked ? 'disabled' : ''} oninput="checklistApp.setExecTextValue('${item.id}', this.value)" placeholder="Digite aqui as observações ou detalhes..." class="w-full bg-gray-900 border border-gray-800 rounded-xl p-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500">${ans.text || ''}</textarea>
+                        </div>
+                    `;
+                }
+
+                // Campo condicional de foto se for Não Conforme
+                if (reqPhoto && isNonConform && type !== 'photo') {
+                    html += `
+                        <div class="p-2.5 bg-rose-950/20 border border-rose-800/40 rounded-xl space-y-2 mt-2">
+                            <span class="text-[11px] font-bold text-rose-300 flex items-center gap-1">
+                                <i class="fa-solid fa-camera"></i> Foto obrigatória para Não Conformidade:
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" ${isLocked ? 'disabled' : ''} onclick="document.getElementById('chk_file_${item.id}').click()" class="px-3 py-1.5 bg-gray-900 border border-gray-700 text-xs text-gray-300 rounded-lg hover:text-white">
+                                    ${ans.photo ? 'Trocar Foto' : 'Tirar Foto'}
+                                </button>
+                                <input type="file" id="chk_file_${item.id}" accept="image/*" capture="environment" class="hidden" onchange="checklistApp.handleExecPhoto('${item.id}', event)">
+                                ${ans.photo ? `
+                                    <div class="w-10 h-10 rounded-lg overflow-hidden border border-rose-500/40">
+                                        <img src="${ans.photo}" class="w-full h-full object-cover">
+                                    </div>
+                                ` : '<span class="text-[10px] text-gray-500">Pendente de foto</span>'}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                html += '</div>';
+            });
+
+            html += '</div>';
+        });
+
+        container.innerHTML = html;
+    }
+
+    setExecAnswer(itemId, val, status) {
+        if (!this.currentExecutionSession || this.currentExecutionSession.completed) return;
+        if (!this.currentExecutionSession.answers[itemId]) this.currentExecutionSession.answers[itemId] = {};
+        this.currentExecutionSession.answers[itemId].value = val;
+        this.currentExecutionSession.answers[itemId].status = status;
+        this.renderExecutionItems();
+        this.updateExecutionProgress();
+    }
+
+    adjustExecNumber(itemId, delta) {
+        if (!this.currentExecutionSession || this.currentExecutionSession.completed) return;
+        if (!this.currentExecutionSession.answers[itemId]) this.currentExecutionSession.answers[itemId] = { value: 0, status: 'conforme' };
+        let cur = parseInt(this.currentExecutionSession.answers[itemId].value || 0, 10);
+        cur += delta;
+        if (cur < 0) cur = 0;
+        this.currentExecutionSession.answers[itemId].value = cur;
+        this.currentExecutionSession.answers[itemId].status = 'conforme';
+        this.renderExecutionItems();
+        this.updateExecutionProgress();
+    }
+
+    setExecNumberValue(itemId, val) {
+        if (!this.currentExecutionSession || this.currentExecutionSession.completed) return;
+        if (!this.currentExecutionSession.answers[itemId]) this.currentExecutionSession.answers[itemId] = {};
+        this.currentExecutionSession.answers[itemId].value = parseInt(val || 0, 10);
+        this.currentExecutionSession.answers[itemId].status = 'conforme';
+        this.updateExecutionProgress();
+    }
+
+    setExecTextValue(itemId, text) {
+        if (!this.currentExecutionSession || this.currentExecutionSession.completed) return;
+        if (!this.currentExecutionSession.answers[itemId]) this.currentExecutionSession.answers[itemId] = {};
+        this.currentExecutionSession.answers[itemId].text = text;
+        this.currentExecutionSession.answers[itemId].status = text.trim() ? 'conforme' : null;
+        this.updateExecutionProgress();
+    }
+
+    async handleExecPhoto(itemId, e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file || !this.currentExecutionSession) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            if (!this.currentExecutionSession.answers[itemId]) this.currentExecutionSession.answers[itemId] = {};
+            this.currentExecutionSession.answers[itemId].photo = evt.target.result;
+            this.currentExecutionSession.answers[itemId].status = 'conforme';
+            this.renderExecutionItems();
+            this.updateExecutionProgress();
+        };
+        reader.readAsDataURL(file);
+    }
+
+    updateExecutionProgress() {
+        if (!this.currentExecutionSession) return;
+        const model = this.currentExecutionSession.model;
+        const answers = this.currentExecutionSession.answers;
+
+        const items = model.items || [];
+        const total = items.length;
+        let answered = 0;
+        let conformCount = 0;
+
+        items.forEach(it => {
+            const ans = answers[it.id];
+            if (ans && (ans.status || ans.signature || ans.value !== undefined || ans.text)) {
+                answered++;
+                if (ans.status === 'conforme' || ans.status === 'sim' || ans.signature) {
+                    conformCount++;
+                }
+            }
+        });
+
+        const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
+        const score = answered > 0 ? Math.round((conformCount / answered) * 100) : 100;
+
+        const labelEl = document.getElementById('chk-exec-progress-label');
+        const barEl = document.getElementById('chk-exec-progress-bar');
+        const scoreBadge = document.getElementById('chk-exec-score-badge');
+
+        if (labelEl) labelEl.innerText = `${answered} / ${total} Itens`;
+        if (barEl) barEl.style.width = `${pct}%`;
+        if (scoreBadge) scoreBadge.innerText = `${score}% Conforme`;
+    }
+
+    submitExecution() {
+        if (!this.currentExecutionSession) return;
+        const session = this.currentExecutionSession;
+        const model = session.model;
+        const answers = session.answers;
+        const items = model.items || [];
+
+        // Validação de itens obrigatórios
+        for (let i = 0; i < items.length; i++) {
+            const it = items[i];
+            if (it.required) {
+                const ans = answers[it.id];
+                if (!ans || (!ans.status && !ans.signature && ans.value === undefined && !ans.text)) {
+                    alert(`Por favor, responda o item: "${it.text}"`);
+                    return;
+                }
+                // Se exigia foto no Não Conforme
+                if (it.requirePhoto && (ans.status === 'nao' || ans.status === 'nao_conforme') && !ans.photo) {
+                    alert(`O item "${it.text}" foi marcado como Não Conforme e exige uma foto de comprovação.`);
+                    return;
+                }
+            }
+        }
+
+        // Calcula score final
+        let conformCount = 0;
+        items.forEach(it => {
+            const ans = answers[it.id];
+            if (ans && (ans.status === 'conforme' || ans.status === 'sim' || ans.signature)) {
+                conformCount++;
+            }
+        });
+        const score = items.length > 0 ? Math.round((conformCount / items.length) * 100) : 100;
+
+        const newExec = {
+            id: session.execId,
+            modelId: model.id,
+            title: model.title,
+            targetRole: model.targetRole,
+            shift: session.shiftTag,
+            date: this.getTodayDateString(),
+            completed: true,
+            completedAt: Date.now(),
+            score,
+            submittedBy: this.getCurrentUserName(),
+            answers
+        };
+
+        const existingIdx = this.executions.findIndex(e => e.id === session.execId);
+        if (existingIdx !== -1) {
+            this.executions[existingIdx] = newExec;
+        } else {
+            this.executions.push(newExec);
+        }
+
         this.saveData();
-        this.renderManageModels();
-        this.renderTodayChecklists();
-        if (typeof showCustomAlert === 'function') {
-            showCustomAlert('Excluído', 'Modelo de checklist removido com sucesso.', 'info');
+        this.closeExecutionModal();
+        this.render();
+
+        if (window.syncManager) {
+            syncManager.showToast(`✓ Checklist transmitido com sucesso! Nota de conformidade: ${score}%`);
+        }
+    }
+
+    viewExecutionDetail(execId) {
+        const ex = this.executions.find(e => e.id === execId);
+        if (!ex) return;
+
+        const modal = document.getElementById('modal-checklist-detail');
+        const titleEl = document.getElementById('chk-detail-title');
+        const metaEl = document.getElementById('chk-detail-meta');
+        const container = document.getElementById('chk-detail-items-container');
+
+        if (titleEl) titleEl.innerText = ex.title;
+        if (metaEl) metaEl.innerText = `Data: ${ex.date} | Turno: ${ex.shift} | Responsável: ${ex.submittedBy} | ${ex.score}% Conforme`;
+
+        const model = this.checklists.find(m => m.id === ex.modelId);
+        const items = model ? model.items : [];
+
+        let html = '';
+        items.forEach((it, idx) => {
+            const ans = ex.answers[it.id] || {};
+            const isNonConform = (ans.status === 'nao' || ans.status === 'nao_conforme');
+            html += `
+                <div class="p-2.5 rounded-xl border ${isNonConform ? 'border-rose-700/60 bg-rose-950/20' : 'border-gray-800 bg-gray-950'} text-xs space-y-1">
+                    <div class="flex items-start justify-between gap-2">
+                        <span class="font-bold text-gray-200">${idx + 1}. ${it.text}</span>
+                        <span class="font-bold shrink-0 ${isNonConform ? 'text-rose-400' : 'text-emerald-400'}">
+                            ${ans.value !== undefined ? ans.value : (ans.status ? ans.status.toUpperCase() : 'OK')}
+                        </span>
+                    </div>
+                    ${ans.signature ? `
+                        <div class="pt-1">
+                            <span class="text-[10px] text-gray-400 block mb-0.5">Assinatura Digital Registrada:</span>
+                            <img src="${ans.signature}" class="h-16 border border-gray-800 rounded bg-gray-900 p-1">
+                        </div>
+                    ` : ''}
+                    ${ans.photo ? `
+                        <div class="pt-1">
+                            <span class="text-[10px] text-gray-400 block mb-0.5">Evidência Fotográfica:</span>
+                            <img src="${ans.photo}" class="w-24 h-24 object-cover rounded-lg border border-gray-700">
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+
+        if (container) container.innerHTML = html;
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.remove('hidden');
+        }
+    }
+
+    closeDetailModal() {
+        const modal = document.getElementById('modal-checklist-detail');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
         }
     }
 }
+
+
 window.checklistApp = new ChecklistApp();
 document.addEventListener('DOMContentLoaded', () => {
     if (window.checklistApp) window.checklistApp.init();
@@ -22971,74 +23252,102 @@ window.tabloidApp = new TabloidApp();
     <!-- MODAL 2: CRIAÇÃO / EDIÇÃO DE MODELO DE CHECKLIST (GERENTE/ADM) -->
     <!-- ======================================================== -->
     <div id="modal-checklist-new" style="display: none; z-index: 100010;" class="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4">
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-lg p-4 sm:p-5 space-y-3.5 shadow-2xl modal-content-box max-h-[92vh] flex flex-col">
-            <div class="flex items-center justify-between border-b border-gray-800 pb-3 shrink-0">
-                <h3 class="font-bold text-sm sm:text-base text-gray-100 flex items-center gap-2">
-                    <i class="fa-solid fa-clipboard-list text-cyan-400"></i>
-                    <span id="chk-modal-model-title">Criar Novo Modelo de Checklist</span>
-                </h3>
-                <button type="button" onclick="checklistApp.closeNewChecklistModal()" class="text-gray-400 hover:text-gray-200 text-lg">✕</button>
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-5xl p-4 sm:p-5 shadow-2xl modal-content-box h-[92vh] flex flex-col space-y-3">
+            
+            <!-- Barra Superior / Ribbon Estilo Simplificação -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-800 pb-3 gap-2 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-list-check text-base"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm sm:text-base text-gray-100 flex items-center gap-2">
+                            <span id="chk-modal-model-title">Criar Questionário de Checklist</span>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/60">v3 Simplificação</span>
+                        </h3>
+                        <p class="text-xs text-gray-400">Estruture seções, questões operacionais e tipos de resposta.</p>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação Rápida (Ribbon) -->
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <button type="button" onclick="checklistApp.addNewSectionPrompt()" class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 active:scale-95 text-cyan-300 rounded-xl text-xs font-bold border border-gray-700 transition flex items-center gap-1 cursor-pointer" title="Adicionar Nova Seção">
+                        <i class="fa-solid fa-folder-plus text-xs"></i> <span>Nova Seção</span>
+                    </button>
+                    <button type="button" onclick="checklistApp.addNewQuestionToActiveSection()" class="px-2.5 py-1.5 bg-cyan-700 hover:bg-cyan-600 active:scale-95 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer" title="Adicionar Nova Pergunta">
+                        <i class="fa-solid fa-plus text-xs"></i> <span>Nova Pergunta</span>
+                    </button>
+                    <button type="button" onclick="checklistApp.duplicateSelectedQuestion()" class="px-2 py-1.5 bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 rounded-xl text-xs font-semibold border border-gray-700 transition" title="Duplicar Selecionado">
+                        <i class="fa-regular fa-copy text-xs"></i>
+                    </button>
+                    <button type="button" onclick="checklistApp.moveSelectedQuestion(-1)" class="px-2 py-1.5 bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 rounded-xl text-xs font-semibold border border-gray-700 transition" title="Mover p/ Cima">
+                        <i class="fa-solid fa-arrow-up text-xs"></i>
+                    </button>
+                    <button type="button" onclick="checklistApp.moveSelectedQuestion(1)" class="px-2 py-1.5 bg-gray-800 hover:bg-gray-700 active:scale-95 text-gray-300 rounded-xl text-xs font-semibold border border-gray-700 transition" title="Mover p/ Baixo">
+                        <i class="fa-solid fa-arrow-down text-xs"></i>
+                    </button>
+                    <button type="button" onclick="checklistApp.deleteSelectedNode()" class="px-2 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 active:scale-95 text-rose-300 rounded-xl text-xs font-semibold border border-rose-800/40 transition" title="Excluir">
+                        <i class="fa-regular fa-trash-can text-xs"></i>
+                    </button>
+                    <button type="button" onclick="checklistApp.closeNewChecklistModal()" class="text-gray-400 hover:text-gray-200 text-lg px-2">✕</button>
+                </div>
             </div>
 
-            <form id="form-new-checklist-model" onsubmit="checklistApp.handleSaveModel(event)" class="flex-1 overflow-y-auto space-y-3.5 custom-scrollbar pr-1">
+            <!-- Dados Principais (Título, Cargo, Periodicidade) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 bg-gray-950 p-2.5 rounded-xl border border-gray-800 shrink-0 text-xs">
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-0.5">Título do Checklist *</label>
+                    <input type="text" id="chk-model-title-input" required placeholder="Ex: Checklist Operacional - Abertura Loja" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-0.5">Cargo Destinado *</label>
+                    <select id="chk-model-role-select" required class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                        <!-- Injetado dinamicamente -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-0.5">Periodicidade *</label>
+                    <select id="chk-model-recurrence-select" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+                        <option value="daily">Diário (Todo Dia)</option>
+                        <option value="shift">Por Turno (Manhã / Tarde / Noite)</option>
+                        <option value="single">Avulso (Por Demanda)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- PAINEL DUPLO ESTILO SIMPLIFICAÇÃO -->
+            <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 min-h-0 overflow-hidden">
+                
+                <!-- Coluna Esquerda (5 colunas): Árvore de Seções e Perguntas -->
+                <div class="md:col-span-5 bg-gray-950 rounded-xl border border-gray-800 flex flex-col min-h-0 overflow-hidden">
+                    <div class="p-2 border-b border-gray-800 flex items-center justify-between shrink-0 bg-gray-900/50">
+                        <span class="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-network-wired text-cyan-400"></i> Estrutura do Questionário
+                        </span>
+                        <span id="chk-tree-count-badge" class="text-[10px] text-gray-400 font-mono">0 questões</span>
+                    </div>
+                    <div id="chk-tree-container" class="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
+                        <!-- Árvore injetada via JS -->
+                    </div>
+                </div>
+
+                <!-- Coluna Direita (7 colunas): Configuração da Pergunta / Seção Selecionada -->
+                <div id="chk-editor-panel" class="md:col-span-7 bg-gray-950 rounded-xl border border-gray-800 flex flex-col min-h-0 overflow-hidden p-3 space-y-3">
+                    <!-- Painel injetado via JS -->
+                </div>
+            </div>
+
+            <!-- Rodapé / Salvar -->
+            <div class="shrink-0 pt-2 border-t border-gray-800 flex items-center justify-between gap-2">
                 <input type="hidden" id="chk-model-id" value="">
-
-                <div>
-                    <label class="block text-xs font-semibold text-gray-300 mb-1">Título do Checklist *</label>
-                    <input type="text" id="chk-model-title-input" required placeholder="Ex: Checklist de Abertura - Frente de Caixa" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-500">
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-300 mb-1">Cargo de Destino *</label>
-                        <select id="chk-model-role-select" required class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-cyan-500">
-                            <!-- Injetado dinamicamente -->
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-300 mb-1">Periodicidade *</label>
-                        <select id="chk-model-recurrence-select" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-200 focus:outline-none focus:border-cyan-500">
-                            <option value="daily">Diário (Todo Dia)</option>
-                            <option value="shift">Por Turno (Manhã / Tarde / Noite)</option>
-                            <option value="single">Avulso (Por Demanda)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-gray-300 mb-1">Descrição / Instruções</label>
-                    <textarea id="chk-model-desc-input" rows="2" placeholder="Instruções gerais para o colaborador antes de iniciar..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-500"></textarea>
-                </div>
-
-                <!-- Itens a Validar -->
-                <div class="pt-2 border-t border-gray-800 space-y-2">
-                    <div class="flex items-center justify-between">
-                        <label class="text-xs font-bold text-cyan-300">Itens de Verificação *</label>
-                        <button type="button" onclick="checklistApp.addEmptyModelItem()" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1 active:scale-95">
-                            <i class="fa-solid fa-plus text-[10px]"></i> Adicionar Item
-                        </button>
-                    </div>
-                    <div id="chk-model-items-builder" class="space-y-2">
-                        <!-- Linhas de itens injetadas dinamicamente -->
-                    </div>
-                </div>
-
-                <!-- Configuração de Exigência -->
-                <div class="pt-2 border-t border-gray-800">
-                    <label class="flex items-center gap-2 cursor-pointer select-none">
-                        <input type="checkbox" id="chk-model-require-photo" checked class="accent-cyan-500 rounded w-4 h-4">
-                        <span class="text-xs text-gray-300">Exigir Foto ou Justificativa em caso de <strong>Não Conforme</strong></span>
-                    </label>
-                </div>
-
-                <div class="pt-3 border-t border-gray-800 flex gap-2">
-                    <button type="button" onclick="checklistApp.closeNewChecklistModal()" class="flex-1 py-2.5 text-xs rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition active:scale-95">Cancelar</button>
-                    <button type="submit" class="flex-1 py-2.5 text-xs rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold shadow-lg shadow-cyan-600/30 transition active:scale-95 flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-save"></i>
-                        <span>Salvar Modelo</span>
-                    </button>
-                </div>
-            </form>
+                <button type="button" onclick="checklistApp.closeNewChecklistModal()" class="px-4 py-2 text-xs rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold transition active:scale-95 cursor-pointer">
+                    Cancelar
+                </button>
+                <button type="button" onclick="checklistApp.saveModelV3()" class="px-6 py-2 text-xs rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold shadow-lg shadow-cyan-600/30 transition active:scale-95 flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>Gravar Checklist</span>
+                </button>
+            </div>
         </div>
     </div>
 
