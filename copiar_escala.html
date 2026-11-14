@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskFlow - Copiar Script da Escala</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #0b1120; color: #f8fafc; padding: 16px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    .container { width: 100%; max-width: 580px; display: flex; flex-direction: column; gap: 14px; }
+    h1 { font-size: 20px; color: #38bdf8; text-align: center; margin-top: 8px; font-weight: 800; }
+    p.desc { font-size: 13px; color: #94a3b8; text-align: center; line-height: 1.4; }
+    
+    .btn-action {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 800;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      transition: transform 0.1s, background 0.2s;
+    }
+    .btn-action:active { transform: scale(0.97); }
+    
+    .btn-copy { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .btn-open { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; }
+    
+    .feedback { font-size: 14px; font-weight: bold; color: #34d399; text-align: center; min-height: 20px; }
+    
+    .step-box { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; }
+    .step-box h3 { font-size: 14px; color: #f1f5f9; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .step-box ol { margin-left: 20px; font-size: 13px; color: #cbd5e1; line-height: 1.7; }
+    .step-box ol li b { color: #38bdf8; }
+    
+    textarea { width: 100%; height: 180px; background: #0f172a; color: #94a3b8; border: 1px solid #334155; border-radius: 10px; padding: 10px; font-family: monospace; font-size: 11px; resize: none; outline: none; }
+    .footer-note { font-size: 11px; color: #64748b; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚡ Atualizar Script da Planilha</h1>
+    <p class="desc">Copie o código atualizado do Google Apps Script com revezamento de domingo corrigido.</p>
+
+    <!-- BOTÃO 1: COPIAR -->
+    <button id="btnCopy" class="btn-action btn-copy" onclick="copiarCodigo()">
+      <span>📋 1. COPIAR CÓDIGO COMPLETO</span>
+    </button>
+    <div id="feedback" class="feedback"></div>
+
+    <!-- BOTÃO 2: ABRIR O EDITOR -->
+    <a href="https://script.google.com/d/18-hsh-oJmXl930S_06-9EiP7inhAkHxYmJ6mNvs4Vaop46VPYnjVzUxH/edit" target="_blank" class="btn-action btn-open">
+      <span>🔗 2. ABRIR EDITOR DO APPS SCRIPT</span>
+    </a>
+
+    <!-- INSTRUÇÕES RÁPIDAS PARA CELULAR -->
+    <div class="step-box">
+      <h3>📱 Passo a Passo no Celular:</h3>
+      <ol>
+        <li>Toque no botão verde <b>"1. COPIAR CÓDIGO COMPLETO"</b> acima.</li>
+        <li>Toque no botão azul <b>"2. ABRIR EDITOR DO APPS SCRIPT"</b> (ele vai abrir o editor do Google no navegador).</li>
+        <li>No editor, dê dois toques rápidos dentro do texto e escolha <b>"Selecionar Tudo"</b>.</li>
+        <li>Apague e escolha <b>"Colar"</b>.</li>
+        <li>Toque no ícone de <b>Salvar (Disquete 💾)</b> no topo da tela.</li>
+      </ol>
+    </div>
+
+    <textarea id="codeArea" readonly onclick="this.select()"></textarea>
+    <p class="footer-note">TaskFlow Escala v3.3 • Supermercados Rondon</p>
+  </div>
+
+  <script>
+    fetch('codigo_escala.txt?v=' + Date.now())
+      .then(res => res.text())
+      .then(text => {
+        document.getElementById('codeArea').value = text;
+      })
+      .catch(err => {
+        console.error('Erro ao ler codigo_escala.txt:', err);
+      });
+
+    function copiarCodigo() {
+      const area = document.getElementById('codeArea');
+      area.select();
+      area.setSelectionRange(0, 999999);
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(area.value).then(() => {
+          mostrarSucesso();
+        }).catch(() => {
+          fallbackCopy();
+        });
+      } else {
+        fallbackCopy();
+      }
+    }
+
+    function fallbackCopy() {
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) mostrarSucesso();
+        else alert('Selecione o texto da caixinha abaixo e toque em Copiar.');
+      } catch (err) {
+        alert('Selecione o texto da caixinha abaixo e toque em Copiar.');
+      }
+    }
+
+    function mostrarSucesso() {
+      const btn = document.getElementById('btnCopy');
+      const fb = document.getElementById('feedback');
+      btn.innerHTML = '<span>✅ CÓDIGO COPIADO!</span>';
+      fb.innerText = 'Código copiado com sucesso! Agora toque no botão 2 abaixo para abrir o editor.';
+      setTimeout(() => {
+        btn.innerHTML = '<span>📋 1. COPIAR CÓDIGO COMPLETO</span>';
+      }, 4000);
+    }
+  </script>
+</body>
+</html>
