@@ -1342,7 +1342,13 @@
                         <span>Concluídas</span>
                         <span id="count-completed-top" class="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-bold">0</span>
                     </button>
-                    <!-- Botão de Criação em Destaque na Barra de Tarefas -->
+                    <!-- Botão Rápido de Falar Tarefa por Voz -->
+                    <button type="button" onclick="window.quickTaskVoice && window.quickTaskVoice.openWithVoice()" class="shrink-0 whitespace-nowrap py-1.5 px-3 text-xs font-bold rounded-xl bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/50 text-indigo-300 hover:text-white transition flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer" title="Falar Tarefa por Áudio / Microfone">
+                        <i class="fa-solid fa-microphone text-indigo-400"></i>
+                        <span class="hidden sm:inline">Falar Tarefa</span>
+                    </button>
+                    
+<!-- Botão de Criação em Destaque na Barra de Tarefas -->
                     <button type="button" onclick="app.openModal()" class="ml-auto shrink-0 whitespace-nowrap py-1.5 px-3.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-md shadow-indigo-600/30 active:scale-95 cursor-pointer" title="Criar Nova Tarefa para a Equipe">
                         <i class="fa-solid fa-plus text-xs"></i>
                         <span>Nova Tarefa</span>
@@ -3261,7 +3267,65 @@
                         </button>
                     </div>
 
-                    <div>
+                    
+                    <!-- ============================================================== -->
+                    <!-- CAIXA DE CRIAÇÃO INTELIGENTE POR VOZ OU TEXTO (PRÉ-MOLDAGEM)   -->
+                    <!-- ============================================================== -->
+                    <div id="quick-task-ai-container" class="rounded-2xl border border-indigo-500/40 bg-gradient-to-br from-indigo-950/70 via-gray-900/90 to-purple-950/40 p-3 sm:p-4 shadow-lg space-y-2.5 relative overflow-hidden transition-all duration-300">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-xs shadow-sm">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                </span>
+                                <div>
+                                    <span class="text-xs font-bold text-gray-100 flex items-center gap-1.5">
+                                        Criação Inteligente por Voz ou Mensagem
+                                        <span class="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">Auto</span>
+                                    </span>
+                                    <p class="text-[10px] text-gray-400 leading-tight">Fale no microfone ou cole uma mensagem para pré-moldar a tarefa</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="window.quickTaskVoice && window.quickTaskVoice.toggleExpand()" id="quick-task-toggle-btn" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 text-xs transition" title="Recolher / Expandir">
+                                <i class="fa-solid fa-chevron-up" id="quick-task-toggle-icon"></i>
+                            </button>
+                        </div>
+
+                        <div id="quick-task-body" class="space-y-2.5">
+                            <!-- Campo de Texto / Mensagem -->
+                            <div class="relative">
+                                <textarea id="quick-task-input" rows="2" placeholder="Ex: 'Danilo repor o setor de bebidas urgente hoje até às 14h' ou cole a mensagem..." class="w-full bg-gray-950/90 border border-gray-700/80 rounded-xl p-2.5 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-400 transition custom-scrollbar resize-none font-sans leading-relaxed"></textarea>
+                                
+                                <!-- Indicador de gravação de áudio pulsante -->
+                                <div id="quick-task-recording-badge" class="hidden absolute top-2 right-2 flex items-center gap-1.5 bg-red-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg animate-pulse">
+                                    <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                                    <span id="quick-task-recording-text">Ouvindo sua voz...</span>
+                                </div>
+                            </div>
+
+                            <!-- Botões de Ação: Microfone e Pré-Moldar -->
+                            <div class="flex items-center gap-2">
+                                <!-- Botão Gravar Voz -->
+                                <button type="button" id="quick-task-mic-btn" onclick="window.quickTaskVoice && window.quickTaskVoice.toggleVoice()" class="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold flex items-center justify-center gap-2 transition shadow-md shadow-indigo-600/30 cursor-pointer">
+                                    <i class="fa-solid fa-microphone text-xs" id="quick-task-mic-icon"></i>
+                                    <span id="quick-task-mic-label">🎙️ Falar Tarefa</span>
+                                </button>
+
+                                <!-- Botão Pré-Moldar Campos -->
+                                <button type="button" onclick="window.quickTaskVoice && window.quickTaskVoice.processManualText()" class="py-2 px-3.5 rounded-xl bg-gray-800 hover:bg-gray-700 active:scale-95 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer">
+                                    <i class="fa-solid fa-bolt text-indigo-400"></i>
+                                    <span>Pré-Moldar</span>
+                                </button>
+                            </div>
+
+                            <!-- Banner de Sucesso / Feedback -->
+                            <div id="quick-task-feedback" class="hidden p-2 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-[11px] text-emerald-300 flex items-center gap-2 animate-fade-in">
+                                <i class="fa-solid fa-circle-check text-emerald-400 text-xs shrink-0"></i>
+                                <span id="quick-task-feedback-msg" class="flex-1 font-medium">Tarefa pré-moldada! Faça os ajustes finais e clique em Salvar.</span>
+                            </div>
+                        </div>
+                    </div>
+
+<div>
                         <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Título da Tarefa *</label>
                         <input type="text" id="task-title" required placeholder="Ex: Fechamento de estoque ou conferência de notas..." class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-gray-100 focus:outline-none focus:border-indigo-500 transition">
                     </div>
@@ -3785,7 +3849,7 @@
     <!-- ========================================== -->
     <!-- MODAL: CENTRAL DE PERSONALIZAÇÃO TASKFLOW  -->
     <!-- ========================================== -->
-    <div id="modal-user-preferences" style="display: none;" onclick="if(event.target === this) window.preferencesManager && window.preferencesManager.closeModal()" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-3 md:p-4">
+    <div id="modal-user-preferences" style="display: none; z-index: 100000;" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-[100000] flex items-center justify-center p-3 md:p-4">
         <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-xl p-5 sm:p-6 shadow-2xl overflow-y-auto max-h-[92vh] custom-scrollbar animate-fade-in text-gray-100" onclick="event.stopPropagation()">
             <!-- Cabeçalho -->
             <div class="flex items-center justify-between pb-4 border-b border-gray-800">
@@ -5345,9 +5409,7 @@
                 this.saveLocally();
                 this.render();
 
-                if (window.syncManager) {
-                    syncManager.showToast(cp && cp.completed ? `✓ Validação das ${checkpointTime} concluída por ${user}!` : `Validação das ${checkpointTime} reaberta.`);
-                }
+                if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast(cp && cp.completed ? `✓ Validação das ${checkpointTime} concluída por ${user}!` : `Validação das ${checkpointTime} reaberta.`); }
 
                 // Dispara sincronização em nuvem
                 try {
@@ -6337,9 +6399,7 @@
 
                 // Som de notificação local e feedback
                 try { this.playNotificationSound(); } catch(e) {}
-                if (window.syncManager) {
-                    syncManager.showToast(imageToSend ? "✓ Foto de comprovação enviada no chat!" : "✓ Mensagem enviada para o chat da tarefa!");
-                }
+                if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast(imageToSend ? "✓ Foto de comprovação enviada no chat!" : "✓ Mensagem enviada para o chat da tarefa!"); }
 
                 // Dispara notificação no envio (com menção ou geral)
                 let notifTitle = 'TaskFlow - Chat da Tarefa';
@@ -6638,9 +6698,7 @@
                     this.saveLocally();
 
                     // Feedback visual instantâneo garantido
-                    if (window.syncManager) {
-                        syncManager.showToast(id ? "✓ Tarefa atualizada com sucesso!" : "✓ Tarefa criada com sucesso!");
-                    }
+                    if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast(id ? "✓ Tarefa atualizada com sucesso!" : "✓ Tarefa criada com sucesso!"); }
 
                     // Som e Notificação (com proteção contra bloqueio de áudio/notif)
                     try { this.playNotificationSound(); } catch(e) {}
@@ -9937,9 +9995,7 @@
                 this.saveTemplates(true);
                 this.closeCategoryModal();
 
-                if (window.syncManager) {
-                    syncManager.showToast(`✓ Tópico "${name}" salvo com sucesso!`);
-                }
+                if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast(`✓ Tópico "${name}" salvo com sucesso!`); }
             }
 
             async deleteCategory(catId) {
@@ -9948,9 +10004,7 @@
                 this.templates = this.templates.filter(c => c.id !== catId);
                 this.saveTemplates(true);
 
-                if (window.syncManager) {
-                    syncManager.showToast("✓ Tópico de diretrizes removido.");
-                }
+                if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast("✓ Tópico de diretrizes removido."); }
             }
 
             promptAddQuestion(catId) {
@@ -9964,9 +10018,7 @@
                 cat.questions.push(q.trim());
                 this.saveTemplates(true);
 
-                if (window.syncManager) {
-                    syncManager.showToast("✓ Nova pergunta adicionada.");
-                }
+                if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast("✓ Nova pergunta adicionada."); }
             }
 
             deleteQuestion(catId, qIdx) {
@@ -9983,9 +10035,7 @@
                 this.templates = this.getDefaultTemplates();
                 this.saveTemplates(true);
 
-                if (window.syncManager) {
-                    syncManager.showToast("✓ Diretrizes padrão restauradas.");
-                }
+                if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast("✓ Diretrizes padrão restauradas."); }
             }
 
             // Sync hooks
@@ -10048,9 +10098,7 @@
                 };
                 localStorage.setItem('taskflow_current_user', JSON.stringify(this.currentUser));
                 this.onLoginSuccess();
-                if (window.syncManager) {
-                    syncManager.showToast("✓ Bem-vindo de volta, " + this.currentUser.displayName + "!");
-                }
+                if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast("✓ Bem-vindo de volta, " + this.currentUser.displayName + "!"); }
             }
 
             init() {
@@ -19863,9 +19911,7 @@
                 this.posters.unshift(newPoster);
                 this.saveToStorage();
 
-                if (window.syncManager) {
-                    syncManager.showToast('✓ Cartaz salvo na fila! Abrindo no PC da impressora...');
-                }
+                if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast('✓ Cartaz salvo na fila! Abrindo no PC da impressora...'); }
 
                 this.syncWithCloud(true);
                 this.switchTab('queue');
@@ -21142,9 +21188,7 @@ class TabloidApp {
         this.closeManualSearch();
         this.updateStats();
         this.renderTable();
-        if (window.syncManager) {
-            syncManager.showToast(`✓ Vinculado: ${code} - ${desc}`);
-        }
+        if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast(`✓ Vinculado: ${code} - ${desc}`); }
     }
 
     openInGoogleSheets() {
@@ -21238,9 +21282,7 @@ class TabloidApp {
         const exportName = this.tabloidFileName.replace(/\.(xlsx|xls|csv)$/i, '') + '_COM_CODIGOS.xlsx';
         XLSX.writeFile(outWb, exportName);
 
-        if (window.syncManager) {
-            syncManager.showToast(`✓ Planilha exportada com sucesso: ${exportName}`);
-        }
+        if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast(`✓ Planilha exportada com sucesso: ${exportName}`); }
     }
 
     copyTableToClipboard() {
@@ -22304,9 +22346,7 @@ class ChecklistApp {
         this.closeNewChecklistModal();
         this.render();
 
-        if (window.syncManager) {
-            syncManager.showToast(`✓ Checklist "${title}" gravado com sucesso!`);
-        }
+        if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast(`✓ Checklist "${title}" gravado com sucesso!`); }
     }
 
     deleteModelPrompt(modelId) {
@@ -22782,9 +22822,7 @@ class ChecklistApp {
         this.closeExecutionModal();
         this.render();
 
-        if (window.syncManager) {
-            syncManager.showToast(`✓ Checklist transmitido com sucesso! Nota de conformidade: ${score}%`);
-        }
+        if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast(`✓ Checklist transmitido com sucesso! Nota de conformidade: ${score}%`); }
     }
 
     viewExecutionDetail(execId) {
@@ -23113,9 +23151,7 @@ window.tabloidApp = new TabloidApp();
                 }
                 this.save(this.prefs);
                 this.apply();
-                if (window.syncManager) {
-                    syncManager.showToast(this.prefs.theme === 'light' ? '☀ Modo Claro ativado' : '🌙 Modo Escuro ativado');
-                }
+                if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast(this.prefs.theme === 'light' ? '☀ Modo Claro ativado' : '🌙 Modo Escuro ativado'); }
             }
 
             openModal() {
@@ -23138,18 +23174,14 @@ window.tabloidApp = new TabloidApp();
             saveAndClose() {
                 this.save(this.prefs);
                 this.closeModal();
-                if (window.syncManager) {
-                    syncManager.showToast('✓ Preferências salvas com sucesso!');
-                }
+                if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast('✓ Preferências salvas com sucesso!'); }
             }
 
             resetToDefaults() {
                 this.prefs = Object.assign({}, this.defaults);
                 this.apply();
                 this.save(this.prefs);
-                if (window.syncManager) {
-                    syncManager.showToast('✓ Padrões originais restaurados');
-                }
+                if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast('✓ Padrões originais restaurados'); }
             }
 
             updateModalActiveStates() {
@@ -24187,6 +24219,511 @@ window.tabloidApp = new TabloidApp();
             </div>
         </div>
     </div>
+
+
+    <!-- ============================================================== -->
+    <!-- SISTEMA DE CRIAÇÃO INTELIGENTE DE TAREFAS POR VOZ / TEXTO      -->
+    <!-- ============================================================== -->
+    <script>
+    (function() {
+        class QuickTaskVoiceEngine {
+            constructor() {
+                this.recognition = null;
+                this.isRecording = false;
+                this.transcriptAccumulated = '';
+                this.isExpanded = true;
+                this.initSpeechRecognition();
+            }
+
+            initSpeechRecognition() {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    console.warn('[QuickTaskVoice] SpeechRecognition não suportado neste navegador.');
+                    return;
+                }
+
+                try {
+                    this.recognition = new SpeechRecognition();
+                    this.recognition.lang = 'pt-BR';
+                    this.recognition.continuous = false;
+                    this.recognition.interimResults = true;
+                    this.recognition.maxAlternatives = 1;
+
+                    this.recognition.onstart = () => {
+                        this.isRecording = true;
+                        this.updateUiRecordingState(true);
+                    };
+
+                    this.recognition.onresult = (event) => {
+                        let interim = '';
+                        let final = '';
+
+                        for (let i = event.resultIndex; i < event.results.length; ++i) {
+                            if (event.results[i].isFinal) {
+                                final += event.results[i][0].transcript;
+                            } else {
+                                interim += event.results[i][0].transcript;
+                            }
+                        }
+
+                        const text = (final || interim).trim();
+                        const input = document.getElementById('quick-task-input');
+                        if (input && text) {
+                            input.value = text;
+                        }
+                        if (final) {
+                            this.transcriptAccumulated = final;
+                        }
+                    };
+
+                    this.recognition.onerror = (event) => {
+                        console.warn('[QuickTaskVoice] Erro no reconhecimento:', event.error);
+                        this.isRecording = false;
+                        this.updateUiRecordingState(false);
+                        
+                        let msg = 'Erro ao capturar áudio.';
+                        if (event.error === 'not-allowed') {
+                            msg = 'Permissão de microfone negada. Permita o microfone no navegador ou use o campo de texto.';
+                        } else if (event.error === 'no-speech') {
+                            msg = 'Nenhuma fala detectada. Toque e fale novamente.';
+                        }
+                        if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast(msg); } else {
+                            alert(msg);
+                        }
+                    };
+
+                    this.recognition.onend = () => {
+                        this.isRecording = false;
+                        this.updateUiRecordingState(false);
+                        const input = document.getElementById('quick-task-input');
+                        const finalTxt = (input ? input.value : '') || this.transcriptAccumulated;
+                        if (finalTxt && finalTxt.trim().length > 2) {
+                            this.parseAndFill(finalTxt);
+                        }
+                    };
+                } catch (e) {
+                    console.error('[QuickTaskVoice] Falha ao inicializar SpeechRecognition:', e);
+                }
+            }
+
+            toggleVoice() {
+                if (this.isRecording) {
+                    this.stopVoice();
+                } else {
+                    this.startVoice();
+                }
+            }
+
+            startVoice() {
+                if (!this.recognition) {
+                    this.initSpeechRecognition();
+                }
+
+                if (!this.recognition) {
+                    if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast('Reconhecimento de voz não suportado neste navegador. Digite ou cole a mensagem no campo!'); } else {
+                        alert('Reconhecimento de voz não disponível neste aparelho/navegador. Digite ou cole a mensagem no campo!');
+                    }
+                    const input = document.getElementById('quick-task-input');
+                    if (input) input.focus();
+                    return;
+                }
+
+                this.transcriptAccumulated = '';
+                try {
+                    this.recognition.start();
+                } catch (e) {
+                    console.warn('[QuickTaskVoice] start error, tentando restart:', e);
+                    try {
+                        this.recognition.stop();
+                        setTimeout(() => this.recognition.start(), 200);
+                    } catch (err) {}
+                }
+            }
+
+            stopVoice() {
+                if (this.recognition && this.isRecording) {
+                    try {
+                        this.recognition.stop();
+                    } catch (e) {}
+                }
+                this.isRecording = false;
+                this.updateUiRecordingState(false);
+            }
+
+            updateUiRecordingState(recording) {
+                const btn = document.getElementById('quick-task-mic-btn');
+                const label = document.getElementById('quick-task-mic-label');
+                const icon = document.getElementById('quick-task-mic-icon');
+                const badge = document.getElementById('quick-task-recording-badge');
+
+                if (recording) {
+                    if (btn) {
+                        btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+                        btn.classList.add('bg-red-600', 'hover:bg-red-500', 'animate-pulse');
+                    }
+                    if (label) label.textContent = '⏹️ Parar Gravação';
+                    if (icon) icon.className = 'fa-solid fa-stop text-xs';
+                    if (badge) badge.classList.remove('hidden');
+                } else {
+                    if (btn) {
+                        btn.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+                        btn.classList.remove('bg-red-600', 'hover:bg-red-500', 'animate-pulse');
+                    }
+                    if (label) label.textContent = '🎙️ Falar Tarefa';
+                    if (icon) icon.className = 'fa-solid fa-microphone text-xs';
+                    if (badge) badge.classList.add('hidden');
+                }
+            }
+
+            toggleExpand() {
+                const fb = document.getElementById('quick-task-feedback');
+                if (fb) fb.classList.add('hidden');
+                const qInput = document.getElementById('quick-task-input');
+                if (qInput) qInput.value = '';
+                const body = document.getElementById('quick-task-body');
+                const icon = document.getElementById('quick-task-toggle-icon');
+                if (!body) return;
+                this.isExpanded = !this.isExpanded;
+                if (this.isExpanded) {
+                    body.classList.remove('hidden');
+                    if (icon) icon.className = 'fa-solid fa-chevron-up';
+                } else {
+                    body.classList.add('hidden');
+                    if (icon) icon.className = 'fa-solid fa-chevron-down';
+                }
+            }
+
+            openWithVoice() {
+                if (window.app && typeof window.app.openModal === 'function') {
+                    window.app.openModal();
+                } else {
+                    const m = document.getElementById('task-modal');
+                    if (m) {
+                        m.classList.remove('hidden');
+                        m.style.display = 'flex';
+                    }
+                }
+
+                // Certifica que a caixa rápida está visível
+                const body = document.getElementById('quick-task-body');
+                if (body && body.classList.contains('hidden')) {
+                    this.toggleExpand();
+                }
+
+                setTimeout(() => {
+                    this.startVoice();
+                }, 350);
+            }
+
+            processManualText() {
+                const input = document.getElementById('quick-task-input');
+                const text = input ? input.value.trim() : '';
+                if (!text) {
+                    if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast('Digite ou cole uma mensagem antes de pré-moldar!'); } else {
+                        alert('Digite ou cole uma mensagem antes de pré-moldar!');
+                    }
+                    if (input) input.focus();
+                    return;
+                }
+                this.parseAndFill(text);
+            }
+
+            // Normalizador de texto para comparações
+            normalizeText(str) {
+                return (str || '')
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .trim();
+            }
+
+            // Lista de colaboradores cadastrados no sistema
+            getKnownCollaborators() {
+                const set = new Set();
+                const list = [];
+
+                // 1. Datalist collaborators-datalist
+                document.querySelectorAll('#collaborators-datalist option, #team-collaborators-datalist option').forEach(opt => {
+                    const val = (opt.value || opt.textContent || '').trim();
+                    if (val) {
+                        const clean = val.replace(/\s*\([^)]*\)/g, '').trim();
+                        if (clean && !set.has(clean.toLowerCase())) {
+                            set.add(clean.toLowerCase());
+                            list.push({ fullName: clean, original: val });
+                        }
+                    }
+                });
+
+                // 2. taskflow_accounts no localStorage
+                try {
+                    const accs = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                    accs.forEach(a => {
+                        const name = (a.displayName || a.name || '').trim();
+                        if (name && !set.has(name.toLowerCase())) {
+                            set.add(name.toLowerCase());
+                            list.push({ fullName: name, original: name + (a.role ? ' (' + a.role + ')' : '') });
+                        }
+                    });
+                } catch (e) {}
+
+                return list;
+            }
+
+            // Motor NLP de análise de texto e extração inteligente
+            parseAndFill(rawText) {
+                if (!rawText || !rawText.trim()) return;
+
+                let workingText = rawText.trim();
+                const normWorking = this.normalizeText(workingText);
+
+                const extracted = {
+                    assignee: null,
+                    priority: null,
+                    date: null,
+                    sector: null,
+                    isInconsistency: false,
+                    isRecurrent: false,
+                    title: '',
+                    notes: ''
+                };
+
+                // --- 1. Extração de Responsável (Assignee) ---
+                const collaborators = this.getKnownCollaborators();
+                let matchedColab = null;
+
+                // Tenta casar nome completo ou primeiro nome
+                for (const colab of collaborators) {
+                    const normFull = this.normalizeText(colab.fullName);
+                    const firstName = normFull.split(/\s+/)[0];
+
+                    if (normFull.length > 2 && normWorking.includes(normFull)) {
+                        matchedColab = colab;
+                        break;
+                    } else if (firstName.length > 2) {
+                        // Verifica com limite de palavra
+                        const regexFirst = new RegExp('\\b' + firstName + '\\b', 'i');
+                        if (regexFirst.test(normWorking)) {
+                            matchedColab = colab;
+                            break;
+                        }
+                    }
+                }
+
+                if (matchedColab) {
+                    extracted.assignee = matchedColab.original;
+                    // Remove menção do responsável do texto para limpar o título
+                    const regexRemove = new RegExp('\\b(para|atribuir\\s+a|atribuir\\s+para|responsavel|ao)?\\s*' + matchedColab.fullName.split(/\s+/)[0] + '[,:]?\\s*', 'gi');
+                    workingText = workingText.replace(regexRemove, ' ');
+                }
+
+                // --- 2. Extração de Prioridade (Priority) ---
+                const normCurrent = this.normalizeText(workingText);
+                if (/\b(urgente|urgencia|emergencia|imediatamente|agora|ja|critico)\b/i.test(normCurrent)) {
+                    extracted.priority = 'alta';
+                    workingText = workingText.replace(/\b(urgente|urgência|urgencia|emergência|emergencia|imediatamente|agora|já|ja|crítico|critico)\b/gi, ' ');
+                } else if (/\b(alta\s+prioridade|prioridade\s+alta|alta|importante|atencao)\b/i.test(normCurrent)) {
+                    extracted.priority = 'alta';
+                    workingText = workingText.replace(/\b(alta\s+prioridade|prioridade\s+alta|prioridade|importante|atenção|atencao)\b/gi, ' ');
+                } else if (/\b(baixa|prioridade\s+baixa|sem\s+pressa|quando\s+der|tranquilo)\b/i.test(normCurrent)) {
+                    extracted.priority = 'baixa';
+                    workingText = workingText.replace(/\b(baixa|prioridade\s+baixa|sem\s+pressa|quando\s+der|tranquilo)\b/gi, ' ');
+                } else {
+                    extracted.priority = 'media';
+                }
+
+                // --- 3. Extração de Data / Prazo (Date) ---
+                const today = new Date();
+                const formatDate = (d) => {
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return y + '-' + m + '-' + day;
+                };
+
+                if (/\b(hoje|pra\s+hoje|ate\s+hoje)\b/i.test(normCurrent)) {
+                    extracted.date = formatDate(today);
+                    workingText = workingText.replace(/\b(hoje|pra\s+hoje|ate\s+hoje|até\s+hoje)\b/gi, ' ');
+                } else if (/\b(depois\s+de\s+amanha|depois\s+de\s+amanhã)\b/i.test(normCurrent)) {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 2);
+                    extracted.date = formatDate(d);
+                    workingText = workingText.replace(/\b(depois\s+de\s+amanha|depois\s+de\s+amanhã)\b/gi, ' ');
+                } else if (/\b(amanha|amanhã|pra\s+amanha|pra\s+amanhã)\b/i.test(normCurrent)) {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    extracted.date = formatDate(d);
+                    workingText = workingText.replace(/\b(amanha|amanhã|pra\s+amanha|pra\s+amanhã)\b/gi, ' ');
+                } else {
+                    // Checa dias da semana: segunda (1), terça (2), quarta (3), quinta (4), sexta (5), sabado (6), domingo (0)
+                    const daysMap = {
+                        'domingo': 0, 'segunda': 1, 'terca': 2, 'quarta': 3,
+                        'quinta': 4, 'sexta': 5, 'sabado': 6
+                    };
+                    for (const [dayName, targetDay] of Object.entries(daysMap)) {
+                        const reg = new RegExp('\\b(' + dayName + '(-feira)?)\\b', 'i');
+                        if (reg.test(normCurrent)) {
+                            const d = new Date();
+                            const currentDay = d.getDay();
+                            let diff = targetDay - currentDay;
+                            if (diff <= 0) diff += 7; // Próximo dia correspondente
+                            d.setDate(d.getDate() + diff);
+                            extracted.date = formatDate(d);
+                            workingText = workingText.replace(reg, ' ');
+                            break;
+                        }
+                    }
+
+                    // Checa formato numérico de data dd/mm ou dd/mm/aaaa
+                    const dateMatch = workingText.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+                    if (dateMatch) {
+                        const dNum = parseInt(dateMatch[1]);
+                        const mNum = parseInt(dateMatch[2]);
+                        const yNum = dateMatch[3] ? (dateMatch[3].length === 2 ? 2000 + parseInt(dateMatch[3]) : parseInt(dateMatch[3])) : today.getFullYear();
+                        if (dNum >= 1 && dNum <= 31 && mNum >= 1 && mNum <= 12) {
+                            extracted.date = yNum + '-' + String(mNum).padStart(2, '0') + '-' + String(dNum).padStart(2, '0');
+                            workingText = workingText.replace(dateMatch[0], ' ');
+                        }
+                    }
+                }
+
+                // Se não detectou data específica, define como hoje por padrão
+                if (!extracted.date) {
+                    extracted.date = formatDate(today);
+                }
+
+                // --- 4. Extração de Setor e Inconsistências ---
+                const sectors = [
+                    'hortifruti', 'frios', 'laticinios', 'leite', 'acougue', 'carnes',
+                    'padaria', 'confeitaria', 'bebidas', 'mercearia', 'farinaceos',
+                    'arroz', 'limpeza', 'perfumaria', 'higiene', 'bazar', 'deposito',
+                    'frente de caixa', 'caixa', 'trocas', 'recebimento'
+                ];
+
+                const normForSector = this.normalizeText(workingText);
+                for (const s of sectors) {
+                    const regS = new RegExp('\\b' + s + '\\b', 'i');
+                    if (regS.test(normForSector)) {
+                        extracted.sector = s.charAt(0).toUpperCase() + s.slice(1);
+                        break;
+                    }
+                }
+
+                // Inconsistência?
+                if (/\b(inconsistencia|inconsistência|avaria|avarias|vencido|vencimento|validade|quebra|estragado|estragada|defeito|ruptura|falta|rombo)\b/i.test(normCurrent)) {
+                    extracted.isInconsistency = true;
+                }
+
+                // Recorrente?
+                if (/\b(recorrente|de\s+hora\s+em\s+hora|a\s+cada\s+hora|ronda|validacoes|checklist\s+de\s+horarios)\b/i.test(normCurrent)) {
+                    extracted.isRecurrent = true;
+                }
+
+                // --- 5. Limpeza do Título ---
+                let cleanTitle = workingText
+                    .replace(/\b(precisa|favor|por\s+favor|fazer|realizar|executar|atribuido|tarefa|ate\s+as|as\s+\d{1,2}(h|:00)?)\b/gi, ' ')
+                    .replace(/[\s,;:.-]+/g, ' ')
+                    .trim();
+
+                // Se sobrou muito pouco ou nada, recorre ao texto original
+                if (cleanTitle.length < 3) {
+                    cleanTitle = rawText.trim();
+                }
+
+                // Capitaliza a primeira letra
+                cleanTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+                extracted.title = cleanTitle;
+
+                // --- 6. Preenchimento Automático dos Campos do Modal ---
+                const titleInput = document.getElementById('task-title');
+                const assigneeInput = document.getElementById('task-assignee');
+                const prioritySelect = document.getElementById('task-priority');
+                const dateInput = document.getElementById('task-date');
+                const incToggle = document.getElementById('task-inconsistency-toggle');
+                const incSector = document.getElementById('task-inconsistency-sector');
+                const incNotes = document.getElementById('task-inconsistency-notes');
+                const recToggle = document.getElementById('task-recurrent-toggle');
+
+                const highlightedElements = [];
+
+                if (titleInput && extracted.title) {
+                    titleInput.value = extracted.title;
+                    highlightedElements.push(titleInput);
+                }
+
+                if (assigneeInput && extracted.assignee) {
+                    assigneeInput.value = extracted.assignee;
+                    highlightedElements.push(assigneeInput);
+                }
+
+                if (prioritySelect && extracted.priority) {
+                    prioritySelect.value = extracted.priority;
+                    highlightedElements.push(prioritySelect);
+                }
+
+                if (dateInput && extracted.date) {
+                    dateInput.value = extracted.date;
+                    highlightedElements.push(dateInput);
+                }
+
+                if (incToggle && extracted.isInconsistency) {
+                    incToggle.checked = true;
+                    if (window.app && typeof window.app.toggleInconsistencyFields === 'function') {
+                        window.app.toggleInconsistencyFields(true);
+                    } else {
+                        incToggle.dispatchEvent(new Event('change'));
+                    }
+                    if (incSector && extracted.sector) {
+                        incSector.value = extracted.sector;
+                        highlightedElements.push(incSector);
+                    }
+                    if (incNotes) {
+                        incNotes.value = 'Detectado por mensagem: ' + rawText;
+                        highlightedElements.push(incNotes);
+                    }
+                }
+
+                if (recToggle && extracted.isRecurrent) {
+                    recToggle.checked = true;
+                    if (window.app && typeof window.app.toggleRecurrenceFields === 'function') {
+                        window.app.toggleRecurrenceFields(true);
+                    } else {
+                        recToggle.dispatchEvent(new Event('change'));
+                    }
+                }
+
+                // --- 7. Feedback Visual nos Campos e Notificação ---
+                highlightedElements.forEach(el => {
+                    el.classList.add('ring-2', 'ring-indigo-400', 'bg-indigo-950/40');
+                    setTimeout(() => {
+                        el.classList.remove('ring-2', 'ring-indigo-400', 'bg-indigo-950/40');
+                    }, 2800);
+                });
+
+                const feedback = document.getElementById('quick-task-feedback');
+                const feedbackMsg = document.getElementById('quick-task-feedback-msg');
+                if (feedback && feedbackMsg) {
+                    let summaryParts = [];
+                    if (extracted.assignee) summaryParts.push('Para: ' + extracted.assignee.split(' ')[0]);
+                    if (extracted.priority) summaryParts.push('Prioridade: ' + extracted.priority.toUpperCase());
+                    if (extracted.date) summaryParts.push('Data: ' + extracted.date.split('-').reverse().join('/'));
+
+                    const desc = summaryParts.length > 0 ? ' (' + summaryParts.join(' • ') + ')' : '';
+                    feedbackMsg.textContent = '✨ Tarefa pré-moldada com sucesso' + desc + '! Faça os últimos ajustes abaixo e clique em Salvar Tarefa.';
+                    feedback.classList.remove('hidden');
+                }
+
+                if (window.syncManager && typeof window.syncManager.showToast === "function") { window.syncManager.showToast('✨ Tarefa pré-moldada! Revise e clique em Salvar.'); }
+
+                // Rolagem suave até o título para fácil visualização
+                if (titleInput) {
+                    titleInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+        }
+
+        window.quickTaskVoice = new QuickTaskVoiceEngine();
+    })();
+    </script>
 
 </body>
 </html>
