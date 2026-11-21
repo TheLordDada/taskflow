@@ -27,26 +27,8 @@ var TF_DIAS = {
 var TF_CAMPOS = { nome: 1, entrada: 3, inicioAlmoco: 4, retornoAlmoco: 5, banco: 7 };
 
 function onOpen() {
-  var ui = SpreadsheetApp.getUi();
-  ui.createMenu("⚡ TaskFlow")
-    .addItem("📅 Atualizar Domingo Automático (Azul / Vermelha)", "menuAtualizarDomingo")
-    .addItem("🔄 Reestruturar Aba 'ESCALA NOVA MODELO 5X2'", "menuAtualizarEscala5x2")
-    .addSeparator()
-    .addItem("🎆 Sincronizar Folgas de Feriado da Semana", "menuSincronizarFolgasFeriado")
-    .addItem("🔍 Auditar Escala Diária (Conflitos e Folgas)", "menuAuditarHoje")
-    .addItem("🟥 Destacar e Contar Postos Vagos", "menuDestacarVagas")
-    .addItem("🛡️ Restaurar Fórmulas de Saída", "menuRestaurarFormulas")
-    .addSeparator()
-    .addItem("📊 Criar / Inicializar Aba 'Senior_BH'", "menuInicializarSeniorBH")
-    .addSeparator()
-    .addSeparator()
-    .addItem("📥 Puxar Memória do Histórico por Data...", "menuPuxarMemoriaHistorico")
-    .addItem("📅 Salvar Escala da Semana no Histórico Mensal", "menuSalvarHistoricoSemana")
-    .addItem("⏰ Configurar Virada Automática da Meia-Noite (Gatilho)", "configurarGatilhoMeiaNoite")
-    .addItem("🔄 Executar Virada Diária Agora (Avançar 1 Dia)", "rotinaViradaDiaria")
-    .addSeparator()
-    .addItem("ℹ️ Sobre o TaskFlow v3.3", "menuSobre")
-    .addToUi();
+  // Menu TaskFlow desativado a pedido do usuário.
+  // Toda a inteligência da escala e integração com o TaskFlow continua funcionando 100% no automático!
 }
 
 function doGet(e) {
