@@ -4344,30 +4344,31 @@
                         <span class="text-[10px] text-gray-400">Controle de acesso</span>
                     </div>
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs pt-1">
-                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700">
+                        <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl bg-gray-900 border border-gray-800 hover:border-indigo-500/50 transition">
                             <input type="checkbox" id="admin-edit-tab-tasks" class="rounded accent-indigo-500 w-4 h-4">
-                            <span class="text-gray-200 font-medium">Tarefas</span>
+                            <span class="text-gray-200 font-semibold">Tarefas</span>
                         </label>
-                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700">
+                        <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl bg-gray-900 border border-gray-800 hover:border-teal-500/50 transition">
                             <input type="checkbox" id="admin-edit-tab-schedule" class="rounded accent-teal-500 w-4 h-4">
-                            <span class="text-gray-200 font-medium">Escala</span>
+                            <span class="text-gray-200 font-semibold">Escala</span>
                         </label>
-                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700">
-                            
-                        <label class="flex items-center gap-2 p-2 rounded-lg bg-gray-900/60 border border-gray-800 hover:border-cyan-500/40 cursor-pointer select-none">
-                            <input type="checkbox" id="admin-edit-tab-checklists" checked class="accent-cyan-500 rounded">
-                            <span class="text-xs text-gray-200">Checklists Operacionais</span>
+                        <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl bg-gray-900 border border-gray-800 hover:border-cyan-500/50 transition">
+                            <input type="checkbox" id="admin-edit-tab-checklists" class="rounded accent-cyan-500 w-4 h-4">
+                            <span class="text-gray-200 font-semibold">Checklists</span>
                         </label>
-                        <input type="checkbox" id="admin-edit-tab-tools" class="rounded accent-amber-500 w-4 h-4">
-                            <span class="text-gray-200 font-medium">Cartazes</span>
+                        <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/50 hover:border-amber-400 transition">
+                            <input type="checkbox" id="admin-edit-tab-tools" class="rounded accent-amber-500 w-4 h-4">
+                            <span class="text-amber-300 font-bold flex items-center gap-1.5">
+                                <i class="fa-solid fa-tags text-[11px] text-amber-400"></i> Cartazes
+                            </span>
                         </label>
-                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700">
-                            <input type="checkbox" id="admin-edit-tab-occurrences" class="rounded accent-amber-500 w-4 h-4">
-                            <span class="text-gray-200 font-medium">Processos</span>
+                        <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl bg-gray-900 border border-gray-800 hover:border-purple-500/50 transition">
+                            <input type="checkbox" id="admin-edit-tab-occurrences" class="rounded accent-purple-500 w-4 h-4">
+                            <span class="text-gray-200 font-semibold">Ocorrências</span>
                         </label>
-                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700">
-                            <input type="checkbox" id="admin-edit-tab-feedback" class="rounded accent-purple-500 w-4 h-4">
-                            <span class="text-gray-200 font-medium">Feedback</span>
+                        <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl bg-gray-900 border border-gray-800 hover:border-blue-500/50 transition">
+                            <input type="checkbox" id="admin-edit-tab-feedback" class="rounded accent-blue-500 w-4 h-4">
+                            <span class="text-gray-200 font-semibold">Feedback</span>
                         </label>
                     </div>
                     <p class="text-[10px] text-gray-500 mt-0.5">As abas desmarcadas não aparecerão na tela deste colaborador.</p>
@@ -11273,6 +11274,10 @@
                             <button type="button" onclick="admin.toggleScheduleEditor('${acc.email}')" class="flex items-center gap-1.5 ${(acc.canEditSchedule || isAdm) ? 'bg-teal-950 border-teal-500/80 text-teal-200 shadow-sm shadow-teal-900/50' : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-600'} border rounded-xl px-2.5 py-1.5 text-xs font-bold transition active:scale-95 cursor-pointer" title="Clique para alternar permissão: Permitir ou bloquear edição da Escala Diária">
                                 <i class="fa-solid ${(acc.canEditSchedule || isAdm) ? 'fa-calendar-check text-teal-400' : 'fa-calendar-xmark text-gray-500'} text-xs"></i>
                                 <span>Escala: <strong class="${(acc.canEditSchedule || isAdm) ? 'text-teal-300' : 'text-gray-400'}">${isAdm ? 'Admin (Livre)' : (acc.canEditSchedule ? 'Pode Editar ✓' : 'Apenas Ver')}</strong></span>
+                            </button>
+                            <button type="button" onclick="admin.toggleCartazesAccess('${acc.email}')" class="flex items-center gap-1.5 ${(isAdm || acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'))) ? 'bg-amber-950 border-amber-500/80 text-amber-200 shadow-sm shadow-amber-900/50' : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-600'} border rounded-xl px-2.5 py-1.5 text-xs font-bold transition active:scale-95 cursor-pointer" title="Clique para liberar ou bloquear acesso ao Gerador de Cartazes de Oferta">
+                                <i class="fa-solid fa-tags ${(isAdm || acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'))) ? 'text-amber-400' : 'text-gray-500'} text-xs"></i>
+                                <span>Cartazes: <strong class="${(isAdm || acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'))) ? 'text-amber-300' : 'text-gray-400'}">${isAdm ? 'Admin (Livre)' : ((acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'))) ? 'Liberado ✓' : 'Bloqueado')}</strong></span>
                             </button>
                             <div class="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl px-2 py-1">
                                 <span class="text-[10px] text-gray-500 font-bold uppercase shrink-0">Cargo:</span>
