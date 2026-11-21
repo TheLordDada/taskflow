@@ -7370,7 +7370,15 @@
 
         window.switchMainView = function(view) {
             if (window.auth && auth.currentUser && !auth.currentUser.isAdmin) {
-                const allowed = auth.currentUser.allowedTabs || ['tasks', 'schedule', 'checklists', 'tools', (auth.currentUser.canAccessOccurrences ? 'occurrences' : null), 'feedback'].filter(Boolean);
+                const canCartazes = auth.currentUser.canAccessCartazes === true || (Array.isArray(auth.currentUser.allowedTabs) && auth.currentUser.allowedTabs.includes('tools'));
+                const allowed = [
+                    'tasks',
+                    'schedule',
+                    'checklists',
+                    (canCartazes ? 'tools' : null),
+                    (auth.currentUser.canAccessOccurrences ? 'occurrences' : null),
+                    'feedback'
+                ].filter(Boolean);
                 if (!allowed.includes(view)) {
                     if (typeof showCustomAlert === 'function') {
                         showCustomAlert('Acesso Restrito', 'Você não possui permissão para acessar esta aba. Solicite liberação ao Administrador.', 'warning');
@@ -10679,6 +10687,28 @@
                 const mobFb = document.getElementById('mob-nav-feedback');
                 const btnNewFb = document.getElementById('topbar-new-feedback-btn');
 
+                // Permissões do Módulo de Cartazes & Ofertas (Configurado pelo Administrador)
+                const canCartazes = isAdm || (this.currentUser.canAccessCartazes === true) || (Array.isArray(this.currentUser.allowedTabs) && this.currentUser.allowedTabs.includes('tools'));
+                const switchTools = document.getElementById('main-switch-tools');
+                const topbarTools = document.getElementById('topbar-switch-tools');
+                const mobTools = document.getElementById('mob-nav-tools');
+                const btnNewPoster = document.getElementById('topbar-new-poster-btn');
+
+                if (canCartazes) {
+                    if (switchTools) { switchTools.classList.remove('hidden'); switchTools.style.display = 'flex'; }
+                    if (topbarTools) { topbarTools.classList.remove('hidden'); topbarTools.style.display = 'flex'; }
+                    if (mobTools) { mobTools.classList.remove('hidden'); mobTools.style.display = 'flex'; }
+                } else {
+                    if (switchTools) { switchTools.classList.add('hidden'); switchTools.style.display = 'none'; }
+                    if (topbarTools) { topbarTools.classList.add('hidden'); topbarTools.style.display = 'none'; }
+                    if (mobTools) { mobTools.classList.add('hidden'); mobTools.style.display = 'none'; }
+                    if (btnNewPoster) { btnNewPoster.classList.add('hidden'); btnNewPoster.style.display = 'none'; }
+
+                    if (window.currentMainView === 'tools') {
+                        window.switchMainView('tasks');
+                    }
+                }
+
                 // Permissões do Módulo de Checklists
                 const allowedTabsUser = this.currentUser.allowedTabs || ['tasks', 'schedule', 'checklists', 'tools', 'occurrences', 'feedback'];
                 const canChecklists = isAdm || allowedTabsUser.includes('checklists');
@@ -11305,6 +11335,11 @@
                                 <button type="button" onclick="admin.toggleOccurrencesAccess('${acc.email}')" title="Autorizar ou Ocultar o Painel de Ocorrências para este colaborador" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 ${acc.canAccessOccurrences ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30' : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200'}">
                                     <i class="fa-solid fa-clipboard-user ${acc.canAccessOccurrences ? 'text-amber-400' : 'text-gray-500'} text-xs"></i>
                                     <span>${acc.canAccessOccurrences ? 'Ocorrências ON' : 'Ocorrências OFF'}</span>
+                                </button>
+
+                                <button type="button" onclick="admin.toggleCartazesAccess('${acc.email}')" title="Autorizar ou Bloquear o Gerador de Cartazes para este colaborador" class="px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 ${(isAdm || acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'))) ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30' : 'bg-gray-800 text-gray-400 border border-gray-700 hover:text-gray-200'}">
+                                    <i class="fa-solid fa-tags ${(isAdm || acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'))) ? 'text-amber-400' : 'text-gray-500'} text-xs"></i>
+                                    <span>${(isAdm || acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'))) ? 'Cartazes ON' : 'Cartazes OFF'}</span>
                                 </button>
 
                                 <button type="button" onclick="admin.openUserAudit('${acc.email}')" title="Ver Dossiê e Tudo que Este Usuário Fez" class="px-2.5 py-1.5 bg-gray-800 hover:bg-indigo-900/60 text-indigo-300 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center gap-1.5 border border-gray-700">
@@ -12470,6 +12505,54 @@
                 syncManager.showToast(`✓ Conta de ${name} criada com sucesso!`);
             }
 
+            toggleCartazesAccess(email) {
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                const acc = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+                if (!acc) return;
+
+                const isCurrentlyAuthorized = acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'));
+                const newAccess = !isCurrentlyAuthorized;
+                acc.canAccessCartazes = newAccess;
+
+                if (!Array.isArray(acc.allowedTabs)) {
+                    acc.allowedTabs = ['tasks', 'schedule', 'checklists'];
+                    if (acc.canAccessOccurrences) acc.allowedTabs.push('occurrences');
+                }
+                if (newAccess) {
+                    if (!acc.allowedTabs.includes('tools')) acc.allowedTabs.push('tools');
+                } else {
+                    acc.allowedTabs = acc.allowedTabs.filter(t => t !== 'tools');
+                }
+
+                localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                if (window.auth && auth.syncUserToCloud) auth.syncUserToCloud(acc);
+
+                if (window.syncManager) {
+                    window.syncManager.publish({
+                        type: 'ACCOUNT_STATUS_UPDATE',
+                        email: acc.email,
+                        status: acc.status,
+                        account: acc
+                    });
+                }
+
+                // Se o usuário logado for este colaborador, aplica permissão na hora
+                if (auth.currentUser && auth.currentUser.email.toLowerCase() === acc.email.toLowerCase()) {
+                    auth.currentUser.canAccessCartazes = newAccess;
+                    auth.currentUser.allowedTabs = acc.allowedTabs;
+                    localStorage.setItem('taskflow_current_user', JSON.stringify(auth.currentUser));
+                    auth.applyPermissionsUI();
+                }
+
+                this.renderAdminUsers();
+                const msg = `Cartazes de ${acc.displayName}: ${newAccess ? 'AUTORIZADO (ON)' : 'BLOQUEADO (OFF)'}`;
+                if (window.syncManager && typeof window.syncManager.showToast === 'function') {
+                    window.syncManager.showToast(msg);
+                } else {
+                    alert(msg);
+                }
+            }
+
             toggleOccurrencesAccess(email) {
                 const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
                 const acc = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
@@ -13140,7 +13223,7 @@
                 if (document.getElementById('admin-edit-tab-checklists')) document.getElementById('admin-edit-tab-checklists').checked = tabs.includes('checklists');
                 if (document.getElementById('admin-edit-tab-tasks')) document.getElementById('admin-edit-tab-tasks').checked = tabs.includes('tasks');
                 if (document.getElementById('admin-edit-tab-schedule')) document.getElementById('admin-edit-tab-schedule').checked = tabs.includes('schedule');
-                if (document.getElementById('admin-edit-tab-tools')) document.getElementById('admin-edit-tab-tools').checked = tabs.includes('tools');
+                if (document.getElementById('admin-edit-tab-tools')) document.getElementById('admin-edit-tab-tools').checked = !!(acc.isAdmin || acc.canAccessCartazes === true || tabs.includes('tools'));
                 if (document.getElementById('admin-edit-tab-occurrences')) document.getElementById('admin-edit-tab-occurrences').checked = tabs.includes('occurrences');
                 if (document.getElementById('admin-edit-tab-feedback')) document.getElementById('admin-edit-tab-feedback').checked = tabs.includes('feedback');
                 if (document.getElementById('admin-edit-user-can-schedule')) document.getElementById('admin-edit-user-can-schedule').checked = !!acc.canEditSchedule;
@@ -13197,6 +13280,7 @@
                 if (newIsAdmin) allowedTabs.push('tabloid');
 
                 const newCanOccurrences = allowedTabs.includes('occurrences');
+                const newCanCartazes = allowedTabs.includes('tools');
                 const newCanSchedule = document.getElementById('admin-edit-user-can-schedule')?.checked || false;
                 const errBox = document.getElementById('admin-edit-user-error');
 
