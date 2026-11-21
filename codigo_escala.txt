@@ -9,8 +9,9 @@
  */
 
 var TF_CONFIG = {
-  versao: 3.3,
-  nomeApp: "TaskFlow Super Conector v3.3 (Histórico Mensal & Janela Deslizante)"
+  versao: 3.4,
+  nomeApp: "TaskFlow Super Conector v3.4 (Folgas de Feriado Planilha Externa Integrada)",
+  idPlanilhaFolgasFeriado: "12amUYVs8SpdtwGa360KJe8WXY29BNdrElrd2QT0gkwQ"
 };
 
 var TF_DIAS = {
@@ -971,6 +972,10 @@ function onEdit(e) {
         } else {
           restaurarEscalaDoHistoricoNaDiaria(dataTexto, col);
         }
+        // Sincroniza automaticamente as folgas de feriado (da planilha externa e local) para a nova data
+        try {
+          sincronizarFolgasFeriadoSemana(sheet.getParent ? sheet.getParent() : SpreadsheetApp.getActiveSpreadsheet());
+        } catch(eFer) {}
       }
     }
   } catch (err) {
@@ -1043,35 +1048,74 @@ function sincronizarFolgasFeriadoSemana(ss) {
     return "";
   }
 
-  // 1. Coleta todas as folgas das abas finalizadas (ex: FOLGAS FERIADO 04/10)
-  var sheets = ss.getSheets();
+  // 1. Coleta todas as folgas das abas (da planilha atual e da planilha separada do usuário)
+  var idExterna = (TF_CONFIG && TF_CONFIG.idPlanilhaFolgasFeriado) ? TF_CONFIG.idPlanilhaFolgasFeriado : "12amUYVs8SpdtwGa360KJe8WXY29BNdrElrd2QT0gkwQ";
+  var listaFontes = [{ ss: ss, isExternal: false }];
+  if (idExterna) {
+    try {
+      var ssExt = SpreadsheetApp.openById(idExterna);
+      if (ssExt) listaFontes.push({ ss: ssExt, isExternal: true });
+    } catch(err) {
+      console.warn("[TaskFlow] Aviso ao conectar na planilha externa de folgas:", err);
+    }
+  }
+
   var finalizedFolgas = [];
 
-  for (var i = 0; i < sheets.length; i++) {
-    var sName = sheets[i].getName();
-    var upper = sName.toUpperCase();
-    // Inclui abas de ORGANIZAÇÃO FOLGAS FERIADO e abas finalizadas
-    if (upper.indexOf("FOLGA") !== -1 && upper.indexOf("FERIADO") !== -1) {
+  for (var f = 0; f < listaFontes.length; f++) {
+    var fonte = listaFontes[f];
+    var currentSS = fonte.ss;
+    var isExt = fonte.isExternal;
+    var sheets = currentSS.getSheets();
+
+    for (var i = 0; i < sheets.length; i++) {
+      var sName = sheets[i].getName();
+      var upper = sName.toUpperCase();
+      // Na planilha externa lê todas as abas ou abas com FOLGA/FERIADO; na local filtra por FOLGA e FERIADO
+      var deveLer = isExt || (upper.indexOf("FOLGA") !== -1 && upper.indexOf("FERIADO") !== -1);
+      if (!deveLer) continue;
+
       var lastRow = sheets[i].getLastRow();
-      if (lastRow < 3) continue;
-      var d = sheets[i].getRange(1, 1, lastRow, Math.min(sheets[i].getLastColumn(), 5)).getDisplayValues();
-      var colNome = 1, colDia = 2, startR = 2;
+      if (lastRow < 2) continue;
+      var numCols = Math.min(sheets[i].getLastColumn(), 10);
+      if (numCols < 2) continue;
+
+      var d = sheets[i].getRange(1, 1, lastRow, numCols).getDisplayValues();
+      var colNome = -1, colDia = -1, startR = 1;
+
       for (var r = 0; r < Math.min(d.length, 5); r++) {
         for (var c = 0; c < d[r].length; c++) {
-          var cell = d[r][c].toUpperCase();
-          if (cell.indexOf("NOME") !== -1) colNome = c;
-          if (cell.indexOf("DIA") !== -1 || cell.indexOf("DATA") !== -1) colDia = c;
+          var cell = String(d[r][c] || "").toUpperCase().trim();
+          if (colNome === -1 && (cell.indexOf("NOME") !== -1 || cell.indexOf("COLABORADOR") !== -1 || cell.indexOf("FUNCIONÁRIO") !== -1 || cell.indexOf("FUNCIONARIO") !== -1)) {
+            colNome = c;
+          }
+          if (colDia === -1 && (cell.indexOf("DIA") !== -1 || cell.indexOf("DATA") !== -1 || cell.indexOf("FOLGA") !== -1 || cell.indexOf("FERIADO") !== -1)) {
+            colDia = c;
+          }
         }
-        if (d[r][colNome] && d[r][colNome].toUpperCase().indexOf("NOME") !== -1) {
+        if (colNome !== -1 && colDia !== -1) {
           startR = r + 1;
           break;
         }
       }
+
+      if (colNome === -1) colNome = 1; // Coluna B por padrão
+      if (colDia === -1) colDia = 2;   // Coluna C por padrão
+
       for (var k = startR; k < d.length; k++) {
         var n = String(d[k][colNome] || "").trim();
         var dia = normalizarData(d[k][colDia]);
-        if (n && n.toUpperCase() !== "NOME" && dia) {
-          finalizedFolgas.push({ aba: sName, nome: n, dataNorm: dia });
+        if (!dia) {
+          // Varre colunas adicionais se a data estiver em outra coluna
+          for (var cTry = 0; cTry < d[k].length; cTry++) {
+            if (cTry !== colNome) {
+              var tDia = normalizarData(d[k][cTry]);
+              if (tDia) { dia = tDia; break; }
+            }
+          }
+        }
+        if (n && n.toUpperCase() !== "NOME" && n.toUpperCase() !== "COLABORADOR" && dia) {
+          finalizedFolgas.push({ aba: sName, nome: n, dataNorm: dia, external: isExt });
         }
       }
     }
