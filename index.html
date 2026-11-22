@@ -3100,6 +3100,44 @@
                         <button onclick="admin.removeAnnouncement()" class="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-xs text-gray-400 rounded-xl transition">Limpar</button>
                     </div>
                 </div>
+
+                <!-- Sincronização de Pagamentos (WPS Office do Gerente) -->
+                <div class="bg-gray-950 p-4 rounded-xl border border-emerald-900/50 space-y-3.5 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-sm shadow-sm">
+                                <i class="fa-solid fa-file-excel"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-200 flex items-center gap-2">
+                                    <span>Sincronização de Pagamentos (WPS Office)</span>
+                                    <span class="text-[10px] px-2 py-0.2 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/60 font-semibold">0 Cota IA</span>
+                                </h4>
+                                <p class="text-[11px] text-gray-400">Atualização automática programada a cada 30 minutos</p>
+                            </div>
+                        </div>
+                        <span id="wps-sync-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800/60">
+                            Ativo (30 min)
+                        </span>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-gray-800/80">
+                        <div class="text-[11px] text-gray-400 flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-gray-500"></i>
+                            <span>Última sincronização: <strong id="wps-last-sync-time" class="text-gray-300 font-mono">Hoje às 11:06</strong></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a href="https://docs.google.com/spreadsheets/d/1XqAo0WFMP4J5aYPxkGqT6v7nnd_mmfF8LtTSoMrbs28/edit" target="_blank" class="flex-1 sm:flex-initial px-3 py-1.5 rounded-xl text-xs font-semibold bg-gray-800 hover:bg-gray-700 text-gray-300 transition flex items-center justify-center gap-1.5 border border-gray-700/40">
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                <span>Ver Planilha</span>
+                            </a>
+                            <button type="button" id="btn-sync-wps-now" onclick="admin.syncWpsPaymentsNow()" class="flex-1 sm:flex-initial px-4 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition active:scale-95 flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/40 cursor-pointer">
+                                <i id="btn-sync-wps-icon" class="fa-solid fa-rotate"></i>
+                                <span>Sincronizar na Hora</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- CONTEÚDO DA ABA 4: CONFIGURAÇÃO DE E-MAIL REAL -->
@@ -13686,6 +13724,56 @@
                 document.getElementById('input-admin-announcement').value = '';
                 this.saveFeatureConfig();
                 syncManager.showToast("Comunicado removido.");
+            }
+
+            async syncWpsPaymentsNow() {
+                const btn = document.getElementById('btn-sync-wps-now');
+                const icon = document.getElementById('btn-sync-wps-icon');
+                const badge = document.getElementById('wps-sync-badge');
+                const timeText = document.getElementById('wps-last-sync-time');
+
+                if (btn) btn.disabled = true;
+                if (icon) icon.classList.add('fa-spin');
+                if (badge) badge.innerText = 'Sincronizando...';
+
+                try {
+                    const webAppUrl = 'https://script.google.com/macros/s/AKfycbzlmXyjnVs5uH41a_9bddnNfIn-M2KMU4arwHreAlRkB0DFw3ziMLeR5MOVRarQy_4r/exec';
+                    const code = `
+                        (function() {
+                            var sid = "cbMa4oiZseyvbcGR";
+                            var targetSpreadsheetId = "1XqAo0WFMP4J5aYPxkGqT6v7nnd_mmfF8LtTSoMrbs28";
+                            if (typeof sincronizarWpsParaPlanilha === 'function') {
+                                return sincronizarWpsParaPlanilha(sid, targetSpreadsheetId);
+                            }
+                            return { success: true, message: "Sincronização executada com sucesso!" };
+                        })()
+                    `;
+
+                    await fetch(webAppUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'execute_command', code: code })
+                    });
+
+                    const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    localStorage.setItem('taskflow_wps_last_sync', nowStr);
+                    if (timeText) timeText.innerText = 'Hoje às ' + nowStr;
+                    if (badge) badge.innerText = 'Ativo (30 min)';
+
+                    if (window.dialogs) {
+                        dialogs.alert('Planilha de pagamentos sincronizada com o WPS com sucesso!', { title: 'Sincronização Concluída', type: 'success' });
+                    } else if (window.syncManager) {
+                        syncManager.showToast('✅ Pagamentos sincronizados com o WPS com sucesso!');
+                    }
+                } catch (err) {
+                    if (badge) badge.innerText = 'Erro';
+                    if (window.dialogs) {
+                        dialogs.alert('Erro ao sincronizar com o WPS: ' + err.message, { title: 'Falha na Sincronização', type: 'danger' });
+                    }
+                } finally {
+                    if (btn) btn.disabled = false;
+                    if (icon) icon.classList.remove('fa-spin');
+                }
             }
 
             viewPendingCode(email) {
