@@ -1112,6 +1112,13 @@
                             </div>
                             <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">ADM</span>
                         </button>
+                        <button type="button" id="main-switch-spreadsheets" onclick="window.switchMainView('spreadsheets')" class="hidden w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-emerald-300 bg-emerald-950/20 border border-emerald-500/20 hover:bg-emerald-900/30 hover:border-emerald-500/40 transition group" title="Central de Planilhas Corporativas (Pagamentos / Escalas)">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fa-solid fa-table-cells text-emerald-400 text-sm"></i>
+                                <span>Planilhas</span>
+                            </div>
+                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">WPS</span>
+                        </button>
                         <button type="button" id="main-switch-tools" onclick="window.switchMainView('tools')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-amber-300 bg-amber-950/20 border border-amber-500/20 hover:bg-amber-900/30 hover:border-amber-500/40 transition group" title="Gerador de Cartazes de Ofertas e Produtos Próximos do Vencimento">
                     <span class="flex items-center gap-2.5 min-w-0">
                         <span class="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 group-hover:bg-amber-500 group-hover:text-black transition">
@@ -1226,6 +1233,10 @@
                         <i class="fa-solid fa-file-excel text-emerald-400 text-xs"></i>
                         <span>Tabloides</span>
                         <span class="text-[9px] font-extrabold px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">ADM</span>
+                    </button>
+                    <button type="button" id="topbar-switch-spreadsheets" onclick="window.switchMainView('spreadsheets')" class="hidden px-2.5 py-1 text-xs font-bold rounded-lg text-emerald-300 bg-emerald-950/40 border border-emerald-500/40 hover:bg-emerald-900/50 hover:text-emerald-200 transition flex items-center gap-1.5 relative shadow-sm" title="Central de Planilhas Corporativas (Pagamentos / Escalas)">
+                        <i class="fa-solid fa-table-cells text-[11px] text-emerald-400"></i>
+                        <span>Planilhas</span>
                     </button>
                     <button type="button" id="topbar-switch-tools" onclick="window.switchMainView('tools')" class="px-2.5 py-1 text-xs font-bold rounded-lg text-amber-300 bg-amber-950/40 border border-amber-500/40 hover:bg-amber-900/50 hover:text-amber-200 transition flex items-center gap-1.5 relative shadow-sm" title="Gerador de Cartazes de Ofertas e Vencimento">
                         <i class="fa-solid fa-tags text-[11px] text-amber-400"></i>
@@ -2659,6 +2670,10 @@
                 <i class="fa-solid fa-file-excel text-base text-emerald-400"></i>
                 <span class="text-[9px] font-semibold">Tabloide</span>
             </button>
+            <button onclick="window.switchMainView('spreadsheets')" id="mob-nav-spreadsheets" class="hidden flex-1 flex flex-col items-center gap-1 text-gray-400 hover:text-emerald-300 py-1 px-1 transition active:scale-90 relative" title="Planilhas">
+                <i class="fa-solid fa-table-cells text-base text-emerald-400"></i>
+                <span class="text-[9px] font-semibold">Planilhas</span>
+            </button>
             <button onclick="window.switchMainView('tools')" id="mob-nav-tools" class="flex-1 flex flex-col items-center gap-1 text-amber-400 hover:text-amber-300 py-1 px-1 transition active:scale-90 relative" title="Gerador de Cartazes de Oferta">
                 <i class="fa-solid fa-tags text-base text-amber-400"></i>
                 <span class="text-[9px] font-bold text-amber-400">Cartazes</span>
@@ -2685,6 +2700,132 @@
             <button type="button" id="mob-fab-action-btn" onclick="window.triggerActiveFAB()" title="Criar Novo Item" class="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 bg-indigo-600 hover:bg-indigo-500 active:scale-90 text-white rounded-xl shadow-2xl shadow-indigo-600/50 flex items-center justify-center text-xl transition border border-indigo-400/40">
                 <i class="fa-solid fa-plus"></i>
             </button>
+            <!-- MÓDULO: CENTRAL DE PLANILHAS (PAGAMENTOS WPS & ESCALAS) -->
+            <div id="view-spreadsheets-container" class="hidden space-y-4 pb-28 md:pb-6">
+                <!-- Cabeçalho Informativo -->
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-3 sm:p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-table-cells text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                                Central de Planilhas
+                                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Sincronizado</span>
+                            </h3>
+                            <p class="text-xs text-gray-400">Acesse as planilhas corporativas com detecção de alterações em tempo real.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <button type="button" onclick="admin.syncWpsPaymentsNow()" class="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition active:scale-95 flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/40 cursor-pointer">
+                            <i class="fa-solid fa-rotate"></i>
+                            <span>Sincronizar Tudo</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card 1: Planilha de Pagamentos (WPS) -->
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 sm:p-5 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-800">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-lg shrink-0">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                    <span>Planilha de Pagamentos (WPS Office)</span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800/60">46 Semanas</span>
+                                </h4>
+                                <p class="text-xs text-gray-400">Fonte: Arquivo oficial do Gerente via WPS Cloud · Atualização automática a cada 30 min (0 Cota IA)</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a href="https://docs.google.com/spreadsheets/d/1XqAo0WFMP4J5aYPxkGqT6v7nnd_mmfF8LtTSoMrbs28/edit" target="_blank" class="px-3.5 py-2 bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700/60 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[11px] text-emerald-400"></i>
+                                <span>Abrir no Google Sheets</span>
+                            </a>
+                            <button type="button" onclick="admin.syncWpsPaymentsNow()" class="px-3.5 py-2 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/50 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer">
+                                <i class="fa-solid fa-rotate text-xs"></i>
+                                <span>Atualizar</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Notificação Inteligente de Alteração do Gerente -->
+                    <div id="wps-alert-box" class="p-3 bg-amber-950/30 border border-amber-900/50 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-200">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-bell text-amber-400 text-sm animate-bounce"></i>
+                            <span><strong>Monitoramento Ativo:</strong> O sistema detecta e sincroniza automaticamente qualquer alteração salva pelo Gerente no WPS.</span>
+                        </div>
+                        <span class="text-[11px] font-mono text-amber-400/80 shrink-0">Automático</span>
+                    </div>
+
+                    <!-- Visualizador Embutido de Abas -->
+                    <div class="space-y-3 pt-1">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                            <span class="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-calendar-week text-indigo-400"></i>
+                                <span>Semana Selecionada:</span>
+                            </span>
+                            <div class="flex items-center gap-2 w-full sm:w-auto">
+                                <select id="select-wps-week" onchange="window.spreadsheetsApp && spreadsheetsApp.onWeekChange(this.value)" class="w-full sm:w-auto bg-gray-950 border border-gray-800 rounded-xl px-3 py-1.5 text-xs text-gray-100 font-semibold focus:outline-none focus:border-emerald-500">
+                                    <option value="PAGAMENTOS 20-22 NOV" selected>PAGAMENTOS 20-22 NOV (Semana Atual)</option>
+                                    <option value="PAGAMENTOS 15 NOV">PAGAMENTOS 15 NOV</option>
+                                    <option value="PAGAMENTOS 08 NOV">PAGAMENTOS 08 NOV</option>
+                                    <option value="PAGAMENTOS 01 NOV">PAGAMENTOS 01 NOV</option>
+                                    <option value="PAGAMENTOS 25 OUT">PAGAMENTOS 25 OUT</option>
+                                    <option value="PAGAMENTOS 18 OUT">PAGAMENTOS 18 OUT</option>
+                                    <option value="PAGAMENTOS 11.12 OUT">PAGAMENTOS 11.12 OUT</option>
+                                    <option value="PAGAMENTOS 04 OUT">PAGAMENTOS 04 OUT</option>
+                                    <option value="PAGAMENTOS 27 SET (2)">PAGAMENTOS 27 SET (2)</option>
+                                    <option value="PAGAMENTOS 27 SET">PAGAMENTOS 27 SET</option>
+                                </select>
+                                <a href="https://docs.google.com/spreadsheets/d/1XqAo0WFMP4J5aYPxkGqT6v7nnd_mmfF8LtTSoMrbs28/edit" target="_blank" title="Ver todas as 46 abas no Google Sheets" class="px-2.5 py-1.5 text-gray-400 hover:text-white bg-gray-800 rounded-xl text-xs transition">
+                                    <i class="fa-solid fa-list text-xs"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Pré-visualização com Tabela Responsiva -->
+                        <div class="overflow-x-auto custom-scrollbar border border-gray-800 rounded-xl bg-gray-950 p-2">
+                            <table class="w-full text-left text-xs text-gray-300">
+                                <thead class="bg-gray-900/80 text-[11px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-800">
+                                    <tr>
+                                        <th class="py-2 px-3">Data</th>
+                                        <th class="py-2 px-3">Setor</th>
+                                        <th class="py-2 px-3">Crachá</th>
+                                        <th class="py-2 px-3">Colaborador</th>
+                                        <th class="py-2 px-3 text-center">Horas</th>
+                                        <th class="py-2 px-3 text-right">Valor R$</th>
+                                        <th class="py-2 px-3 text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wps-preview-tbody" class="divide-y divide-gray-800/60 font-medium">
+                                    <!-- Carregado via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Planilha de Escalas (Em Breve / Em Preparação) -->
+                <div class="bg-gray-900 border border-gray-800/70 rounded-xl p-4 sm:p-5 shadow-sm opacity-80 hover:opacity-100 transition space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-teal-600/20 text-teal-400 border border-teal-500/30 flex items-center justify-center text-lg shrink-0">
+                                <i class="fa-solid fa-calendar-days"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                    <span>Planilha de Escala Diária & Turnos</span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-800 text-teal-300 border border-teal-500/40">Em Preparação</span>
+                                </h4>
+                                <p class="text-xs text-gray-400">Espaço reservado para conectar a planilha de escalas assim que você disponibilizar o link.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </nav>
     </main>
 
@@ -4391,7 +4532,14 @@
                             <span class="text-gray-200 font-semibold">Escala</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl bg-gray-900 border border-gray-800 hover:border-cyan-500/50 transition">
-                            <input type="checkbox" id="admin-edit-tab-checklists" class="rounded accent-cyan-500 w-4 h-4">
+                                                            <label class="flex items-center gap-2 p-2 rounded-lg bg-gray-950 border border-gray-800 text-xs font-semibold text-gray-300 cursor-pointer hover:border-emerald-500/50 transition">
+                                    <input type="checkbox" id="admin-edit-tab-spreadsheets" class="rounded border-gray-700 text-emerald-600 focus:ring-0">
+                                    <span class="flex items-center gap-1.5">
+                                        <i class="fa-solid fa-table-cells text-emerald-400 text-xs"></i>
+                                        <span>Planilhas (WPS/Escalas)</span>
+                                    </span>
+                                </label>
+<input type="checkbox" id="admin-edit-tab-checklists" class="rounded accent-cyan-500 w-4 h-4">
                             <span class="text-gray-200 font-semibold">Checklists</span>
                         </label>
                         <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/50 hover:border-amber-400 transition">
@@ -7415,6 +7563,7 @@
                     'schedule',
                     'checklists',
                     (canCartazes ? 'tools' : null),
+                    (auth.currentUser.isAdmin || auth.currentUser.canAccessSpreadsheets === true || (Array.isArray(auth.currentUser.allowedTabs) && auth.currentUser.allowedTabs.includes('spreadsheets')) ? 'spreadsheets' : null),
                     (auth.currentUser.canAccessOccurrences ? 'occurrences' : null),
                     'feedback'
                 ].filter(Boolean);
@@ -7435,6 +7584,10 @@
             const toolsSec = document.getElementById('view-tools-container');
             const tabloidSec = document.getElementById('view-tabloid-container');
             const chkSec = document.getElementById('view-checklists-container');
+            const sheetsSec = document.getElementById('view-spreadsheets-container');
+            const switchSpreadsheets = document.getElementById('main-switch-spreadsheets');
+            const topbarSpreadsheets = document.getElementById('topbar-switch-spreadsheets');
+            const mobSpreadsheets = document.getElementById('mob-nav-spreadsheets');
             const switchChecklists = document.getElementById('main-switch-checklists');
             const topbarChecklists = document.getElementById('topbar-switch-checklists');
             const mobChecklists = document.getElementById('mob-nav-checklists');
@@ -7478,6 +7631,9 @@
             if (toolsSec) toolsSec.classList.add('hidden');
             if (tabloidSec) tabloidSec.classList.add('hidden');
             if (chkSec) chkSec.classList.add('hidden');
+            const sheetsSecToHide = document.getElementById('view-spreadsheets-container');
+            if (sheetsSecToHide) sheetsSecToHide.classList.add('hidden');
+            if (sheetsSec) sheetsSec.classList.add('hidden');
 
             // Exibir filtros de tarefas na sidebar apenas na view de Tarefas
             const sidebarTaskFilters = document.getElementById('sidebar-task-filters');
@@ -7614,7 +7770,21 @@
                         if (window.posterApp) posterApp.updateLivePreview();
                     }, 50);
                 }
-            } else if (view === 'checklists') {
+            } else if (view === 'spreadsheets') {
+                const sheetsSec = document.getElementById('view-spreadsheets-container');
+                const viewTitle = document.getElementById('current-view-title');
+                const switchSpreadsheets = document.getElementById('main-switch-spreadsheets');
+                const topbarSpreadsheets = document.getElementById('topbar-switch-spreadsheets');
+                const mobSpreadsheets = document.getElementById('mob-nav-spreadsheets');
+                
+                if (sheetsSec) sheetsSec.classList.remove('hidden');
+                if (viewTitle) viewTitle.innerText = "Central de Planilhas";
+                if (switchSpreadsheets) switchSpreadsheets.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition bg-emerald-600 text-white shadow-md shadow-emerald-600/30";
+                if (topbarSpreadsheets) topbarSpreadsheets.className = "px-2.5 py-1 text-xs font-bold rounded-lg bg-emerald-600 text-white transition flex items-center gap-1.5 relative shadow-sm";
+                if (mobSpreadsheets) mobSpreadsheets.className = "flex flex-col items-center gap-1 text-emerald-400 py-1 px-1 transition active:scale-90";
+                if (window.spreadsheetsApp) spreadsheetsApp.renderPreview();
+            }
+            if (view === 'checklists') {
                 const canManage = (window.checklistApp && typeof checklistApp.canManage === 'function') ? checklistApp.canManage() : true;
                 if (mobFab) {
                     if (canManage) {
@@ -10750,6 +10920,20 @@
 
                 // Permissões do Módulo de Checklists
                 const allowedTabsUser = this.currentUser.allowedTabs || ['tasks', 'schedule', 'checklists', 'tools', 'occurrences', 'feedback'];
+                const canSpreadsheets = isAdm || (this.currentUser.canAccessSpreadsheets === true) || (Array.isArray(this.currentUser.allowedTabs) && this.currentUser.allowedTabs.includes('spreadsheets'));
+                const switchSheets = document.getElementById('main-switch-spreadsheets');
+                const topbarSheets = document.getElementById('topbar-switch-spreadsheets');
+                const mobSheets = document.getElementById('mob-nav-spreadsheets');
+                if (canSpreadsheets) {
+                    if (switchSheets) { switchSheets.classList.remove('hidden'); switchSheets.style.display = 'flex'; }
+                    if (topbarSheets) { topbarSheets.classList.remove('hidden'); topbarSheets.style.display = 'flex'; }
+                    if (mobSheets) { mobSheets.classList.remove('hidden'); mobSheets.style.display = 'flex'; }
+                } else {
+                    if (switchSheets) { switchSheets.classList.add('hidden'); switchSheets.style.display = 'none'; }
+                    if (topbarSheets) { topbarSheets.classList.add('hidden'); topbarSheets.style.display = 'none'; }
+                    if (mobSheets) { mobSheets.classList.add('hidden'); mobSheets.style.display = 'none'; }
+                    if (window.currentMainView === 'spreadsheets') window.switchMainView('tasks');
+                }
                 const canChecklists = isAdm || allowedTabsUser.includes('checklists');
                 const switchChk = document.getElementById('main-switch-checklists');
                 const topbarChk = document.getElementById('topbar-switch-checklists');
@@ -11313,7 +11497,11 @@
                                 <i class="fa-solid ${(acc.canEditSchedule || isAdm) ? 'fa-calendar-check text-teal-400' : 'fa-calendar-xmark text-gray-500'} text-xs"></i>
                                 <span>Escala: <strong class="${(acc.canEditSchedule || isAdm) ? 'text-teal-300' : 'text-gray-400'}">${isAdm ? 'Admin (Livre)' : (acc.canEditSchedule ? 'Pode Editar ✓' : 'Apenas Ver')}</strong></span>
                             </button>
-                            <button type="button" onclick="admin.toggleCartazesAccess('${acc.email}')" class="flex items-center gap-1.5 ${(isAdm || acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'))) ? 'bg-amber-950 border-amber-500/80 text-amber-200 shadow-sm shadow-amber-900/50' : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-600'} border rounded-xl px-2.5 py-1.5 text-xs font-bold transition active:scale-95 cursor-pointer" title="Clique para liberar ou bloquear acesso ao Gerador de Cartazes de Oferta">
+                            <button type="button" onclick="admin.toggleCartazesAccess('${acc.email}')
+                            <button type="button" onclick="admin.toggleSpreadsheetsAccess('${acc.email}')" class="flex items-center gap-1.5 ${(isAdm || acc.canAccessSpreadsheets === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('spreadsheets'))) ? 'bg-emerald-950 border-emerald-500/80 text-emerald-200 shadow-sm shadow-emerald-900/50' : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-gray-200'} border px-2.5 py-1 rounded-lg text-[10px] font-bold transition active:scale-95 cursor-pointer" title="Liberar ou Bloquear Aba de Planilhas">
+                                <i class="fa-solid fa-table-cells text-[10px] ${(isAdm || acc.canAccessSpreadsheets === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('spreadsheets'))) ? 'text-emerald-400' : 'text-gray-500'}"></i>
+                                <span>Planilhas: ${(isAdm || acc.canAccessSpreadsheets === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('spreadsheets'))) ? 'Liberado ✓' : 'Bloqueado'}</span>
+                            </button>" class="flex items-center gap-1.5 ${(isAdm || acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'))) ? 'bg-amber-950 border-amber-500/80 text-amber-200 shadow-sm shadow-amber-900/50' : 'bg-gray-900 border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-600'} border rounded-xl px-2.5 py-1.5 text-xs font-bold transition active:scale-95 cursor-pointer" title="Clique para liberar ou bloquear acesso ao Gerador de Cartazes de Oferta">
                                 <i class="fa-solid fa-tags ${(isAdm || acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'))) ? 'text-amber-400' : 'text-gray-500'} text-xs"></i>
                                 <span>Cartazes: <strong class="${(isAdm || acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'))) ? 'text-amber-300' : 'text-gray-400'}">${isAdm ? 'Admin (Livre)' : ((acc.canAccessCartazes === true || (Array.isArray(acc.allowedTabs) && acc.allowedTabs.includes('tools'))) ? 'Liberado ✓' : 'Bloqueado')}</strong></span>
                             </button>
@@ -12548,6 +12736,30 @@
                 syncManager.showToast(`✓ Conta de ${name} criada com sucesso!`);
             }
 
+            toggleSpreadsheetsAccess(email) {
+                const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
+                const acc = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+                if (!acc) return;
+                if (!Array.isArray(acc.allowedTabs)) {
+                    acc.allowedTabs = ['tasks', 'schedule', 'checklists', 'tools', 'occurrences', 'feedback'];
+                }
+                const newAccess = !acc.canAccessSpreadsheets;
+                acc.canAccessSpreadsheets = newAccess;
+                if (newAccess) {
+                    if (!acc.allowedTabs.includes('spreadsheets')) acc.allowedTabs.push('spreadsheets');
+                } else {
+                    acc.allowedTabs = acc.allowedTabs.filter(t => t !== 'spreadsheets');
+                }
+                localStorage.setItem('taskflow_accounts', JSON.stringify(accounts));
+                this.renderAdminUsers();
+                const msg = `Aba Planilhas de ${acc.displayName || acc.name}: ${newAccess ? 'LIBERADA (ON)' : 'BLOQUEADA (OFF)'}`;
+                if (window.syncManager && typeof window.syncManager.showToast === 'function') {
+                    window.syncManager.showToast(msg);
+                } else {
+                    alert(msg);
+                }
+            }
+
             toggleCartazesAccess(email) {
                 const accounts = JSON.parse(localStorage.getItem('taskflow_accounts') || '[]');
                 const acc = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
@@ -13316,6 +13528,7 @@
                 const allowedTabs = [];
                 if (document.getElementById('admin-edit-tab-tasks')?.checked) allowedTabs.push('tasks');
                 if (document.getElementById('admin-edit-tab-checklists')?.checked) allowedTabs.push('checklists');
+                if (document.getElementById('admin-edit-tab-spreadsheets')?.checked) allowedTabs.push('spreadsheets');
                 if (document.getElementById('admin-edit-tab-schedule')?.checked) allowedTabs.push('schedule');
                 if (document.getElementById('admin-edit-tab-tools')?.checked) allowedTabs.push('tools');
                 if (document.getElementById('admin-edit-tab-occurrences')?.checked) allowedTabs.push('occurrences');
@@ -24900,6 +25113,62 @@ window.tabloidApp = new TabloidApp();
 
         window.quickTaskVoice = new QuickTaskVoiceEngine();
     })();
+    
+        // ==========================================
+        // GERENCIADOR DA CENTRAL DE PLANILHAS (WPS)
+        // ==========================================
+        class SpreadsheetsManager {
+            constructor() {
+                this.currentWeek = 'PAGAMENTOS 20-22 NOV';
+                this.sampleData = {
+                    'PAGAMENTOS 20-22 NOV': [
+                        { data: '20/11/2026', setor: 'AÇOUGUE', cracha: '10104', nome: 'ANDRE', horas: '6h', valor: 'R$ 150,00', status: 'PAGO' },
+                        { data: '20/11/2026', setor: 'AÇOUGUE', cracha: '13023', nome: 'VANIA', horas: '6h', valor: 'R$ 150,00', status: 'PAGO' },
+                        { data: '20/11/2026', setor: 'AÇOUGUE', cracha: '15239', nome: 'VILMA', horas: '6h', valor: 'R$ 150,00', status: 'PAGO' },
+                        { data: '20/11/2026', setor: 'ALIMENTAÇÃO', cracha: '12782', nome: 'MIKELY FERNANDA', horas: '6h', valor: 'R$ 150,00', status: 'PAGO' },
+                        { data: '20/11/2026', setor: 'REPOSIÇÃO', cracha: '11361', nome: 'CLEBER', horas: '6h', valor: 'R$ 150,00', status: 'PAGO' },
+                        { data: '22/11/2026', setor: 'FRENTE', cracha: '321', nome: 'SUSY', horas: '6h', valor: 'R$ 150,00', status: 'PAGO' },
+                        { data: '22/11/2026', setor: 'FRENTE', cracha: '20925', nome: 'REBECA', horas: '6h', valor: 'R$ 150,00', status: 'PAGO' },
+                        { data: '22/11/2026', setor: 'FRENTE', cracha: '21856', nome: 'BRUNA', horas: '4h', valor: 'R$ 100,00', status: 'PAGO' }
+                    ],
+                    'PAGAMENTOS 27 SET': [
+                        { data: '27/09/2026', setor: 'ZELADORIA', cracha: '11934', nome: 'ROSELI MOREIRA', horas: '6h', valor: 'R$ 150,00', status: 'PAGO' },
+                        { data: '27/09/2026', setor: 'FRENTE', cracha: '3174', nome: 'SOLANGE', horas: '3h', valor: 'R$ 75,00', status: 'PAGO' },
+                        { data: '27/09/2026', setor: 'FRENTE', cracha: '11079', nome: 'MIRIAM', horas: '3h', valor: 'R$ 75,00', status: 'PAGO' },
+                        { data: '27/09/2026', setor: 'REPOSIÇÃO', cracha: '3434', nome: 'MACIEL', horas: '3h', valor: 'R$ 75,00', status: 'PAGO' },
+                        { data: '27/09/2026', setor: 'REPOSIÇÃO', cracha: '3341', nome: 'GUILHERME', horas: '4h', valor: 'R$ 100,00', status: 'PAGO' }
+                    ]
+                };
+            }
+
+            onWeekChange(weekName) {
+                this.currentWeek = weekName;
+                this.renderPreview();
+            }
+
+            renderPreview() {
+                const tbody = document.getElementById('wps-preview-tbody');
+                if (!tbody) return;
+                const list = this.sampleData[this.currentWeek] || this.sampleData['PAGAMENTOS 20-22 NOV'] || [];
+                if (list.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-gray-500">Consulte a planilha no Google Sheets para visualizar todas as 46 abas completas.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = list.map(item => `
+                    <tr class="hover:bg-gray-800/40 transition">
+                        <td class="py-2.5 px-3 font-mono text-gray-400">${item.data}</td>
+                        <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-950/80 text-indigo-300 border border-indigo-800/40">${item.setor}</span></td>
+                        <td class="py-2.5 px-3 font-mono text-gray-400">${item.cracha}</td>
+                        <td class="py-2.5 px-3 font-bold text-white">${item.nome}</td>
+                        <td class="py-2.5 px-3 text-center font-semibold text-gray-300">${item.horas}</td>
+                        <td class="py-2.5 px-3 text-right font-bold text-emerald-400 font-mono">${item.valor}</td>
+                        <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-950 text-emerald-300 border border-emerald-800/60">${item.status}</span></td>
+                    </tr>
+                `).join('');
+            }
+        }
+        window.spreadsheetsApp = new SpreadsheetsManager();
+
     </script>
 
 </body>
